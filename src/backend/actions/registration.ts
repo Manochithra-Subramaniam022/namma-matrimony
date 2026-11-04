@@ -36,14 +36,23 @@ export async function getNextRegistrationId(): Promise<string> {
 
 export async function registerProfileWithPrisma(formData: any) {
   try {
+    if (!formData.fullName || typeof formData.fullName !== 'string' || !formData.fullName.trim()) {
+      throw new Error('Full Name is required for registration.');
+    }
+
+    if (!formData.whatsappNumber && !formData.mobileNumber) {
+      throw new Error('Mobile or WhatsApp number is required for registration.');
+    }
+
     const displayId = await getNextRegistrationId();
-    const randomDigits = Math.floor(1000 + Math.random() * 9000);
 
     const cleanMobile = formData.whatsappNumber
       ? formData.whatsappNumber.replace(/\D/g, '').slice(-10)
-      : formData.mobileNumber
-      ? formData.mobileNumber.replace(/\D/g, '').slice(-10)
-      : `99${randomDigits}0000`.slice(0, 10);
+      : formData.mobileNumber.replace(/\D/g, '').slice(-10);
+
+    if (cleanMobile.length < 10) {
+      throw new Error('Please provide a valid 10-digit mobile number.');
+    }
 
     const email = formData.email || `${cleanMobile}@nammamatrimony.local`;
 
@@ -137,7 +146,7 @@ export async function registerProfileWithPrisma(formData: any) {
 
     const profileData = {
       userId: actualUserId,
-      name: formData.fullName || 'Member',
+      name: formData.fullName.trim(),
       gender,
       livingCountry: formData.country || 'India',
       state: formData.state || 'Tamil Nadu',
