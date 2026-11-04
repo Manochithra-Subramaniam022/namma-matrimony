@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #800020;
+  --color-primary-light: #9B1130;
+  --color-primary-dark: #580016;
+  --color-accent: #D4AF37;
+  --color-accent-light: #F3E5AB;
+  --color-accent-hover: #C59B27;
+  --color-background: #FFFDF9;
+  --color-surface: #FFFFFF;
+  --color-foreground: #1C1917;
+  --color-muted: #78716C;
+  
+  --font-serif: 'Noto Serif Tamil', Georgia, serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Custom premium scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-primary);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-primary-light);
+}
+
+::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+/* Hide default Edge/IE password reveal button and clear button */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}

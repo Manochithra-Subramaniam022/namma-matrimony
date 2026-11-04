@@ -1,0 +1,26 @@
+import { PrismaClient, Prisma } from '../../generated/prisma/client/client'
+export { Prisma }
+import { PrismaPg } from '@prisma/adapter-pg'
+import pg from 'pg'
+
+const connectionString = process.env.DATABASE_URL || process.env.DIRECT_URL || '';
+
+const prismaClientSingleton = () => {
+  // If there's no connection string in development, we can mock or throw, but typically we want it to run.
+  if (!connectionString) {
+    console.warn("DATABASE_URL is not set");
+  }
+  const pool = new pg.Pool({ connectionString, max: 3 })
+  const adapter = new PrismaPg(pool)
+  return new PrismaClient({ adapter })
+}
+
+declare global {
+  var prismaGlobal8: undefined | ReturnType<typeof prismaClientSingleton>
+}
+
+const prisma = globalThis.prismaGlobal8 ?? prismaClientSingleton()
+
+export default prisma
+
+if (process.env.NODE_ENV !== 'production') globalThis.prismaGlobal8 = prisma
