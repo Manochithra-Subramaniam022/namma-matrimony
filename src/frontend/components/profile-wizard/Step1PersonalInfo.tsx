@@ -949,31 +949,43 @@ export function Step1PersonalInfo({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           <FileUpload
             label={language === 'TA' ? 'வரனின் புகைப்படம் (Profile Photo)' : 'Profile Photograph'}
-            subLabel="JPEG/PNG (Max 5MB) - Watermarked"
+            subLabel="JPEG/PNG (Max 10MB) - Watermarked"
             accept="image/*"
             required={true}
+            maxSizeMB={10}
+            bucket="profile photo"
             watermarkText="NAMMA MATRIMONY"
+            initialUrl={watch('photoUrl')}
             onUploadSuccess={(url) => setValue('photoUrl', url)}
           />
 
           <FileUpload
             label={language === 'TA' ? 'ஜாதக நகல் (Horoscope PDF / Photo)' : 'Jathagam Copy (PDF / Image)'}
-            subLabel="PDF or JPG format"
+            subLabel="PDF or JPG format (Max 10MB)"
             accept="image/*,application/pdf"
+            maxSizeMB={10}
+            bucket="horoscope"
+            initialUrl={watch('horoscopeUrl')}
             onUploadSuccess={(url) => setValue('horoscopeUrl', url)}
           />
 
           <FileUpload
             label={language === 'TA' ? 'அரசு அடையாள அட்டை (Govt ID Proof - Optional)' : 'Govt ID Proof (Aadhaar / Voter ID)'}
-            subLabel="For 100% verified profile badge"
+            subLabel="For 100% verified profile badge (Max 50MB)"
             accept="image/*,application/pdf"
+            maxSizeMB={50}
+            bucket="Govt id, Community Certificate"
+            initialUrl={watch('idProofUrl')}
             onUploadSuccess={(url) => setValue('idProofUrl', url)}
           />
 
           <FileUpload
             label={language === 'TA' ? 'சாதிச் சான்றிதழ் (Caste Certificate - Optional)' : 'Caste Certificate (Optional)'}
-            subLabel="Optional community verification"
+            subLabel="Optional community verification (Max 50MB)"
             accept="image/*,application/pdf"
+            maxSizeMB={50}
+            bucket="Govt id, Community Certificate"
+            initialUrl={watch('casteCertificateUrl')}
             onUploadSuccess={(url) => setValue('casteCertificateUrl', url)}
           />
         </div>

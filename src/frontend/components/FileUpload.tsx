@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Upload, X, CheckCircle, FileText, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 interface FileUploadProps {
   label: string;
@@ -87,12 +88,19 @@ export function FileUpload({
   onUploadSuccess,
   required = false,
   watermarkText = 'NAMMA MATRIMONY',
+  bucket,
 }: FileUploadProps) {
   const [fileUrl, setFileUrl] = useState<string | null>(initialUrl || null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (initialUrl && initialUrl !== fileUrl) {
+      setFileUrl(initialUrl);
+    }
+  }, [initialUrl]);
 
   const handleFile = async (selectedFile: File) => {
     setError(null);
@@ -108,19 +116,65 @@ export function FileUpload({
         finalFile = await addWatermark(selectedFile, watermarkText);
       }
 
-      // Convert to local data URL / object URL for persistent display
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const resultUrl = e.target?.result as string;
-        setFileUrl(resultUrl);
+      let uploadedUrl = '';
+
+      if (bucket) {
+        const timestamp = Date.now();
+        const randomSuffix = Math.random().toString(36).substring(2, 7);
+        const cleanName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const filePath = `${timestamp}_${randomSuffix}_${cleanName}`;
+
+        const { data: uploadData, error: uploadErr } = await supabase.storage
+          .from(bucket)
+          .upload(filePath, finalFile, {
+            cacheControl: '3600',
+            upsert: true,
+            contentType: finalFile.type || selectedFile.type,
+          });
+
+        if (uploadErr) {
+          console.warn(`Supabase Storage upload to [${bucket}] failed:`, uploadErr);
+          if (
+            uploadErr.message?.includes('row-level security') ||
+            (uploadErr as any).statusCode === 403 ||
+            (uploadErr as any).statusCode === '403'
+          ) {
+            setError(
+              `Bucket "${bucket}" policy required in Supabase SQL editor. Using local preview for now.`
+            );
+          } else {
+            setError(uploadErr.message || `Upload to ${bucket} failed`);
+          }
+        } else if (uploadData) {
+          const { data: pubData } = supabase.storage.from(bucket).getPublicUrl(filePath);
+          uploadedUrl = pubData.publicUrl;
+        }
+      }
+
+      if (uploadedUrl) {
+        setFileUrl(uploadedUrl);
         setFileName(finalFile.name);
-        onUploadSuccess(resultUrl);
+        onUploadSuccess(uploadedUrl);
         setIsProcessing(false);
-      };
-      reader.readAsDataURL(finalFile);
+      } else {
+        // Fallback to local Data URL (e.g., if no bucket or RLS policy pending)
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const resultUrl = e.target?.result as string;
+          setFileUrl(resultUrl);
+          setFileName(finalFile.name);
+          onUploadSuccess(resultUrl);
+          setIsProcessing(false);
+        };
+        reader.onerror = () => {
+          setError('Failed to read file preview');
+          setIsProcessing(false);
+        };
+        reader.readAsDataURL(finalFile);
+      }
     } catch (err: any) {
       console.error(err);
-      setError('Failed to process image');
+      setError(err.message || 'Failed to process file');
       setIsProcessing(false);
     }
   };
@@ -128,14 +182,24 @@ export function FileUpload({
   const handleRemove = () => {
     setFileUrl(null);
     setFileName(null);
+    setError(null);
     onUploadSuccess('');
     if (inputRef.current) inputRef.current.value = '';
   };
 
+  const isImage = fileUrl
+    ? fileUrl.startsWith('data:image') ||
+      /\.(jpg|jpeg|png|webp|gif|svg)($|\?)/i.test(fileUrl)
+    : false;
+
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-1.5">
-        <label className={`text-xs font-bold text-gray-700 uppercase tracking-wide ${required ? "after:content-['*'] after:ml-1 after:text-primary" : ''}`}>
+        <label
+          className={`text-xs font-bold text-gray-700 uppercase tracking-wide ${
+            required ? "after:content-['*'] after:ml-1 after:text-primary" : ''
+          }`}
+        >
           {label}
         </label>
         {subLabel && <span className="text-[11px] text-gray-400 font-medium">{subLabel}</span>}
@@ -144,8 +208,12 @@ export function FileUpload({
       {fileUrl ? (
         <div className="relative border-2 border-primary/20 bg-primary/5 rounded-2xl p-4 flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-3 overflow-hidden">
-            {fileUrl.startsWith('data:image') || fileUrl.includes('.jpg') || fileUrl.includes('.png') ? (
-              <img src={fileUrl} alt="Upload preview" className="w-14 h-14 object-cover rounded-xl border border-[#D4AF37]/50 shadow-xs" />
+            {isImage ? (
+              <img
+                src={fileUrl}
+                alt="Upload preview"
+                className="w-14 h-14 object-cover rounded-xl border border-[#D4AF37]/50 shadow-xs"
+              />
             ) : (
               <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center border border-primary/20 text-primary">
                 <FileText className="w-7 h-7" />
@@ -186,7 +254,9 @@ export function FileUpload({
           {isProcessing ? (
             <div className="flex flex-col items-center gap-2 text-primary">
               <Loader2 className="w-8 h-8 animate-spin text-[#D4AF37]" />
-              <span className="text-xs font-bold">Applying Protective Watermark...</span>
+              <span className="text-xs font-bold">
+                {bucket ? 'Watermarking & Uploading to Cloud...' : 'Applying Protective Watermark...'}
+              </span>
             </div>
           ) : (
             <>
@@ -204,7 +274,7 @@ export function FileUpload({
         </div>
       )}
 
-      {error && <p className="text-xs text-red-600 font-semibold mt-1.5">{error}</p>}
+      {error && <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 font-medium mt-1.5">{error}</p>}
     </div>
   );
 }
