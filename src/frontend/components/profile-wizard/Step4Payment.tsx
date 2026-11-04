@@ -5,7 +5,7 @@ import { CheckCircle, ArrowLeft, Sparkles, Heart, User, Check, ShieldCheck, MapP
 import { BRANDING } from '@/constants/branding';
 
 interface Step4PaymentProps {
-  onComplete: () => void;
+  onComplete: (profileData?: any) => void;
   onPrev: () => void;
   language?: 'TA' | 'EN';
   initialData?: any;
@@ -20,6 +20,7 @@ export function Step4Payment({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [refId, setRefId] = useState('nm-0001');
+  const [createdProfile, setCreatedProfile] = useState<any>(null);
 
   useEffect(() => {
     fetch('/api/register')
@@ -57,12 +58,17 @@ export function Step4Payment({
       console.error('Registration submission error:', err);
     } finally {
       setRefId(assignedId);
-      localStorage.setItem('namma_registration_complete', JSON.stringify({
+      const finalProfileData = {
+        ...payload,
+        registrationId: assignedId,
         refId: assignedId,
+        displayId: assignedId,
         paidStatus: 'FREE_SERVICE',
         timestamp: new Date().toISOString(),
-      }));
-
+      };
+      setCreatedProfile(finalProfileData);
+      localStorage.setItem('namma_registration_complete', JSON.stringify(finalProfileData));
+      localStorage.setItem('namma_matrimony_profile', JSON.stringify(finalProfileData));
       localStorage.removeItem('namma_matrimony_draft');
 
       setIsSubmitting(false);
@@ -250,15 +256,22 @@ export function Step4Payment({
               </p>
             </div>
 
-            {/* Action Button */}
-            <div className="pt-2">
+            {/* Action Buttons */}
+            <div className="pt-2 space-y-2.5">
               <button
                 type="button"
-                onClick={onComplete}
-                className="w-full bg-primary hover:bg-primary-light text-white py-3.5 px-6 rounded-full font-extrabold text-sm shadow-md transition-all cursor-pointer hover:scale-[1.02]"
+                onClick={() => onComplete(createdProfile)}
+                className="w-full bg-primary hover:bg-primary-light text-white py-3.5 px-6 rounded-full font-extrabold text-sm sm:text-base shadow-lg transition-all cursor-pointer hover:scale-[1.02] flex items-center justify-center gap-2 border-2 border-[#D4AF37]"
               >
-                {language === 'TA' ? 'முகப்புக்குச் செல்க (Go to Home)' : 'Go to Homepage'}
+                <span>{language === 'TA' ? 'சுயவிவர பயோடேட்டாவைக் காண்க →' : 'View Full Matrimony Profile →'}</span>
               </button>
+
+              <a
+                href="/"
+                className="block text-gray-500 hover:text-gray-800 text-xs font-bold py-1.5 transition-colors"
+              >
+                {language === 'TA' ? 'முகப்புப் பக்கத்திற்குச் செல்க' : 'Go to Homepage'}
+              </a>
             </div>
           </div>
         </div>

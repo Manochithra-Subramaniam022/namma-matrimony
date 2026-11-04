@@ -66,6 +66,15 @@ export default function LandingPage() {
               <span>{language === 'TA' ? 'English' : 'தமிழ்'}</span>
             </button>
 
+            {/* My Profile Link */}
+            <Link
+              href="/profile"
+              className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 sm:py-2 rounded-full bg-primary/5 hover:bg-primary/10 border border-primary/20 text-xs sm:text-sm font-bold text-primary transition-all shrink-0"
+              title="View Registered Profile"
+            >
+              <span>{language === 'TA' ? 'எனது சுயவிவரம்' : 'My Profile'}</span>
+            </Link>
+
             {/* Free Register CTA */}
             <Link
               href="/register"
@@ -395,7 +404,11 @@ export default function LandingPage() {
             </a>
             <span className="hidden sm:inline text-gray-300">•</span>
             <Link href="/register" className="text-primary font-bold hover:underline">
-              {language === 'TA' ? 'இலவச பதிவு பக்கம்' : 'Free Registration'}
+              {language === 'TA' ? 'இலவச பதிவு' : 'Free Registration'}
+            </Link>
+            <span className="hidden sm:inline text-gray-300">•</span>
+            <Link href="/profile" className="text-primary font-bold hover:underline">
+              {language === 'TA' ? 'எனது சுயவிவரம் (பயோடேட்டா)' : 'My Profile / Biodata'}
             </Link>
           </div>
 

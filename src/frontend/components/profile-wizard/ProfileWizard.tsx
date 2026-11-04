@@ -5,6 +5,7 @@ import { Step1PersonalInfo } from './Step1PersonalInfo';
 import { Step2FamilyDetails } from './Step2FamilyDetails';
 import { Step3Expectations } from './Step3Expectations';
 import { Step4Payment } from './Step4Payment';
+import AkshayamProfileView from '@/frontend/components/profile/AkshayamProfileView';
 import { useLanguage } from '@/frontend/context/LanguageContext';
 import { BRANDING } from '@/constants/branding';
 import BrandLogo from '../BrandLogo';
@@ -29,6 +30,7 @@ export default function ProfileWizard({
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<any>(initialData || {});
   const [gender, setGender] = useState<string>(initialData?.gender || 'MALE');
+  const [completedProfile, setCompletedProfile] = useState<any | null>(null);
 
   const steps = [
     { titleEn: 'Basic Details', titleTa: 'அடிப்படை விவரங்கள்' },
@@ -37,9 +39,18 @@ export default function ProfileWizard({
     { titleEn: 'Review & Complete', titleTa: 'சரிபார்த்தல் & நிறைவு' },
   ];
 
-  // Restore draft from localStorage on mount
+  // Restore draft or check for completed profile view
   useEffect(() => {
     try {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('view') === 'profile') {
+        const savedProf = localStorage.getItem('namma_matrimony_profile');
+        if (savedProf) {
+          setCompletedProfile(JSON.parse(savedProf));
+          return;
+        }
+      }
+
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
@@ -81,6 +92,19 @@ export default function ProfileWizard({
     updateFormData(data);
     setCurrentStep(3);
   };
+
+  if (completedProfile) {
+    return (
+      <AkshayamProfileView
+        profile={completedProfile}
+        language={language}
+        onEdit={() => {
+          setCompletedProfile(null);
+          setCurrentStep(0);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background py-3 sm:py-8 px-2 sm:px-6 lg:px-8 font-sans selection:bg-primary/20">
@@ -269,8 +293,12 @@ export default function ProfileWizard({
 
             {currentStep === 3 && (
               <Step4Payment
-                onComplete={() => {
-                  window.location.href = '/';
+                onComplete={(profileData) => {
+                  if (profileData) {
+                    setCompletedProfile(profileData);
+                  } else {
+                    window.location.href = '/';
+                  }
                 }}
                 onPrev={() => setCurrentStep(2)}
                 language={language}
