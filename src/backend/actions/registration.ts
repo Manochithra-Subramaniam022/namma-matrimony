@@ -1,37 +1,6 @@
-import prisma from '@/backend/prisma';
 import { supabase } from '@/lib/supabase';
 
 export async function getNextRegistrationId(): Promise<string> {
-  // 1. Try Prisma if DATABASE_URL is available
-  if (process.env.DATABASE_URL || process.env.DIRECT_URL) {
-    try {
-      const profiles = await prisma.profile.findMany({
-        where: {
-          displayId: { not: null },
-        },
-        select: { displayId: true },
-      });
-
-      let maxNum = 0;
-      for (const p of profiles) {
-        if (p.displayId) {
-          const match = p.displayId.match(/nm-(\d+)/i);
-          if (match) {
-            const num = parseInt(match[1], 10);
-            if (!isNaN(num) && num > maxNum) {
-              maxNum = num;
-            }
-          }
-        }
-      }
-      const nextNum = maxNum + 1;
-      return `nm-${String(nextNum).padStart(4, '0')}`;
-    } catch (err) {
-      console.warn('Prisma getNextRegistrationId error:', err);
-    }
-  }
-
-  // 2. Query Supabase
   try {
     const { data: profiles, error } = await supabase
       .from('Profile')
@@ -60,7 +29,7 @@ export async function getNextRegistrationId(): Promise<string> {
     const nextNum = maxNum + 1;
     return `nm-${String(nextNum).padStart(4, '0')}`;
   } catch (err) {
-    console.error('getNextRegistrationId fallback failed:', err);
+    console.error('getNextRegistrationId failed:', err);
     return 'nm-0001';
   }
 }
@@ -68,12 +37,13 @@ export async function getNextRegistrationId(): Promise<string> {
 export async function registerProfileWithPrisma(formData: any) {
   try {
     const displayId = await getNextRegistrationId();
+    const randomDigits = Math.floor(1000 + Math.random() * 9000);
 
     const cleanMobile = formData.whatsappNumber
       ? formData.whatsappNumber.replace(/\D/g, '').slice(-10)
       : formData.mobileNumber
       ? formData.mobileNumber.replace(/\D/g, '').slice(-10)
-      : `99${randomCode}0000`.slice(0, 10);
+      : `99${randomDigits}0000`.slice(0, 10);
 
     const email = formData.email || `${cleanMobile}@nammamatrimony.local`;
 
@@ -123,179 +93,7 @@ export async function registerProfileWithPrisma(formData: any) {
       workNature = 'NOT_WORKING';
     }
 
-    // If DATABASE_URL is set, execute Prisma operations
-    if (process.env.DATABASE_URL || process.env.DIRECT_URL) {
-      // 1. Create or Update User
-      const user = await prisma.user.upsert({
-        where: { mobile_no: cleanMobile },
-        create: {
-          mobile_no: cleanMobile,
-          email,
-          password: formData.password || null,
-          whatsappProfileDeliveryNumber: formData.whatsappNumber || null,
-          userid: displayId,
-          role: 'USER',
-          status: 'ACTIVE',
-        },
-        update: {
-          email,
-          whatsappProfileDeliveryNumber: formData.whatsappNumber || null,
-        },
-      });
-
-      // 2. Create or Update Profile
-      const profile = await prisma.profile.upsert({
-        where: { userId: user.id },
-        create: {
-          userId: user.id,
-          name: formData.fullName || 'Member',
-          gender,
-          livingCountry: formData.country || 'India',
-          state: formData.state || 'Tamil Nadu',
-          city: formData.city || 'Coimbatore',
-          religion: formData.religion || 'Hindu',
-          caste: formData.caste || 'Kongu Vellalar Gounder',
-          subCaste: formData.subCaste || null,
-          koottam: formData.kootam || null,
-          dob,
-          tob: formData.timeOfBirth || null,
-          lob: formData.placeOfBirth || null,
-          height: parseFloat(formData.height) || 165,
-          weight: parseFloat(formData.weight) || 60,
-          physicalCondition,
-          skinColour: formData.complexion || 'Wheatish',
-          maritalStatus,
-          familyStatus,
-          foodHabits: habitMap(formData.foodHabits),
-          drinkingHabits: habitMap(formData.drinkingHabits),
-          smokingHabits: habitMap(formData.smokingHabits),
-          rasi: formData.rasi || null,
-          nakshatra: formData.nakshatram || null,
-          poruthaNakshatram: Array.isArray(formData.poruthamNakshatras) ? formData.poruthamNakshatras : [],
-          dosham: Array.isArray(formData.dosham) ? formData.dosham.join(', ') : formData.dosham || null,
-          displayId,
-          status: 'PENDING',
-          isLive: false,
-          houseAddress: formData.address || null,
-          houseLocation: formData.landmark || null,
-          hideMobileNo: Boolean(formData.hideMobile ?? true),
-          hideHouseAddress: Boolean(formData.hideAddress ?? true),
-          hidePhoto: Boolean(formData.hidePhoto ?? false),
-          photoUrl: formData.profilePhotoUrl || null,
-          jathakamUrl: formData.horoscopeFileUrl || null,
-          idProofUrl: formData.idProofUrl || null,
-          casteCertificateUrl: formData.casteCertificateUrl || null,
-          rasiGrid: formData.horoscopeChart || null,
-          amsamGrid: formData.horoscopeChart || null,
-          haveChildren: Boolean(formData.haveChildren === 'Yes'),
-          numberOfChildren: parseInt(formData.childrenCount) || 0,
-          childrenAge: formData.childrenDetails || null,
-          yearOfMarriage: formData.marriageYear || null,
-          yearOfDivorce: formData.divorceYear || null,
-          educations: {
-            create: Array.isArray(formData.education)
-              ? formData.education.map((edu: any) => ({
-                  level: edu.level || 'UG',
-                  degreeName: edu.degree || 'Degree',
-                  institution: edu.institution || 'University',
-                }))
-              : [],
-          },
-        },
-        update: {
-          name: formData.fullName || 'Member',
-          gender,
-          caste: formData.caste || 'Kongu Vellalar Gounder',
-          koottam: formData.kootam || null,
-          displayId,
-        },
-      });
-
-      // 3. Create or Update Family
-      await prisma.family.upsert({
-        where: { userId: user.id },
-        create: {
-          userId: user.id,
-          fatherName: formData.fatherName || null,
-          fatherLivingStatus: String(formData.fatherStatus).toUpperCase() === 'LATE' ? 'LATE' : 'ALIVE',
-          fatherStatus: String(formData.fatherStatus).toUpperCase() === 'LATE' ? null : (formData.fatherOccupation || null),
-          fatherMobile: String(formData.fatherStatus).toUpperCase() === 'LATE' ? null : (formData.fatherMobile || null),
-          motherName: formData.motherName || null,
-          motherLivingStatus: String(formData.motherStatus).toUpperCase() === 'LATE' ? 'LATE' : 'ALIVE',
-          motherStatus: String(formData.motherStatus).toUpperCase() === 'LATE' ? null : (formData.motherOccupation || null),
-          motherMobile: String(formData.motherStatus).toUpperCase() === 'LATE' ? null : (formData.motherMobile || null),
-          workNature,
-          salary: formData.annualIncome || null,
-          organisation: formData.companyName || null,
-          designation: formData.designation || null,
-          workingAddress: formData.workLocation || null,
-          googleLocation: formData.workMapUrl || null,
-          rentalIncome: formData.rentalIncome || null,
-          houseType: formData.houseType || null,
-          houseSqFt: formData.houseSqft || null,
-          thottam: formData.landAcres || null,
-          vacantLand: formData.commercialSqft || null,
-          totalAssetValue: formData.netAssets || null,
-          assetComments: formData.assetComments || null,
-          dowryDetails: `Gold: ${formData.seerGoldPavun || '0'} Pavun, Cash: ${formData.seerCash || '0'}, Vehicle: ${formData.seerVehicle || 'None'}`,
-          siblings: {
-            create: Array.isArray(formData.siblings)
-              ? formData.siblings.map((sib: any) => ({
-                  name: sib.name || 'Sibling',
-                  relation: sib.relation || 'Brother',
-                  status: sib.status || sib.maritalStatus || 'Unmarried',
-                }))
-              : [],
-          },
-        },
-        update: {
-          fatherName: formData.fatherName || null,
-          fatherLivingStatus: String(formData.fatherStatus).toUpperCase() === 'LATE' ? 'LATE' : 'ALIVE',
-          fatherStatus: String(formData.fatherStatus).toUpperCase() === 'LATE' ? null : (formData.fatherOccupation || null),
-          fatherMobile: String(formData.fatherStatus).toUpperCase() === 'LATE' ? null : (formData.fatherMobile || null),
-          motherName: formData.motherName || null,
-          motherLivingStatus: String(formData.motherStatus).toUpperCase() === 'LATE' ? 'LATE' : 'ALIVE',
-          motherStatus: String(formData.motherStatus).toUpperCase() === 'LATE' ? null : (formData.motherOccupation || null),
-          motherMobile: String(formData.motherStatus).toUpperCase() === 'LATE' ? null : (formData.motherMobile || null),
-          salary: formData.annualIncome || null,
-        },
-      });
-
-      // 4. Create or Update Expectations
-      await prisma.expectations.upsert({
-        where: { userId: user.id },
-        create: {
-          userId: user.id,
-          expectedHeight: parseFloat(formData.partnerHeightMin) || null,
-          colourPreference: formData.partnerComplexion || null,
-          maxAgeLimit: parseInt(formData.partnerMaxAgeGap) || null,
-          preferredSectors: Array.isArray(formData.partnerSectors) ? formData.partnerSectors : [],
-          preferredLocations: Array.isArray(formData.partnerPreferredCities) ? formData.partnerPreferredCities : [],
-          expectedIncome: formData.partnerMinIncome || null,
-          expectsRentalIncome: Boolean(formData.partnerExpectRental),
-          expectsThottam: Boolean(formData.partnerExpectLand),
-          expectsVacantLand: Boolean(formData.partnerExpectVacantLand),
-          acceptsDivorced: Boolean(formData.partnerOpenDivorced),
-          preferredDistanceRadius: parseInt(formData.partnerDistanceRadius) || null,
-          city: Array.isArray(formData.partnerPreferredCities) && formData.partnerPreferredCities.length > 0 ? formData.partnerPreferredCities[0] : null,
-          referredBy: formData.referredBy || null,
-          comments: formData.openExpectations || null,
-        },
-        update: {
-          comments: formData.openExpectations || null,
-        },
-      });
-
-      return {
-        success: true,
-        method: 'PRISMA',
-        registrationId: displayId,
-        userId: user.id,
-        profileId: profile.id,
-      };
-    }
-
-    // Fallback: Supabase Client Direct
+    // Direct Database Storage via Supabase
     const userId = crypto.randomUUID();
     const profileId = crypto.randomUUID();
     const familyId = crypto.randomUUID();

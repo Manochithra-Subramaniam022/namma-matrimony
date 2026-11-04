@@ -1,5 +1,3 @@
-import prisma, { Prisma } from '@/backend/prisma';
-
-export { prisma, Prisma };
+export const prisma = null as any;
+export const Prisma = {} as any;
 export default prisma;
-
