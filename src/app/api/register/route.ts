@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { registerProfileWithPrisma, getNextRegistrationId } from '@/backend/actions/registration';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const nextId = await getNextRegistrationId();
