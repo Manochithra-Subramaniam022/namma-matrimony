@@ -27,6 +27,7 @@ const step1Schema = z.object({
   hidePhoto: z.boolean().default(false),
 
   // Demographics
+  profileFor: z.string().default('SON'),
   fullName: z.string().min(2, 'Name is required'),
   gender: z.enum(['MALE', 'FEMALE']),
   dob: z.string().min(1, 'Date of birth is required'),
@@ -135,6 +136,7 @@ export function Step1PersonalInfo({
       hideAddress: initialData?.hideAddress ?? false,
       hidePhoto: initialData?.hidePhoto ?? false,
 
+      profileFor: initialData?.profileFor || 'SON',
       fullName: initialData?.fullName || '',
       gender: initialData?.gender || 'MALE',
       dob: initialData?.dob || '',
@@ -195,6 +197,7 @@ export function Step1PersonalInfo({
   });
 
   const watchGender = watch('gender');
+  const watchProfileFor = watch('profileFor');
   const watchMaritalStatus = watch('maritalStatus');
   const watchReligion = watch('religion');
   const watchKoottam = watch('koottam');
@@ -435,6 +438,39 @@ export function Step1PersonalInfo({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+          {/* Profile For / Relationship */}
+          <div className="sm:col-span-2 md:col-span-3 bg-[#FFFDF9] border border-primary/20 p-3 sm:p-4 rounded-xl sm:rounded-2xl">
+            <label className="block text-xs font-bold text-primary uppercase mb-2">
+              {language === 'TA' ? 'பதிவு யாருக்காக செய்யப்படுகிறது? (Profile Registering For)' : 'Who is this candidate profile for?'}
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+              {[
+                { id: 'SON', ta: 'மகன் (Son)', en: 'Son', g: 'MALE' },
+                { id: 'DAUGHTER', ta: 'மகள் (Daughter)', en: 'Daughter', g: 'FEMALE' },
+                { id: 'SELF', ta: 'சுயவிவரம் (Self)', en: 'Self', g: null },
+                { id: 'BROTHER', ta: 'சகோதரர் (Brother)', en: 'Brother', g: 'MALE' },
+                { id: 'SISTER', ta: 'சகோதரி (Sister)', en: 'Sister', g: 'FEMALE' },
+                { id: 'RELATIVE', ta: 'உறவினர் (Relative)', en: 'Relative', g: null },
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => {
+                    setValue('profileFor', opt.id);
+                    if (opt.g) setValue('gender', opt.g as any);
+                  }}
+                  className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                    watchProfileFor === opt.id
+                      ? 'bg-primary text-white border-primary shadow-xs'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-primary/40'
+                  }`}
+                >
+                  {language === 'TA' ? opt.ta : opt.en}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="sm:col-span-2">
             <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5 after:content-['*'] after:ml-1 after:text-primary">
               {language === 'TA' ? 'முழுப்பெயர் (Full Name)' : 'Full Name'}

@@ -34,12 +34,14 @@ import { BRANDING } from '@/constants/branding';
 interface AkshayamProfileViewProps {
   profile: any;
   onEdit?: () => void;
+  onBack?: () => void;
   language?: 'TA' | 'EN';
 }
 
 export default function AkshayamProfileView({
   profile,
   onEdit,
+  onBack,
   language = 'TA',
 }: AkshayamProfileViewProps) {
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
@@ -159,6 +161,17 @@ export default function AkshayamProfileView({
           </div>
 
           <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+            {onBack && (
+              <button
+                onClick={onBack}
+                type="button"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold transition-all cursor-pointer border border-primary/20"
+                title="Back to Dashboard"
+              >
+                <span>← {language === 'TA' ? 'எனது கணக்கு (Dashboard)' : 'Back to Dashboard'}</span>
+              </button>
+            )}
+
             <button
               onClick={handlePrint}
               type="button"

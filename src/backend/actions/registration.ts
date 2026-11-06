@@ -34,6 +34,100 @@ export async function getNextRegistrationId(): Promise<string> {
   }
 }
 
+export async function getProfilesByMobile(mobile: string) {
+  try {
+    const cleanMobile = mobile.replace(/\D/g, '').slice(-10);
+    if (!cleanMobile || cleanMobile.length < 10) return [];
+
+    const { data: user } = await supabase
+      .from('User')
+      .select('id, email, mobile_no, whatsappProfileDeliveryNumber')
+      .eq('mobile_no', cleanMobile)
+      .maybeSingle();
+
+    let query = supabase.from('Profile').select('*');
+    if (user?.id) {
+      query = query.or(`userId.eq.${user.id},profileCreatedBy.eq.${cleanMobile}`);
+    } else {
+      query = query.eq('profileCreatedBy', cleanMobile);
+    }
+
+    const { data: profiles, error } = await query.order('displayId', { ascending: false });
+    if (error) {
+      console.error('getProfilesByMobile query error:', error);
+      return [];
+    }
+
+    // Attach family and expectations for each profile
+    const fullProfiles = await Promise.all(
+      (profiles || []).map(async (p) => {
+        const { data: family } = await supabase
+          .from('Family')
+          .select('*')
+          .eq('userId', p.userId)
+          .maybeSingle();
+
+        const { data: expectations } = await supabase
+          .from('Expectations')
+          .select('*')
+          .eq('userId', p.userId)
+          .maybeSingle();
+
+        return {
+          ...p,
+          family: family || {},
+          expectations: expectations || {},
+          userContact: {
+            mobile: user?.mobile_no || cleanMobile,
+            email: user?.email,
+          },
+        };
+      })
+    );
+
+    return fullProfiles;
+  } catch (err) {
+    console.error('getProfilesByMobile error:', err);
+    return [];
+  }
+}
+
+export async function getProfileById(displayIdOrId: string) {
+  try {
+    let query = supabase.from('Profile').select('*');
+    if (displayIdOrId.toLowerCase().startsWith('nm-')) {
+      query = query.ilike('displayId', displayIdOrId);
+    } else {
+      query = query.eq('id', displayIdOrId);
+    }
+
+    const { data: profile, error } = await query.maybeSingle();
+    if (error || !profile) return null;
+
+    // Fetch family and expectations
+    const { data: family } = await supabase
+      .from('Family')
+      .select('*')
+      .eq('userId', profile.userId)
+      .maybeSingle();
+
+    const { data: expectations } = await supabase
+      .from('Expectations')
+      .select('*')
+      .eq('userId', profile.userId)
+      .maybeSingle();
+
+    return {
+      ...profile,
+      family: family || {},
+      expectations: expectations || {},
+    };
+  } catch (err) {
+    console.error('getProfileById error:', err);
+    return null;
+  }
+}
+
 export async function registerProfileWithPrisma(formData: any) {
   try {
     if (!formData.fullName || typeof formData.fullName !== 'string' || !formData.fullName.trim()) {
@@ -103,28 +197,24 @@ export async function registerProfileWithPrisma(formData: any) {
     }
 
     // Direct Database Storage via Supabase
-    const userId = crypto.randomUUID();
-    const profileId = crypto.randomUUID();
-    const familyId = crypto.randomUUID();
-    const expectationsId = crypto.randomUUID();
-
-    // 1. Check or Insert User
+    // 1. Check or Insert Primary User Account
     const { data: existingUser } = await supabase
       .from('User')
       .select('id, userid')
       .eq('mobile_no', cleanMobile)
       .maybeSingle();
 
-    const actualUserId = existingUser?.id || userId;
+    let primaryUserId = existingUser?.id;
 
     if (!existingUser) {
+      primaryUserId = crypto.randomUUID();
       const { error: userErr } = await supabase.from('User').insert([{
-        id: actualUserId,
+        id: primaryUserId,
         mobile_no: cleanMobile,
         email,
         password: formData.password || null,
         whatsappProfileDeliveryNumber: formData.whatsappNumber || null,
-        userid: displayId,
+        userid: `ACC-${cleanMobile}`,
         role: 'USER',
         status: 'ACTIVE',
         updatedAt: new Date().toISOString(),
@@ -135,17 +225,63 @@ export async function registerProfileWithPrisma(formData: any) {
       }
     }
 
-    // 2. Check if Profile already exists for this user
-    const { data: existingProfile } = await supabase
-      .from('Profile')
-      .select('id, displayId')
-      .eq('userId', actualUserId)
-      .maybeSingle();
+    // 2. Check if we are EDITING an existing candidate registration or CREATING a new one
+    let targetCandidateUserId = primaryUserId!;
+    let targetProfileId = crypto.randomUUID();
+    let profileDisplayId = displayId;
+    let isEditing = false;
 
-    const profileDisplayId = existingProfile?.displayId || displayId;
+    if (formData.profileId || formData.editDisplayId || formData.displayId) {
+      const searchId = formData.profileId || formData.editDisplayId || formData.displayId;
+      const { data: foundProfile } = await supabase
+        .from('Profile')
+        .select('id, userId, displayId')
+        .or(`id.eq.${searchId},displayId.ilike.${searchId}`)
+        .maybeSingle();
 
-    const profileData = {
-      userId: actualUserId,
+      if (foundProfile) {
+        isEditing = true;
+        targetProfileId = foundProfile.id;
+        targetCandidateUserId = foundProfile.userId;
+        profileDisplayId = foundProfile.displayId;
+      }
+    }
+
+    if (!isEditing) {
+      // For a NEW candidate registration:
+      // Check if primaryUserId already has a row in Profile (to avoid Profile_userId_key violation)
+      const { data: profileWithSameUserId } = await supabase
+        .from('Profile')
+        .select('id')
+        .eq('userId', primaryUserId)
+        .maybeSingle();
+
+      if (profileWithSameUserId) {
+        // Primary user already has candidate #1.
+        // For candidate #2, #3, ..., #N: create a candidate sub-user record in User table
+        const candidateSubUserId = crypto.randomUUID();
+        const { error: subUserErr } = await supabase.from('User').insert([{
+          id: candidateSubUserId,
+          mobile_no: null,
+          email: `${cleanMobile}+${displayId.replace(/[^a-zA-Z0-9]/g, '')}@nammamatrimony.local`,
+          password: null,
+          whatsappProfileDeliveryNumber: formData.whatsappNumber || cleanMobile,
+          userid: displayId,
+          role: 'USER',
+          status: 'ACTIVE',
+          updatedAt: new Date().toISOString(),
+        }]);
+
+        if (subUserErr) {
+          console.error('Candidate sub-user creation error:', subUserErr);
+        } else {
+          targetCandidateUserId = candidateSubUserId;
+        }
+      }
+    }
+
+    const profileData: any = {
+      userId: targetCandidateUserId,
       name: formData.fullName.trim(),
       gender,
       livingCountry: formData.country || 'India',
@@ -172,6 +308,7 @@ export async function registerProfileWithPrisma(formData: any) {
       poruthaNakshatram: Array.isArray(formData.poruthaNakshatram) ? formData.poruthaNakshatram : (Array.isArray(formData.poruthamNakshatras) ? formData.poruthamNakshatras : []),
       dosham: Array.isArray(formData.doshams) ? formData.doshams.join(', ') : (Array.isArray(formData.dosham) ? formData.dosham.join(', ') : formData.dosham || null),
       displayId: profileDisplayId,
+      profileCreatedBy: cleanMobile,
       status: 'PENDING',
       isLive: false,
       houseAddress: formData.address || null,
@@ -188,13 +325,13 @@ export async function registerProfileWithPrisma(formData: any) {
       childrenAge: formData.childrenDetails || null,
     };
 
-    let actualProfileId = existingProfile?.id || profileId;
+    let actualProfileId = targetProfileId;
 
-    if (existingProfile) {
+    if (isEditing) {
       const { error: pUpErr } = await supabase
         .from('Profile')
         .update(profileData)
-        .eq('id', existingProfile.id);
+        .eq('id', targetProfileId);
       if (pUpErr) {
         console.error('Supabase profile update error:', pUpErr);
         throw new Error(pUpErr.message || 'Failed to update profile');
@@ -202,19 +339,19 @@ export async function registerProfileWithPrisma(formData: any) {
     } else {
       const { data: newP, error: pInErr } = await supabase
         .from('Profile')
-        .insert([{ id: profileId, ...profileData }])
+        .insert([{ id: targetProfileId, ...profileData }])
         .select('id, displayId')
         .single();
       if (pInErr) {
         console.error('Supabase profile insertion error:', pInErr);
         throw new Error(pInErr.message || 'Failed to save profile');
       }
-      actualProfileId = newP?.id || profileId;
+      actualProfileId = newP?.id || targetProfileId;
     }
 
     // 3. Family Data
     const familyPayload = {
-      userId: actualUserId,
+      userId: targetCandidateUserId,
       fatherName: formData.fatherName || null,
       fatherLivingStatus: String(formData.fatherStatus).toUpperCase() === 'LATE' ? 'LATE' : 'ALIVE',
       fatherStatus: String(formData.fatherStatus).toUpperCase() === 'LATE' ? null : (formData.fatherOccupation || null),
@@ -242,18 +379,18 @@ export async function registerProfileWithPrisma(formData: any) {
     const { data: existingFamily } = await supabase
       .from('Family')
       .select('id')
-      .eq('userId', actualUserId)
+      .eq('userId', targetCandidateUserId)
       .maybeSingle();
 
     if (existingFamily) {
       await supabase.from('Family').update(familyPayload).eq('id', existingFamily.id);
     } else {
-      await supabase.from('Family').insert([{ id: familyId, ...familyPayload }]);
+      await supabase.from('Family').insert([{ id: crypto.randomUUID(), ...familyPayload }]);
     }
 
     // 4. Expectations Data
     const expectationsPayload = {
-      userId: actualUserId,
+      userId: targetCandidateUserId,
       expectedHeight: parseFloat(formData.expectedMinHeightCm || formData.partnerHeightMin) || null,
       colourPreference: formData.complexionPreference || formData.partnerComplexion || null,
       maxAgeLimit: parseInt(formData.expectedAgeGap || formData.partnerMaxAgeGap) || null,
@@ -272,20 +409,20 @@ export async function registerProfileWithPrisma(formData: any) {
     const { data: existingExp } = await supabase
       .from('Expectations')
       .select('id')
-      .eq('userId', actualUserId)
+      .eq('userId', targetCandidateUserId)
       .maybeSingle();
 
     if (existingExp) {
       await supabase.from('Expectations').update(expectationsPayload).eq('id', existingExp.id);
     } else {
-      await supabase.from('Expectations').insert([{ id: expectationsId, ...expectationsPayload }]);
+      await supabase.from('Expectations').insert([{ id: crypto.randomUUID(), ...expectationsPayload }]);
     }
 
     return {
       success: true,
       method: 'SUPABASE_CLIENT',
       registrationId: profileDisplayId,
-      userId: actualUserId,
+      userId: targetCandidateUserId,
       profileId: actualProfileId,
     };
   } catch (err: any) {

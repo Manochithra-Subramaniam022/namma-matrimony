@@ -43,6 +43,14 @@ export default function ProfileWizard({
   useEffect(() => {
     try {
       const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('new') === 'true') {
+        localStorage.removeItem(STORAGE_KEY);
+        const userMobile = localStorage.getItem('namma_user_mobile');
+        setFormData(userMobile ? { whatsappNumber: userMobile } : {});
+        setCurrentStep(0);
+        return;
+      }
+
       if (urlParams.get('view') === 'profile') {
         const savedProf = localStorage.getItem('namma_matrimony_profile');
         if (savedProf) {

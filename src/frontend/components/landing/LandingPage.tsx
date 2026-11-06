@@ -14,6 +14,7 @@ import {
   Compass,
   Lock,
   CheckCircle,
+  User,
 } from 'lucide-react';
 
 export default function LandingPage() {
@@ -66,22 +67,23 @@ export default function LandingPage() {
               <span>{language === 'TA' ? 'English' : 'தமிழ்'}</span>
             </button>
 
-            {/* My Profile Link */}
+            {/* My Profile Dashboard Link */}
             <Link
               href="/profile"
-              className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 sm:py-2 rounded-full bg-primary/5 hover:bg-primary/10 border border-primary/20 text-xs sm:text-sm font-bold text-primary transition-all shrink-0 whitespace-nowrap"
-              title="View Registered Profile"
+              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full bg-primary/5 hover:bg-primary/10 border border-primary/20 text-[11px] sm:text-xs md:text-sm font-bold text-primary transition-all shrink-0 whitespace-nowrap"
+              title="View Registered Profiles Dashboard"
             >
-              <span>{language === 'TA' ? 'எனது சுயவிவரம்' : 'My Profile'}</span>
+              <User className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" />
+              <span>{language === 'TA' ? 'சுயவிவரக் கணக்கு' : 'My Profile'}</span>
             </Link>
 
             {/* Free Register CTA */}
             <Link
-              href="/register"
+              href="/register?new=true"
               className="bg-primary hover:bg-primary-light text-white px-2.5 sm:px-4 md:px-5 py-1.5 sm:py-2.5 rounded-full font-bold text-[11px] sm:text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-1 sm:gap-1.5 hover:scale-[1.02] shrink-0 whitespace-nowrap"
             >
               <Heart className="w-3 h-3 sm:w-4 sm:h-4 fill-white shrink-0" />
-              <span>{language === 'TA' ? 'இலவச பதிவு' : 'Register Free'}</span>
+              <span>{language === 'TA' ? '+ புதிய வரன் பதிவு' : '+ Register Candidate'}</span>
             </Link>
           </div>
         </div>

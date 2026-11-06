@@ -71,6 +71,21 @@ export function Step4Payment({
       localStorage.setItem('namma_matrimony_profile', JSON.stringify(finalProfileData));
       localStorage.removeItem('namma_matrimony_draft');
 
+      // Update multi-registration list in localStorage
+      try {
+        const storedRegistrations = JSON.parse(localStorage.getItem('namma_registrations') || '[]');
+        const updatedList = [
+          finalProfileData,
+          ...storedRegistrations.filter((r: any) => (r.displayId || r.registrationId) !== assignedId),
+        ];
+        localStorage.setItem('namma_registrations', JSON.stringify(updatedList));
+        if (payload.whatsappNumber || payload.mobileNumber) {
+          localStorage.setItem('namma_user_mobile', payload.whatsappNumber || payload.mobileNumber);
+        }
+      } catch (e) {
+        console.error('Failed to update namma_registrations:', e);
+      }
+
       setIsSubmitting(false);
       setShowSuccessModal(true);
     }
@@ -261,14 +276,36 @@ export function Step4Payment({
               <button
                 type="button"
                 onClick={() => onComplete(createdProfile)}
-                className="w-full bg-primary hover:bg-primary-light text-white py-3.5 px-6 rounded-full font-extrabold text-sm sm:text-base shadow-lg transition-all cursor-pointer hover:scale-[1.02] flex items-center justify-center gap-2 border-2 border-[#D4AF37]"
+                className="w-full bg-primary hover:bg-primary-light text-white py-3.5 px-6 rounded-full font-extrabold text-sm sm:text-base shadow-lg transition-all cursor-pointer hover:scale-[1.01] flex items-center justify-center gap-2 border-2 border-[#D4AF37]"
               >
-                <span>{language === 'TA' ? 'சுயவிவர பயோடேட்டாவைக் காண்க →' : 'View Full Matrimony Profile →'}</span>
+                <span>{language === 'TA' ? 'பயோடேட்டாவைக் காண்க (View Biodata) →' : 'View Akshayam Biodata →'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.href = '/profile';
+                }}
+                className="w-full bg-[#FFFDF9] hover:bg-gray-100 text-primary border-2 border-primary/30 py-3 px-6 rounded-full font-extrabold text-xs sm:text-sm shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <User className="w-4 h-4 text-[#D4AF37]" />
+                <span>{language === 'TA' ? 'எனது சுயவிவரக் கணக்கு (My Profile Dashboard)' : 'Go to My Profile Dashboard'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.removeItem('namma_matrimony_draft');
+                  window.location.href = '/register?new=true';
+                }}
+                className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 py-2.5 px-4 rounded-full font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <span>+ {language === 'TA' ? 'மற்றொரு வரன் பதிவு செய்க (Register Another Candidate)' : 'Register Another Bride/Groom'}</span>
               </button>
 
               <a
                 href="/"
-                className="block text-gray-500 hover:text-gray-800 text-xs font-bold py-1.5 transition-colors"
+                className="block text-gray-500 hover:text-gray-800 text-xs font-bold py-1 transition-colors"
               >
                 {language === 'TA' ? 'முகப்புப் பக்கத்திற்குச் செல்க' : 'Go to Homepage'}
               </a>
