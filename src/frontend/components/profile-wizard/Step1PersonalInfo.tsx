@@ -147,7 +147,7 @@ export function Step1PersonalInfo({
       locationLandmark: initialData?.locationLandmark || '',
 
       religion: initialData?.religion || 'Hindu',
-      caste: initialData?.caste || 'Kongu Vellalar Gounder',
+      caste: initialData?.caste || '',
       subCaste: initialData?.subCaste || '',
       koottam: initialData?.koottam || '',
       customKoottam: initialData?.customKoottam || '',
@@ -604,6 +604,7 @@ export function Step1PersonalInfo({
               {...register('caste')}
               className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:bg-white focus:outline-none transition-all"
             >
+              <option value="">{language === 'TA' ? '-- சாதியைத் தேர்ந்தெடுக்கவும் --' : '-- Select Community --'}</option>
               {CASTE_OPTIONS.map((c) => (
                 <option key={c.value} value={c.value}>
                   {language === 'TA' ? c.labelTa : c.labelEn}

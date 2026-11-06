@@ -11,8 +11,8 @@ export const BRANDING = {
     planNameTa: '100% முற்றிலும் இலவச சேவை',
     cost: 'Free Forever / ₹0',
     costTamil: 'எப்போதும் முற்றிலும் இலவசம்',
-    descriptionEn: 'Designed wholeheartedly as a non-profit community initiative to help every family find their ideal life partner without brokerage or subscription fees.',
-    descriptionTa: 'எந்தவித தரகு கட்டணமும் அல்லது மாதாந்திர கட்டணமும் இன்றி, அனைவருக்கும் உதவும் நோக்கில் தொடங்கப்பட்ட முழுமையான இலவச சேவை.',
+    descriptionEn: 'Designed wholeheartedly as a non-profit community initiative to help every family find their ideal life partner with zero fees or subscription charges.',
+    descriptionTa: 'எந்தவித கட்டணமும் அல்லது மாதாந்திர கட்டணமும் இன்றி, அனைத்து தமிழ் சமூகத்தினருக்கும் உதவும் நோக்கில் தொடங்கப்பட்ட முழுமையான இலவச சேவை.',
   },
 
   features: [

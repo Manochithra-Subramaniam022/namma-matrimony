@@ -22,7 +22,7 @@ export default function LandingPage() {
   const [lookingFor, setLookingFor] = useState('BRIDE');
   const [ageFrom, setAgeFrom] = useState('21');
   const [ageTo, setAgeTo] = useState('29');
-  const [castePreference, setCastePreference] = useState('Kongu Vellalar Gounder');
+  const [castePreference, setCastePreference] = useState('Any');
 
   return (
     <div className="min-h-screen bg-[#FFFDF9] text-gray-900 font-sans selection:bg-primary/20 flex flex-col">
@@ -119,8 +119,8 @@ export default function LandingPage() {
             {/* Subheading */}
             <p className="text-xs sm:text-sm md:text-base text-gray-700 font-medium max-w-xl mx-auto leading-relaxed px-1">
               {language === 'TA'
-                ? 'எந்தவித தரகு கட்டணமும் இன்றி, கொங்கு வேளாளர் கவுண்டர் உள்ளிட்ட அனைத்து தமிழ் சமூக வரன்களை நேரடியாகவும் இலவசமாகவும் கண்டறியலாம்.'
-                : 'A genuine non-profit community platform to help Tamil families connect directly, verify authentic profiles, and match horoscopes completely free.'}
+                ? 'எந்தவித கட்டணமும் இன்றி, அனைத்து தமிழ் சமூக வரன்களையும் நேரடியாகவும் முற்றிலும் இலவசமாகவும் கண்டறியலாம்.'
+                : 'A genuine non-profit community platform to help families connect directly, verify authentic profiles, and match horoscopes completely free across all Tamil communities.'}
             </p>
 
             {/* Hero CTA Button */}
@@ -219,13 +219,21 @@ export default function LandingPage() {
                   onChange={(e) => setCastePreference(e.target.value)}
                   className="w-full h-11 px-3 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-semibold text-xs sm:text-sm focus:border-primary focus:outline-none"
                 >
+                  <option value="Any">{language === 'TA' ? 'அனைத்து தமிழ் சமூகம் (All Tamil Communities)' : 'All Tamil Communities (Any)'}</option>
                   <option value="Kongu Vellalar Gounder">கொங்கு வேளாளர் கவுண்டர்</option>
                   <option value="Vanniyar">வன்னியர்</option>
                   <option value="Nadar">நாடார்</option>
                   <option value="Chettiar">செட்டியார்</option>
                   <option value="Mudaliar">முதலியார்</option>
                   <option value="Brahmin">பிராமணர்</option>
-                  <option value="Any">அனைத்து சமூகம் (Any)</option>
+                  <option value="Pillai">பிள்ளை</option>
+                  <option value="Thevar">தேவர் / முக்குலத்தோர்</option>
+                  <option value="Naidu">நாயுடு</option>
+                  <option value="Reddiar">ரெட்டியார்</option>
+                  <option value="Viswakarma">விஸ்வகர்மா</option>
+                  <option value="Yadav">யாதவர்</option>
+                  <option value="AdiDravidar">ஆதி திராவிடர்</option>
+                  <option value="Other">{language === 'TA' ? 'இதர தமிழ் சமூகங்கள் (Other)' : 'Other Tamil Communities'}</option>
                 </select>
               </div>
 
@@ -256,7 +264,7 @@ export default function LandingPage() {
             <p className="text-xs sm:text-sm text-gray-600 mt-2">
               {language === 'TA'
                 ? 'மக்களுக்கு உதவும் நோக்கில் முற்றிலும் இலவசமாக வடிவமைக்கப்பட்ட நேரடி வரன் தேடல்'
-                : 'A transparent community initiative to connect families without subscription fees or brokers'}
+                : 'A transparent community initiative to connect families with zero subscription fees or charges'}
             </p>
           </div>
 

@@ -152,7 +152,7 @@ export async function registerProfileWithPrisma(formData: any) {
       state: formData.state || 'Tamil Nadu',
       city: formData.city || 'Coimbatore',
       religion: formData.religion || 'Hindu',
-      caste: formData.caste || 'Kongu Vellalar Gounder',
+      caste: formData.caste || 'Tamil',
       subCaste: formData.subCaste || null,
       koottam: formData.kootam || formData.koottam || null,
       dob: dob.toISOString(),

@@ -93,8 +93,8 @@ export function Step4Payment({
             </h3>
             <p className="text-xs sm:text-sm text-rose-100/90 max-w-lg leading-relaxed">
               {language === 'TA'
-                ? 'எந்தவித தரகு கட்டணமும், உறுப்பினர் கட்டணமும் இன்றி மக்களுக்கு உதவும் உன்னத நோக்கில் உருவாக்கப்பட்ட இலவச மேட்ரிமோனி தளம்.'
-                : 'Built purely as a community social service to help families find compatible life partners with zero fees and no intermediaries.'}
+                ? 'எந்தவித கட்டணமும் அல்லது உறுப்பினர் கட்டணமும் இன்றி அனைத்து தமிழ் சமூக மக்களுக்கும் உதவும் உன்னத நோக்கில் உருவாக்கப்பட்ட இலவச மேட்ரிமோனி தளம்.'
+                : 'Built purely as a community social service to help families find compatible life partners with zero fees and no charges across all Tamil communities.'}
             </p>
           </div>
 
@@ -151,7 +151,7 @@ export function Step4Payment({
               {language === 'TA' ? 'சமூகம் & குலம்' : 'Caste & Koottam'}
             </span>
             <p className="font-bold text-gray-900 text-sm">
-              {initialData?.caste || 'Kongu Vellalar Gounder'} {initialData?.kootam ? `• ${initialData.kootam}` : ''}
+              {initialData?.caste || (language === 'TA' ? 'அனைத்து தமிழ் சமூகம்' : 'All Tamil Communities')} {initialData?.kootam ? `• ${initialData.kootam}` : ''}
             </p>
           </div>
 

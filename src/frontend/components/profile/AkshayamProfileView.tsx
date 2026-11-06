@@ -94,7 +94,7 @@ export default function AkshayamProfileView({
 *பெயர்:* ${fullName}
 *பாலினம்:* ${gender}
 *வயது & உயரம்:* ${age ? `${age} வயது` : ''} ${heightDisplay ? `• ${heightDisplay}` : ''}
-*சமூகம் & குலம்:* ${profile?.caste || 'கொங்கு வெள்ளாளர்'} ${profile?.koottam || profile?.kootam ? `(${profile.koottam || profile.kootam})` : ''}
+*சமூகம் & குலம்:* ${profile?.caste || 'தமிழ் சமூகம்'} ${profile?.koottam || profile?.kootam ? `(${profile.koottam || profile.kootam})` : ''}
 *ராசி & நட்சத்திரம்:* ${profile?.rasi || '-'} • ${profile?.nakshatram || '-'}
 *கல்வி:* ${profile?.educationList?.[0]?.degree || profile?.education || '-'}
 *பணி & ஊர்:* ${profile?.designation || profile?.workNature || '-'} ${profile?.workCity ? `(${profile.workCity})` : ''}
@@ -322,7 +322,7 @@ export default function AkshayamProfileView({
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-primary shrink-0">சமூகம் & குலம்:</span>
                   <span className="font-extrabold text-gray-900">
-                    {profile?.caste || 'கொங்கு வெள்ளாளர் கவுண்டர்'}
+                    {profile?.caste || 'தமிழ் சமூகம்'}
                     {profile?.subCaste ? ` • ${profile.subCaste}` : ''}
                   </span>
                 </div>
@@ -856,7 +856,7 @@ export default function AkshayamProfileView({
                 <div>
                   <p className="font-bold text-xs">100% இலவச மக்கள் சேவை உத்தரவாதம்</p>
                   <p className="text-[11px] text-emerald-700 mt-0.5 leading-relaxed">
-                    எந்தவித தரகு கட்டணமும் இன்றி குடும்பங்கள் நேரடியாக தொடர்பு கொண்டு பேச இந்த சுயவிவரம் வழங்கப்படுகிறது.
+                    எந்தவித கட்டணமும் இன்றி குடும்பங்கள் நேரடியாக தொடர்பு கொண்டு பேச இந்த சுயவிவரம் வழங்கப்படுகிறது.
                   </p>
                 </div>
               </div>
