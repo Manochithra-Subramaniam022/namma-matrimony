@@ -102,7 +102,7 @@ export default function LandingPage() {
             </div>
 
             {/* Main Headline */}
-            <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-primary font-serif tracking-tight leading-[1.2]">
+            <h1 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-primary font-serif tracking-tight leading-snug sm:leading-tight max-w-2xl mx-auto px-1">
               {language === 'TA' ? (
                 <>
                   உங்கள் இல்லறத்திற்கான <br className="hidden sm:inline" />
@@ -117,7 +117,7 @@ export default function LandingPage() {
             </h1>
 
             {/* Subheading */}
-            <p className="text-xs sm:text-base md:text-lg text-gray-700 font-medium max-w-2xl mx-auto leading-relaxed px-1">
+            <p className="text-xs sm:text-sm md:text-base text-gray-700 font-medium max-w-xl mx-auto leading-relaxed px-1">
               {language === 'TA'
                 ? 'எந்தவித தரகு கட்டணமும் இன்றி, கொங்கு வேளாளர் கவுண்டர் உள்ளிட்ட அனைத்து தமிழ் சமூக வரன்களை நேரடியாகவும் இலவசமாகவும் கண்டறியலாம்.'
                 : 'A genuine non-profit community platform to help Tamil families connect directly, verify authentic profiles, and match horoscopes completely free.'}
