@@ -43,7 +43,7 @@ export default function BrandLogo({
   }[size];
 
   return (
-    <div className={`flex items-center ${sizeClasses.gap} group select-none ${className}`}>
+    <div className={`flex items-center ${sizeClasses.gap} group select-none shrink-0 ${className}`}>
       {/* Auspicious Emblem */}
       <div className="relative shrink-0 flex items-center justify-center">
         <div className={`${sizeClasses.iconBox} bg-gradient-to-br from-primary via-primary-light to-[#580016] p-0.5 shadow-md group-hover:shadow-lg group-hover:scale-105 transition-all duration-300`}>
@@ -57,7 +57,7 @@ export default function BrandLogo({
       </div>
 
       {/* Typography */}
-      <div className="flex flex-col leading-none sm:leading-tight min-w-0">
+      <div className="flex flex-col leading-none sm:leading-tight shrink-0">
         <span className={`font-serif font-black tracking-tight text-primary ${sizeClasses.title} drop-shadow-xs whitespace-nowrap`}>
           {BRANDING.brandNameTamil}
         </span>

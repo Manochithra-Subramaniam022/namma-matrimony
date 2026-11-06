@@ -118,7 +118,7 @@ export default function ProfileWizard({
           {/* Header Bar */}
           {!hideHeader && (
             <div className="flex justify-between items-center mb-6 sm:mb-8 border-b border-primary/10 pb-3 sm:pb-4 gap-2">
-              <a href="/" className="inline-flex items-center gap-2 min-w-0 shrink">
+              <a href="/" className="inline-flex items-center gap-2 shrink-0">
                 <BrandLogo size="md" />
               </a>
 

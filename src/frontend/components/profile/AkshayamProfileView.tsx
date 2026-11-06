@@ -214,11 +214,11 @@ export default function AkshayamProfileView({
             <span>✤</span>
           </div>
 
-          <div className="flex items-center justify-center gap-2 mb-1">
+          <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mb-1">
             <h1 className="text-xl sm:text-3xl font-serif font-black text-white tracking-tight">
               {BRANDING.brandNameTamil}
             </h1>
-            <span className="text-[#D4AF37] font-serif text-lg sm:text-2xl">•</span>
+            <span className="text-[#D4AF37] font-serif text-lg sm:text-2xl hidden sm:inline">•</span>
             <span className="text-sm sm:text-xl font-bold text-amber-200 font-serif">
               {BRANDING.brandName}
             </span>
@@ -912,3 +912,4 @@ export default function AkshayamProfileView({
     </div>
   );
 }
+

@@ -38,29 +38,29 @@ export default function LandingPage() {
 
       {/* 2. NAVBAR */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-primary/10 shadow-xs">
-        <div className="max-w-6xl mx-auto px-2.5 sm:px-6 lg:px-8 h-14 sm:h-20 flex items-center justify-between gap-1 sm:gap-4">
-          <Link href="/" className="inline-flex items-center gap-1.5 sm:gap-2 group shrink min-w-0">
+        <div className="max-w-6xl mx-auto px-2.5 sm:px-6 lg:px-8 h-14 sm:h-20 flex items-center justify-between gap-2 sm:gap-4">
+          <Link href="/" className="inline-flex items-center gap-1.5 sm:gap-2 group shrink-0">
             <BrandLogo size="md" />
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-gray-700">
-            <a href="#how-it-works" className="hover:text-primary transition-colors">
+          <nav className="hidden lg:flex items-center gap-6 xl:gap-8 text-sm font-semibold text-gray-700 shrink-0">
+            <a href="#how-it-works" className="hover:text-primary transition-colors whitespace-nowrap">
               {language === 'TA' ? 'எப்படி செயல்படுகிறது' : 'How It Works'}
             </a>
-            <a href="#features" className="hover:text-primary transition-colors">
+            <a href="#features" className="hover:text-primary transition-colors whitespace-nowrap">
               {language === 'TA' ? 'சிறப்பம்சங்கள்' : 'Features'}
             </a>
-            <a href="#about-service" className="hover:text-primary transition-colors">
+            <a href="#about-service" className="hover:text-primary transition-colors whitespace-nowrap">
               {language === 'TA' ? 'இலவச சேவை' : 'About Service'}
             </a>
           </nav>
 
-          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             {/* Language Toggle */}
             <button
               type="button"
               onClick={toggleLanguage}
-              className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-primary/5 hover:bg-primary/10 border border-primary/20 text-[11px] sm:text-xs font-bold text-primary transition-all cursor-pointer shrink-0"
+              className="flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-primary/5 hover:bg-primary/10 border border-primary/20 text-[11px] sm:text-xs font-bold text-primary transition-all cursor-pointer shrink-0 whitespace-nowrap"
               title="Switch Language"
             >
               <span>{language === 'TA' ? 'English' : 'தமிழ்'}</span>
@@ -69,7 +69,7 @@ export default function LandingPage() {
             {/* My Profile Link */}
             <Link
               href="/profile"
-              className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 sm:py-2 rounded-full bg-primary/5 hover:bg-primary/10 border border-primary/20 text-xs sm:text-sm font-bold text-primary transition-all shrink-0"
+              className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 sm:py-2 rounded-full bg-primary/5 hover:bg-primary/10 border border-primary/20 text-xs sm:text-sm font-bold text-primary transition-all shrink-0 whitespace-nowrap"
               title="View Registered Profile"
             >
               <span>{language === 'TA' ? 'எனது சுயவிவரம்' : 'My Profile'}</span>
@@ -78,7 +78,7 @@ export default function LandingPage() {
             {/* Free Register CTA */}
             <Link
               href="/register"
-              className="bg-primary hover:bg-primary-light text-white px-2.5 sm:px-5 py-1.5 sm:py-2.5 rounded-full font-bold text-[11px] sm:text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-1 sm:gap-1.5 hover:scale-[1.02] shrink-0 whitespace-nowrap"
+              className="bg-primary hover:bg-primary-light text-white px-2.5 sm:px-4 md:px-5 py-1.5 sm:py-2.5 rounded-full font-bold text-[11px] sm:text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-1 sm:gap-1.5 hover:scale-[1.02] shrink-0 whitespace-nowrap"
             >
               <Heart className="w-3 h-3 sm:w-4 sm:h-4 fill-white shrink-0" />
               <span>{language === 'TA' ? 'இலவச பதிவு' : 'Register Free'}</span>
