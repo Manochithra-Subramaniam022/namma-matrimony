@@ -431,8 +431,8 @@ export default function LandingPage() {
               </h3>
               <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
                 {language === 'TA'
-                  ? 'உண்மையான சுயவிவரங்கள் சரிபார்க்கப்பட்டு, 10 பொருத்தங்களுடன் கூடிய வரன்கள் தேர்ந்தெடுக்கப்படும்.'
-                  : 'Profiles are verified to ensure authentic matches with traditional 10-Porutham compatibility.'}
+                  ? 'உண்மையான சுயவிவரங்கள் சரிபார்க்கப்பட்டு, 10 பொருத்தங்களுடன் பொருந்தும் வரன்களை தேர்ந்தெடுக்கலாம்.'
+                  : 'Profiles are verified so you can choose matching partners with traditional 10-Porutham compatibility.'}
               </p>
             </div>
 
