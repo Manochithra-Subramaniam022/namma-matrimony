@@ -15,7 +15,10 @@ import {
   Lock,
   CheckCircle,
   User,
+  AlertCircle,
 } from 'lucide-react';
+
+const AGE_OPTIONS = Array.from({ length: 55 - 18 + 1 }, (_, i) => 18 + i);
 
 export default function LandingPage() {
   const { language, toggleLanguage } = useLanguage();
@@ -24,6 +27,10 @@ export default function LandingPage() {
   const [ageFrom, setAgeFrom] = useState('21');
   const [ageTo, setAgeTo] = useState('29');
   const [castePreference, setCastePreference] = useState('Any');
+
+  const numAgeFrom = parseInt(ageFrom, 10);
+  const numAgeTo = parseInt(ageTo, 10);
+  const isAgeInvalid = !isNaN(numAgeFrom) && !isNaN(numAgeTo) && numAgeTo <= numAgeFrom;
 
   return (
     <div className="min-h-screen bg-[#FFFDF9] text-gray-900 font-sans selection:bg-primary/20 flex flex-col">
@@ -182,34 +189,63 @@ export default function LandingPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1.5">
-                  {language === 'TA' ? 'வயது வரம்பு' : 'Age Limit'}
-                </label>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-gray-600">
+                    {language === 'TA' ? 'வயது வரம்பு' : 'Age Limit'}
+                  </label>
+                  <span className={`text-[11px] font-bold ${isAgeInvalid ? 'text-red-600' : 'text-[#800020]'}`}>
+                    {isAgeInvalid
+                      ? (language === 'TA' ? 'தவறான வரம்பு' : 'Invalid Range')
+                      : `${ageFrom} - ${ageTo} ${language === 'TA' ? 'வயது' : 'Yrs'}`}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   <select
                     value={ageFrom}
                     onChange={(e) => setAgeFrom(e.target.value)}
-                    className="w-full h-11 px-2.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-semibold text-xs sm:text-sm focus:border-primary focus:outline-none"
+                    className={`w-full h-11 px-2.5 rounded-xl border text-gray-900 font-semibold text-xs sm:text-sm focus:outline-none transition-all ${
+                      isAgeInvalid
+                        ? 'border-red-400 bg-red-50/30 focus:border-red-500'
+                        : 'border-gray-300 bg-[#FFFDF9] focus:border-primary'
+                    }`}
+                    aria-label={language === 'TA' ? 'குறைந்தபட்ச வயது' : 'Minimum Age'}
                   >
-                    {[20, 21, 22, 23, 24, 25, 26, 27, 28, 30, 32].map((a) => (
+                    {AGE_OPTIONS.map((a) => (
                       <option key={a} value={a}>
-                        {a} Yrs
+                        {a} {language === 'TA' ? 'வயது' : 'Yrs'}
                       </option>
                     ))}
                   </select>
-                  <span className="text-xs text-gray-400 shrink-0">to</span>
+                  <span className="text-xs font-bold text-gray-400 shrink-0">
+                    {language === 'TA' ? 'முதல்' : 'to'}
+                  </span>
                   <select
                     value={ageTo}
                     onChange={(e) => setAgeTo(e.target.value)}
-                    className="w-full h-11 px-2.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-semibold text-xs sm:text-sm focus:border-primary focus:outline-none"
+                    className={`w-full h-11 px-2.5 rounded-xl border text-gray-900 font-semibold text-xs sm:text-sm focus:outline-none transition-all ${
+                      isAgeInvalid
+                        ? 'border-red-500 bg-red-50/50 text-red-900 focus:border-red-600 focus:ring-1 focus:ring-red-500'
+                        : 'border-gray-300 bg-[#FFFDF9] focus:border-primary'
+                    }`}
+                    aria-label={language === 'TA' ? 'அதிகபட்ச வயது' : 'Maximum Age'}
                   >
-                    {[24, 26, 28, 30, 32, 35, 38, 40].map((a) => (
+                    {AGE_OPTIONS.map((a) => (
                       <option key={a} value={a}>
-                        {a} Yrs
+                        {a} {language === 'TA' ? 'வயது' : 'Yrs'}
                       </option>
                     ))}
                   </select>
                 </div>
+                {isAgeInvalid && (
+                  <div className="flex items-start gap-1 text-[11px] font-bold text-red-600 mt-1.5 bg-red-50 p-1.5 rounded-lg border border-red-200 animate-in fade-in leading-tight">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-red-600" />
+                    <span>
+                      {language === 'TA'
+                        ? `அதிகபட்ச வயது (${ageTo}) குறைந்தபட்ச வயதை (${ageFrom}) விட அதிகமாக இருக்க வேண்டும்.`
+                        : `Max age (${ageTo}) should be higher than minimum age (${ageFrom}).`}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -240,13 +276,29 @@ export default function LandingPage() {
               </div>
 
               <div className="flex items-end">
-                <Link
-                  href="/register"
-                  className="w-full h-11 bg-primary hover:bg-primary-light text-white rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all"
-                >
-                  <Search className="w-4 h-4" />
-                  <span>{language === 'TA' ? 'வரன்களை காண்க' : 'Search Matches'}</span>
-                </Link>
+                {isAgeInvalid ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full h-11 bg-gray-200 text-gray-400 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-not-allowed border border-gray-300 select-none transition-all"
+                    title={
+                      language === 'TA'
+                        ? 'அதிகபட்ச வயது குறைந்தபட்ச வயதை விட அதிகமாக இருக்க வேண்டும்'
+                        : 'Max age should be higher than minimum age'
+                    }
+                  >
+                    <Search className="w-4 h-4 text-gray-400" />
+                    <span>{language === 'TA' ? 'வரன்களை காண்க' : 'Search Matches'}</span>
+                  </button>
+                ) : (
+                  <Link
+                    href={`/register?lookingFor=${lookingFor}&minAge=${ageFrom}&maxAge=${ageTo}&caste=${encodeURIComponent(castePreference)}`}
+                    className="w-full h-11 bg-primary hover:bg-primary-light text-white rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all hover:scale-[1.01] cursor-pointer"
+                  >
+                    <Search className="w-4 h-4" />
+                    <span>{language === 'TA' ? 'வரன்களை காண்க' : 'Search Matches'}</span>
+                  </Link>
+                )}
               </div>
             </div>
           </div>
