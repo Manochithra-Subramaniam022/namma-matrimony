@@ -64,6 +64,22 @@ export default function ProfileWizard({
         const parsed = JSON.parse(saved);
         setFormData(parsed);
         if (parsed.gender) setGender(parsed.gender);
+      } else if (urlParams.get('lookingFor')) {
+        const lookingForParam = urlParams.get('lookingFor');
+        const candidateGender = lookingForParam === 'BRIDE' ? 'MALE' : 'FEMALE';
+        const casteParam = urlParams.get('caste');
+        const areaParam = urlParams.get('area');
+        const doshamParam = urlParams.get('dosham');
+        const financialParam = urlParams.get('financial');
+
+        setGender(candidateGender);
+        setFormData({
+          gender: candidateGender,
+          caste: casteParam && casteParam !== 'Any' ? casteParam : '',
+          city: areaParam && areaParam !== 'Any' ? areaParam : '',
+          doshams: doshamParam && doshamParam !== 'Any' ? [doshamParam] : [],
+          familyStatus: financialParam && financialParam !== 'Any' ? financialParam : 'MIDDLE_CLASS',
+        });
       }
     } catch (e) {
       console.error('Failed to restore draft', e);

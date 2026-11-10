@@ -15,7 +15,10 @@ import {
   Lock,
   CheckCircle,
   User,
+  Users,
   AlertCircle,
+  MapPin,
+  Building,
 } from 'lucide-react';
 
 const AGE_OPTIONS = Array.from({ length: 55 - 18 + 1 }, (_, i) => 18 + i);
@@ -27,6 +30,9 @@ export default function LandingPage() {
   const [ageFrom, setAgeFrom] = useState('21');
   const [ageTo, setAgeTo] = useState('29');
   const [castePreference, setCastePreference] = useState('Any');
+  const [areaPreference, setAreaPreference] = useState('Any');
+  const [financialCapacity, setFinancialCapacity] = useState('Any');
+  const [doshamPreference, setDoshamPreference] = useState('Any');
 
   const numAgeFrom = parseInt(ageFrom, 10);
   const numAgeTo = parseInt(ageTo, 10);
@@ -173,24 +179,27 @@ export default function LandingPage() {
               </h3>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-5">
+              {/* 1. Looking For */}
               <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1.5">
-                  {language === 'TA' ? 'நான் தேடுவது' : 'Looking For'}
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5 flex items-center gap-1.5">
+                  <Heart className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span>{language === 'TA' ? 'நான் தேடுவது' : 'Looking For'}</span>
                 </label>
                 <select
                   value={lookingFor}
                   onChange={(e) => setLookingFor(e.target.value)}
-                  className="w-full h-11 px-3 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-semibold text-xs sm:text-sm focus:border-primary focus:outline-none"
+                  className="w-full h-11 px-3 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-semibold text-xs sm:text-sm focus:border-primary focus:outline-none transition-all"
                 >
                   <option value="BRIDE">{language === 'TA' ? 'மணமகள் (Bride)' : 'Bride'}</option>
                   <option value="GROOM">{language === 'TA' ? 'மணமகன் (Groom)' : 'Groom'}</option>
                 </select>
               </div>
 
+              {/* 2. Age Limit with Real-Time Validation */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-bold text-gray-600">
+                  <label className="block text-xs font-bold text-gray-700 uppercase">
                     {language === 'TA' ? 'வயது வரம்பு' : 'Age Limit'}
                   </label>
                   <span className={`text-[11px] font-bold ${isAgeInvalid ? 'text-red-600' : 'text-[#800020]'}`}>
@@ -248,14 +257,16 @@ export default function LandingPage() {
                 )}
               </div>
 
+              {/* 3. Community / Caste */}
               <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1.5">
-                  {language === 'TA' ? 'சமூகம் / சாதி' : 'Community'}
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5 flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span>{language === 'TA' ? 'சமூகம் / சாதி' : 'Community'}</span>
                 </label>
                 <select
                   value={castePreference}
                   onChange={(e) => setCastePreference(e.target.value)}
-                  className="w-full h-11 px-3 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-semibold text-xs sm:text-sm focus:border-primary focus:outline-none"
+                  className="w-full h-11 px-3 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-semibold text-xs sm:text-sm focus:border-primary focus:outline-none transition-all"
                 >
                   <option value="Any">{language === 'TA' ? 'அனைத்து தமிழ் சமூகம் (All Tamil Communities)' : 'All Tamil Communities (Any)'}</option>
                   <option value="Kongu Vellalar Gounder">கொங்கு வேளாளர் கவுண்டர்</option>
@@ -275,12 +286,85 @@ export default function LandingPage() {
                 </select>
               </div>
 
-              <div className="flex items-end">
+              {/* 4. Area / Location Filter */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span>{language === 'TA' ? 'பகுதி / மாவட்டம் (Area)' : 'Area / District'}</span>
+                </label>
+                <select
+                  value={areaPreference}
+                  onChange={(e) => setAreaPreference(e.target.value)}
+                  className="w-full h-11 px-3 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-semibold text-xs sm:text-sm focus:border-primary focus:outline-none transition-all"
+                >
+                  <option value="Any">{language === 'TA' ? 'அனைத்து பகுதிகள் (All Tamil Nadu / Any)' : 'All Areas / Any'}</option>
+                  <option value="Coimbatore">கோயம்புத்தூர் (Coimbatore)</option>
+                  <option value="Erode">ஈரோடு (Erode)</option>
+                  <option value="Tirupur">திருப்பூர் (Tirupur)</option>
+                  <option value="Salem">சேலம் (Salem)</option>
+                  <option value="Namakkal">நாமக்கல் (Namakkal)</option>
+                  <option value="Karur">கரூர் (Karur)</option>
+                  <option value="Dindigul">திண்டுக்கல் (Dindigul)</option>
+                  <option value="Madurai">மதுரை (Madurai)</option>
+                  <option value="Trichy">திருச்சி (Trichy)</option>
+                  <option value="Chennai">சென்னை (Chennai)</option>
+                  <option value="Dharmapuri">தர்மபுரி / கிருஷ்ணகிரி</option>
+                  <option value="Thanjavur">தஞ்சாவூர் / டெல்டா</option>
+                  <option value="Tirunelveli">திருநெல்வேலி / தென் தமிழகம்</option>
+                  <option value="Bangalore">பெங்களூர் / கர்நாடகா</option>
+                  <option value="Abroad">வெளிநாடு (NRI / Abroad)</option>
+                  <option value="Other">இதர பகுதிகள் (Other Districts)</option>
+                </select>
+              </div>
+
+              {/* 5. Financial Capacity in Plans Filter */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5 flex items-center gap-1.5">
+                  <Building className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span>{language === 'TA' ? 'பொருளாதார நிலை (Financial Capacity)' : 'Financial Capacity in Plans'}</span>
+                </label>
+                <select
+                  value={financialCapacity}
+                  onChange={(e) => setFinancialCapacity(e.target.value)}
+                  className="w-full h-11 px-3 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-semibold text-xs sm:text-sm focus:border-primary focus:outline-none transition-all"
+                >
+                  <option value="Any">{language === 'TA' ? 'அனைத்து நிலைகள் (Any Financial Status)' : 'Any Financial Status / Plans'}</option>
+                  <option value="MIDDLE_CLASS">{language === 'TA' ? 'நடுத்தர குடும்பம் (Middle Class)' : 'Middle Class'}</option>
+                  <option value="UPPER_MIDDLE_CLASS">{language === 'TA' ? 'உயர் நடுத்தர குடும்பம் (Upper Middle Class)' : 'Upper Middle Class'}</option>
+                  <option value="RICH">{language === 'TA' ? 'வசதியான குடும்பம் (Rich / Well Settled)' : 'Rich / Well Settled'}</option>
+                  <option value="AFFLUENT">{language === 'TA' ? 'பெரும் செல்வந்தர் (Affluent / VIP)' : 'Affluent / VIP'}</option>
+                  <option value="ASSETS_50L_1CR">{language === 'TA' ? 'சொத்து: ரூ. 50L - 1 கோடி (Assets 50L - 1 Cr)' : 'Assets: ₹50L - ₹1 Crore'}</option>
+                  <option value="ASSETS_1CR_3CR">{language === 'TA' ? 'சொத்து: ரூ. 1 கோடி - 3 கோடி (Assets 1 - 3 Cr)' : 'Assets: ₹1 Cr - ₹3 Crores'}</option>
+                  <option value="ASSETS_3CR_PLUS">{language === 'TA' ? 'சொத்து: ரூ. 3+ கோடி (Assets 3+ Crores)' : 'Assets: ₹3+ Crores'}</option>
+                </select>
+              </div>
+
+              {/* 6. Sutham or Ragu Kethu / Dosham Filter */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5 flex items-center gap-1.5">
+                  <Compass className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" />
+                  <span>{language === 'TA' ? 'ஜாதகம்: சுத்தம் / ராகு கேது' : 'Horoscope: Sutham / Ragu Kethu'}</span>
+                </label>
+                <select
+                  value={doshamPreference}
+                  onChange={(e) => setDoshamPreference(e.target.value)}
+                  className="w-full h-11 px-3 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-semibold text-xs sm:text-sm focus:border-primary focus:outline-none transition-all"
+                >
+                  <option value="Any">{language === 'TA' ? 'அனைத்து ஜாதகம் (Any Horoscope)' : 'Any Horoscope'}</option>
+                  <option value="SUTHAM">{language === 'TA' ? 'சுத்த ஜாதகம் (Sutha Jathagam - தோஷமில்லை)' : 'Sutham (Clean / No Dosham)'}</option>
+                  <option value="RAGU_KETHU">{language === 'TA' ? 'ராகு - கேது தோஷம் (Ragu Kethu Dosham)' : 'Ragu Kethu Dosham'}</option>
+                  <option value="SEVVAI">{language === 'TA' ? 'செவ்வாய் தோஷம் (Sevvai Dosham)' : 'Sevvai Dosham'}</option>
+                  <option value="SEVVAI_RAGU_KETHU">{language === 'TA' ? 'செவ்வாய் & ராகு-கேது இரண்டும் (Both)' : 'Sevvai & Ragu Kethu'}</option>
+                </select>
+              </div>
+
+              {/* 7. Search Matches CTA Button */}
+              <div className="col-span-1 sm:col-span-2 lg:col-span-3 pt-2 sm:pt-3">
                 {isAgeInvalid ? (
                   <button
                     type="button"
                     disabled
-                    className="w-full h-11 bg-gray-200 text-gray-400 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-not-allowed border border-gray-300 select-none transition-all"
+                    className="w-full h-12 bg-gray-200 text-gray-400 rounded-xl sm:rounded-2xl font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 cursor-not-allowed border border-gray-300 select-none transition-all"
                     title={
                       language === 'TA'
                         ? 'அதிகபட்ச வயது குறைந்தபட்ச வயதை விட அதிகமாக இருக்க வேண்டும்'
@@ -288,15 +372,16 @@ export default function LandingPage() {
                     }
                   >
                     <Search className="w-4 h-4 text-gray-400" />
-                    <span>{language === 'TA' ? 'வரன்களை காண்க' : 'Search Matches'}</span>
+                    <span>{language === 'TA' ? 'பொருத்தமான வரன்களைக் காண்க' : 'Search Matching Profiles'}</span>
                   </button>
                 ) : (
                   <Link
-                    href={`/register?lookingFor=${lookingFor}&minAge=${ageFrom}&maxAge=${ageTo}&caste=${encodeURIComponent(castePreference)}`}
-                    className="w-full h-11 bg-primary hover:bg-primary-light text-white rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all hover:scale-[1.01] cursor-pointer"
+                    href={`/register?lookingFor=${lookingFor}&minAge=${ageFrom}&maxAge=${ageTo}&caste=${encodeURIComponent(castePreference)}&area=${encodeURIComponent(areaPreference)}&financial=${encodeURIComponent(financialCapacity)}&dosham=${encodeURIComponent(doshamPreference)}`}
+                    className="w-full h-12 bg-primary hover:bg-primary-light text-white rounded-xl sm:rounded-2xl font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all hover:scale-[1.01] cursor-pointer"
                   >
-                    <Search className="w-4 h-4" />
-                    <span>{language === 'TA' ? 'வரன்களை காண்க' : 'Search Matches'}</span>
+                    <Search className="w-4 h-4 text-[#D4AF37]" />
+                    <span>{language === 'TA' ? 'பொருத்தமான வரன்களைக் காண்க' : 'Find Matching Profiles'}</span>
+                    <ArrowRight className="w-4 h-4 text-white" />
                   </Link>
                 )}
               </div>
