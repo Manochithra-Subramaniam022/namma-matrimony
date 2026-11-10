@@ -5,7 +5,7 @@ import { BRANDING } from "@/constants/branding";
 
 export const metadata: Metadata = {
   title: `${BRANDING.brandNameTamil} | ${BRANDING.brandName} - ${BRANDING.taglineTamil}`,
-  description: `${BRANDING.brandName} - ${BRANDING.subTaglineTamil}. 100% சரிபார்க்கப்பட்ட வரன்கள் மற்றும் துல்லியமான ஜாதகப் பொருத்தம்.`,
+  description: `${BRANDING.brandName} - ${BRANDING.subTaglineTamil}. 100% சரிபார்க்கப்பட்ட வரன்கள் மற்றும் இலவச மேட்ரிமோனி சேவை.`,
   keywords: ["Namma Matrimony", "Tamil Matrimony", "நம்ம மேட்ரிமோனி", "தமிழ் மேட்ரிமோனி", "Jathagam Matching", "Tamil Bride Groom"],
   openGraph: {
     title: `${BRANDING.brandNameTamil} | ${BRANDING.brandName}`,

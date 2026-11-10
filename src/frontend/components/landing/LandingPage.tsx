@@ -465,14 +465,13 @@ export default function LandingPage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
             {BRANDING.features.map((feat, idx) => (
               <div key={idx} className="bg-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl border border-primary/15 shadow-sm hover:shadow-md transition-all space-y-2.5 sm:space-y-3">
                 <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
                   {idx === 0 && <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />}
                   {idx === 1 && <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-[#D4AF37]" />}
-                  {idx === 2 && <Compass className="w-5 h-5 sm:w-6 sm:h-6 text-[#D4AF37]" />}
-                  {idx === 3 && <Lock className="w-5 h-5 sm:w-6 sm:h-6 text-[#D4AF37]" />}
+                  {idx === 2 && <Lock className="w-5 h-5 sm:w-6 sm:h-6 text-[#D4AF37]" />}
                 </div>
                 <h3 className="text-sm sm:text-base font-bold text-primary font-serif">
                   {language === 'TA' ? feat.titleTa : feat.titleEn}

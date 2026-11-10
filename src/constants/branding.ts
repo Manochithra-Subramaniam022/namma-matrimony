@@ -29,12 +29,6 @@ export const BRANDING = {
       descTa: 'அடையாள அட்டை மூலம் சரிபார்க்கப்பட்ட உண்மையான குடும்ப வரன்கள்.',
     },
     {
-      titleEn: 'Authentic Horoscope Matching',
-      titleTa: 'துல்லியமான ஜாதகப் பொருத்தம்',
-      descEn: 'Comprehensive 10-Porutham astrology analysis with South Indian 12-house chart.',
-      descTa: '10 பொருத்தங்கள் மற்றும் 12 கட்ட ராசி, நவாம்ச அமைப்புகளைக் கொண்ட பகுப்பாய்வு.',
-    },
-    {
       titleEn: 'Complete Privacy Protection',
       titleTa: 'முழுமையான தனியுரிமைப் பாதுகாப்பு',
       descEn: 'Keep phone number and home address confidential as per your preference.',
