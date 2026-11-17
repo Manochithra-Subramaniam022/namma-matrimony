@@ -11,7 +11,6 @@ import {
   Heart,
   Search,
   ArrowRight,
-  ArrowLeft,
   Compass,
   Lock,
   CheckCircle,
@@ -54,25 +53,9 @@ export default function LandingPage() {
       {/* 2. NAVBAR */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-primary/10 shadow-xs">
         <div className="max-w-6xl mx-auto px-2.5 sm:px-6 lg:px-8 h-14 sm:h-20 flex items-center justify-between gap-2 sm:gap-4">
-          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-            <button
-              type="button"
-              onClick={() => {
-                if (typeof window !== 'undefined' && window.history.length > 1) {
-                  window.history.back();
-                }
-              }}
-              className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-primary/5 hover:bg-primary/10 border border-primary/20 text-[11px] sm:text-xs font-bold text-primary transition-all cursor-pointer shrink-0 whitespace-nowrap"
-              title={language === 'TA' ? 'பின்செல்க' : 'Go Back'}
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>{language === 'TA' ? 'பின்செல்க' : 'Back'}</span>
-            </button>
-
-            <Link href="/" className="inline-flex items-center gap-1.5 sm:gap-2 group shrink-0">
-              <BrandLogo size="md" />
-            </Link>
-          </div>
+          <Link href="/" className="inline-flex items-center gap-1.5 sm:gap-2 group shrink-0">
+            <BrandLogo size="md" />
+          </Link>
 
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             {/* Language Toggle */}
