@@ -161,7 +161,7 @@ export default function LandingPage() {
               </div>
               <div className="flex items-center justify-center gap-1.5 bg-white sm:bg-transparent p-2 sm:p-0 rounded-xl sm:rounded-none border sm:border-0 border-gray-200/80 shadow-2xs sm:shadow-none min-h-[42px]">
                 <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#D4AF37] shrink-0" />
-                <span>{language === 'TA' ? '10 பொருத்தம்' : '10 Porutham Chart'}</span>
+                <span>{language === 'TA' ? 'சரியான வரன் பொருத்தம்' : 'Right Matching Partners'}</span>
               </div>
               <div className="flex items-center justify-center gap-1.5 bg-white sm:bg-transparent p-2 sm:p-0 rounded-xl sm:rounded-none border sm:border-0 border-gray-200/80 shadow-2xs sm:shadow-none min-h-[42px]">
                 <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
@@ -418,7 +418,7 @@ export default function LandingPage() {
               <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
                 {language === 'TA'
                   ? 'உங்கள் அடிப்படை விவரங்கள், குலம், கல்வி, பணி மற்றும் ஜாதகக் கட்டங்களை 4 எளிய படிகளில் கட்டணமின்றி பதிவு செய்யவும்.'
-                  : 'Submit your personal details, Kongu Koottam, career, and South Indian 12-house astrology chart with zero charges.'}
+                  : 'Submit your personal details, community, career, and South Indian 12-house astrology chart with zero charges.'}
               </p>
             </div>
 
@@ -427,12 +427,12 @@ export default function LandingPage() {
                 2
               </div>
               <h3 className="text-base sm:text-lg font-bold text-primary font-serif">
-                {language === 'TA' ? '2. சரிபார்த்தல் & ஜாதக பொருத்தம்' : '2. Verify & Match'}
+                {language === 'TA' ? '2. சரிபார்த்தல் & வரன் பொருத்தம்' : '2. Verify & Match'}
               </h3>
               <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
                 {language === 'TA'
-                  ? 'உண்மையான சுயவிவரங்கள் சரிபார்க்கப்பட்டு, 10 பொருத்தங்களுடன் பொருந்தும் வரன்களை தேர்ந்தெடுக்கலாம்.'
-                  : 'Profiles are verified so you can choose matching partners with traditional 10-Porutham compatibility.'}
+                  ? 'உண்மையான சுயவிவரங்கள் சரிபார்க்கப்பட்டு, சரியான பொருந்தும் வரன்களை தேர்ந்தெடுக்கலாம்.'
+                  : 'Profiles are verified so you can choose the right matching partners.'}
               </p>
             </div>
 
@@ -445,7 +445,7 @@ export default function LandingPage() {
               </h3>
               <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
                 {language === 'TA'
-                  ? 'தரகர்கள் இன்றி, எந்தவித மறைமுகக் கட்டணங்களும் இன்றி நேரடியாக குடும்பத்தினருடன் பேசி சுபமாக திருமணத்தை முடிவு செய்யலாம்.'
+                  ? 'எந்தவித மறைமுகக் கட்டணங்களும் இன்றி நேரடியாக குடும்பத்தினருடன் பேசி சுபமாக திருமணத்தை முடிவு செய்யலாம்.'
                   : 'Speak directly with prospective families with complete transparency and zero commission charges.'}
               </p>
             </div>
@@ -502,7 +502,7 @@ export default function LandingPage() {
                 </h3>
                 <p className="text-xs sm:text-sm text-rose-100/90 max-w-md leading-relaxed">
                   {language === 'TA'
-                    ? 'மக்களுக்கு உதவும் உன்னத நோக்கில் அனைத்து வரன் பதிவுகளும், தொடர்புகளும், ஜாதகப் பொருத்தங்களும் எப்போதும் இலவசம்.'
+                    ? 'மக்களுக்கு உதவும் உன்னத நோக்கில் அனைத்து வரன் பதிவுகளும், தொடர்புகளும், வரன் பொருத்தங்களும் எப்போதும் இலவசம்.'
                     : 'Created solely to help families find suitable life partners without financial burden or commercial motives.'}
                 </p>
               </div>
