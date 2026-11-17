@@ -74,18 +74,6 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          <nav className="hidden lg:flex items-center gap-6 xl:gap-8 text-sm font-semibold text-gray-700 shrink-0">
-            <a href="#how-it-works" className="hover:text-primary transition-colors whitespace-nowrap">
-              {language === 'TA' ? 'எப்படி செயல்படுகிறது' : 'How It Works'}
-            </a>
-            <a href="#features" className="hover:text-primary transition-colors whitespace-nowrap">
-              {language === 'TA' ? 'சிறப்பம்சங்கள்' : 'Features'}
-            </a>
-            <a href="#about-service" className="hover:text-primary transition-colors whitespace-nowrap">
-              {language === 'TA' ? 'இலவச சேவை' : 'About Service'}
-            </a>
-          </nav>
-
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             {/* Language Toggle */}
             <button
