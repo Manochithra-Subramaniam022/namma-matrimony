@@ -544,6 +544,10 @@ export default function LandingPage() {
             <Link href="/profile" className="text-primary font-bold hover:underline">
               {language === 'TA' ? 'எனது சுயவிவரம் (பயோடேட்டா)' : 'My Profile / Biodata'}
             </Link>
+            <span className="hidden sm:inline text-gray-300">•</span>
+            <Link href="/admin" className="text-gray-400 hover:text-primary transition-colors">
+              {language === 'TA' ? 'நிர்வாக பலகை' : 'Admin Console'}
+            </Link>
           </div>
 
           <div className="pt-4 sm:pt-6 border-t border-gray-100 text-xs text-gray-400 px-2 leading-relaxed">
