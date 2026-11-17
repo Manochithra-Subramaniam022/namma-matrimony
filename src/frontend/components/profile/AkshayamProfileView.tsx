@@ -26,7 +26,8 @@ import {
   Layers,
   Award,
   ChevronRight,
-  ArrowLeft
+  ArrowLeft,
+  Trash2
 } from 'lucide-react';
 import { JathagamChart, HouseData } from '@/frontend/components/JathagamChart';
 import BrandLogo from '@/frontend/components/BrandLogo';
@@ -35,6 +36,7 @@ import { BRANDING } from '@/constants/branding';
 interface AkshayamProfileViewProps {
   profile: any;
   onEdit?: () => void;
+  onDelete?: () => void;
   onBack?: () => void;
   language?: 'TA' | 'EN';
 }
@@ -42,6 +44,7 @@ interface AkshayamProfileViewProps {
 export default function AkshayamProfileView({
   profile,
   onEdit,
+  onDelete,
   onBack,
   language = 'TA',
 }: AkshayamProfileViewProps) {
@@ -201,6 +204,18 @@ export default function AkshayamProfileView({
               >
                 <Edit3 className="w-3.5 h-3.5" />
                 <span>{language === 'TA' ? 'மாற்றுக' : 'Edit'}</span>
+              </button>
+            )}
+
+            {onDelete && (
+              <button
+                onClick={onDelete}
+                type="button"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-bold transition-all cursor-pointer"
+                title="Delete Profile"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                <span>{language === 'TA' ? 'நீக்குக' : 'Delete'}</span>
               </button>
             )}
 

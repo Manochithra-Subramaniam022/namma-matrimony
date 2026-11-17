@@ -27,7 +27,9 @@ import {
   Calendar,
   Lock,
   PlusCircle,
-  RotateCcw
+  RotateCcw,
+  Trash2,
+  CheckCircle
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -46,6 +48,65 @@ export default function ProfilePage() {
   const [phoneInput, setPhoneInput] = useState('');
   const [isSearchingPhone, setIsSearchingPhone] = useState(false);
   const [searchError, setSearchError] = useState('');
+
+  // Delete candidate confirmation state
+  const [candidateToDelete, setCandidateToDelete] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteSuccessMsg, setDeleteSuccessMsg] = useState('');
+
+  // Delete candidate handler
+  const handleConfirmDelete = async () => {
+    if (!candidateToDelete) return;
+    setIsDeleting(true);
+    const targetId = candidateToDelete.id || candidateToDelete.profileId || candidateToDelete.displayId || candidateToDelete.registrationId;
+    const targetDisplayId = candidateToDelete.displayId || candidateToDelete.registrationId || '';
+
+    try {
+      if (targetId || targetDisplayId) {
+        await fetch(`/api/register?id=${encodeURIComponent(targetId || targetDisplayId)}`, {
+          method: 'DELETE',
+        });
+      }
+
+      // Update in-memory and localStorage lists
+      const updated = registrations.filter((c) => {
+        const cId = c.id || c.profileId || c.displayId || c.registrationId;
+        const cDisp = c.displayId || c.registrationId;
+        return cId !== targetId && cDisp !== targetDisplayId;
+      });
+
+      setRegistrations(updated);
+      localStorage.setItem('namma_registrations', JSON.stringify(updated));
+
+      // Clear draft if it was the deleted profile
+      const draft = localStorage.getItem('namma_matrimony_draft');
+      if (draft) {
+        try {
+          const parsed = JSON.parse(draft);
+          if (parsed.displayId === targetDisplayId || parsed.id === targetId) {
+            localStorage.removeItem('namma_matrimony_draft');
+          }
+        } catch {}
+      }
+
+      if (activeViewCandidate && (activeViewCandidate.displayId === targetDisplayId || activeViewCandidate.id === targetId)) {
+        setActiveViewCandidate(null);
+      }
+
+      setCandidateToDelete(null);
+      setDeleteSuccessMsg(
+        language === 'TA'
+          ? `வரன் பதிவு (${targetDisplayId || ''}) வெற்றிகரமாக நீக்கப்பட்டது.`
+          : `Candidate profile (${targetDisplayId || ''}) deleted successfully.`
+      );
+      setTimeout(() => setDeleteSuccessMsg(''), 4000);
+    } catch (err: any) {
+      console.error('Delete candidate error:', err);
+      alert(language === 'TA' ? 'வரன் பதிவை நீக்குவதில் பிழை ஏற்பட்டது.' : 'Failed to delete profile. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // 1. Initial Load from LocalStorage and Supabase API
   useEffect(() => {
@@ -191,6 +252,59 @@ export default function ProfilePage() {
     window.open(url, '_blank');
   };
 
+  // Delete Confirmation Modal Renderer
+  const renderDeleteModal = () => {
+    if (!candidateToDelete) return null;
+    const targetName = candidateToDelete.fullName || candidateToDelete.name || (language === 'TA' ? 'வரன்' : 'Candidate');
+    const targetId = candidateToDelete.displayId || candidateToDelete.registrationId || '';
+
+    return (
+      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-primary/20 space-y-4">
+          <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+            <Trash2 className="w-6 h-6" />
+          </div>
+
+          <div className="text-center space-y-1.5">
+            <h3 className="text-lg font-bold text-gray-900 font-serif">
+              {language === 'TA' ? 'வரன் பதிவை நீக்க வேண்டுமா?' : 'Delete Candidate Profile?'}
+            </h3>
+            <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+              {language === 'TA'
+                ? `நீங்கள் "${targetName}" ${targetId ? `(${targetId})` : ''} அவர்களின் பதிவை நீக்க விரும்புகிறீர்களா? நீக்கிய பிறகு இதை மீட்டெடுக்க முடியாது.`
+                : `Are you sure you want to permanently delete "${targetName}" ${targetId ? `(${targetId})` : ''}? This action cannot be undone.`}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 pt-2">
+            <button
+              type="button"
+              disabled={isDeleting}
+              onClick={() => setCandidateToDelete(null)}
+              className="flex-1 py-2.5 px-4 rounded-full border border-gray-300 text-gray-700 font-bold text-xs sm:text-sm hover:bg-gray-100 transition-all cursor-pointer"
+            >
+              {language === 'TA' ? 'ரத்து செய்க' : 'Cancel'}
+            </button>
+
+            <button
+              type="button"
+              disabled={isDeleting}
+              onClick={handleConfirmDelete}
+              className="flex-1 py-2.5 px-4 rounded-full bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>
+                {isDeleting
+                  ? (language === 'TA' ? 'நீக்கப்படுகிறது...' : 'Deleting...')
+                  : (language === 'TA' ? 'ஆம், நீக்குக' : 'Yes, Delete')}
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // If user selected a specific candidate to view in Akshayam format
   if (activeViewCandidate) {
     return (
@@ -223,7 +337,10 @@ export default function ProfilePage() {
             localStorage.setItem('namma_matrimony_draft', JSON.stringify(activeViewCandidate));
             window.location.href = '/register';
           }}
+          onDelete={() => setCandidateToDelete(activeViewCandidate)}
         />
+
+        {renderDeleteModal()}
       </div>
     );
   }
@@ -634,6 +751,16 @@ export default function ProfilePage() {
                       >
                         <Edit3 className="w-3.5 h-3.5 text-gray-700" />
                       </button>
+
+                      {/* Delete Candidate */}
+                      <button
+                        type="button"
+                        onClick={() => setCandidateToDelete(candidate)}
+                        className="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 p-2 rounded-full transition-all cursor-pointer hover:scale-105 shadow-2xs"
+                        title={language === 'TA' ? 'வரன் பதிவை நீக்குக' : 'Delete Profile'}
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -732,6 +859,17 @@ export default function ProfilePage() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* 7. DELETE CONFIRMATION MODAL */}
+      {renderDeleteModal()}
+
+      {/* 8. SUCCESS TOAST NOTIFICATION */}
+      {deleteSuccessMsg && (
+        <div className="fixed bottom-6 right-6 z-50 bg-emerald-800 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-xs sm:text-sm font-bold border border-emerald-600 animate-in slide-in-from-bottom duration-300">
+          <CheckCircle className="w-4 h-4 text-emerald-300 shrink-0" />
+          <span>{deleteSuccessMsg}</span>
         </div>
       )}
     </div>

@@ -433,3 +433,78 @@ export async function registerProfileWithPrisma(formData: any) {
     };
   }
 }
+
+export async function deleteProfile(profileIdOrDisplayId: string) {
+  try {
+    if (!profileIdOrDisplayId || typeof profileIdOrDisplayId !== 'string') {
+      throw new Error('Profile identifier is required.');
+    }
+
+    const cleanId = profileIdOrDisplayId.trim();
+
+    // 1. Locate the Profile
+    let query = supabase.from('Profile').select('id, userId, displayId');
+    if (cleanId.toLowerCase().startsWith('nm-')) {
+      query = query.ilike('displayId', cleanId);
+    } else {
+      query = query.or(`id.eq.${cleanId},displayId.ilike.${cleanId}`);
+    }
+
+    const { data: profile, error } = await query.maybeSingle();
+    if (error) {
+      console.error('Error finding profile to delete:', error);
+      throw error;
+    }
+
+    if (!profile) {
+      return { success: true, message: 'Profile not found or already deleted' };
+    }
+
+    const { id: profileId, userId, displayId } = profile;
+
+    // 2. Delete Education rows linked to profileId
+    await supabase.from('Education').delete().eq('profileId', profileId);
+
+    // 3. Delete Family and Sibling records if userId exists
+    if (userId) {
+      const { data: family } = await supabase.from('Family').select('id').eq('userId', userId).maybeSingle();
+      if (family?.id) {
+        await supabase.from('Sibling').delete().eq('familyId', family.id);
+        await supabase.from('Family').delete().eq('id', family.id);
+      } else {
+        await supabase.from('Family').delete().eq('userId', userId);
+      }
+
+      // 4. Delete Expectations
+      await supabase.from('Expectations').delete().eq('userId', userId);
+    }
+
+    // 5. Delete Profile
+    const { error: profileDeleteErr } = await supabase.from('Profile').delete().eq('id', profileId);
+    if (profileDeleteErr) {
+      console.error('Error deleting profile record:', profileDeleteErr);
+      throw profileDeleteErr;
+    }
+
+    // 6. If this was a candidate sub-user (no primary mobile_no), clean up candidate sub-user
+    if (userId) {
+      const { data: subUser } = await supabase.from('User').select('id, mobile_no').eq('id', userId).maybeSingle();
+      if (subUser && !subUser.mobile_no) {
+        await supabase.from('User').delete().eq('id', userId);
+      }
+    }
+
+    return {
+      success: true,
+      message: 'Profile deleted successfully',
+      deletedId: profileId,
+      deletedDisplayId: displayId,
+    };
+  } catch (err: any) {
+    console.error('deleteProfile error:', err);
+    return {
+      success: false,
+      error: err.message || 'Failed to delete profile',
+    };
+  }
+}

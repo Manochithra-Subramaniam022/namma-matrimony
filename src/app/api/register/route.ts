@@ -4,6 +4,7 @@ import {
   getNextRegistrationId,
   getProfilesByMobile,
   getProfileById,
+  deleteProfile,
 } from '@/backend/actions/registration';
 
 export const dynamic = 'force-dynamic';
@@ -39,6 +40,35 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result);
   } catch (err: any) {
     console.error('Registration API error:', err);
+    return NextResponse.json({
+      success: false,
+      error: err.message || 'Internal server error',
+    }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    let targetId = searchParams.get('id') || searchParams.get('displayId');
+
+    if (!targetId) {
+      try {
+        const body = await req.json();
+        targetId = body.id || body.displayId || body.profileId;
+      } catch {
+        // Body was empty or not json
+      }
+    }
+
+    if (!targetId) {
+      return NextResponse.json({ success: false, error: 'Profile ID is required to delete' }, { status: 400 });
+    }
+
+    const result = await deleteProfile(targetId);
+    return NextResponse.json(result);
+  } catch (err: any) {
+    console.error('API DELETE /api/register error:', err);
     return NextResponse.json({
       success: false,
       error: err.message || 'Internal server error',
