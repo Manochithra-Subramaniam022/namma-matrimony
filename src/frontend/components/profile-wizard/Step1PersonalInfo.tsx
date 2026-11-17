@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Trash2, Eye, EyeOff, CheckCircle2, ShieldCheck, Sparkles, AlertCircle, FileText } from 'lucide-react';
+import { Plus, Trash2, Eye, EyeOff, CheckCircle2, ShieldCheck, Sparkles, AlertCircle, FileText, ArrowLeft } from 'lucide-react';
 import { FileUpload } from '../FileUpload';
 import { HouseData } from '../JathagamChart';
 import { rasiOptions, nakshatraByRasi, allNakshatras } from '@/frontend/utils/astrology';
@@ -1029,7 +1029,22 @@ export function Step1PersonalInfo({
       </div>
 
       {/* Navigation Buttons */}
-      <div className="flex justify-end pt-3 sm:pt-4">
+      <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-0 justify-between items-center pt-3 sm:pt-4">
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== 'undefined' && window.history.length > 1) {
+              window.history.back();
+            } else {
+              window.location.href = '/';
+            }
+          }}
+          className="w-full sm:w-auto bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 sm:px-8 py-3.5 rounded-full font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4 shrink-0" />
+          <span>{language === 'TA' ? 'முகப்புக்குத் திரும்பு' : 'Back to Home'}</span>
+        </button>
+
         <button
           type="submit"
           className="w-full sm:w-auto bg-primary hover:bg-primary-light text-white px-8 sm:px-10 py-3.5 rounded-full font-extrabold text-sm sm:text-base shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 cursor-pointer"

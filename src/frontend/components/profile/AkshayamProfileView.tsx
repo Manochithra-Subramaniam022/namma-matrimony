@@ -25,7 +25,8 @@ import {
   Lock,
   Layers,
   Award,
-  ChevronRight
+  ChevronRight,
+  ArrowLeft
 } from 'lucide-react';
 import { JathagamChart, HouseData } from '@/frontend/components/JathagamChart';
 import BrandLogo from '@/frontend/components/BrandLogo';
@@ -153,7 +154,16 @@ export default function AkshayamProfileView({
 
         {/* 1. TOP ACTION TOOLBAR (Hidden in Print) */}
         <div className="no-print bg-[#FFFDF9] border-b border-primary/10 px-4 sm:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={onBack ? onBack : () => (typeof window !== 'undefined' && window.history.length > 1 ? window.history.back() : (window.location.href = '/profile'))}
+              type="button"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold transition-all cursor-pointer border border-primary/20"
+              title={language === 'TA' ? 'பின்செல்க' : 'Go Back'}
+            >
+              <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
+              <span>{language === 'TA' ? 'பின்செல்க' : 'Back'}</span>
+            </button>
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">
               {language === 'TA' ? 'அக்சயம் பாணி வரன் பயோடேட்டா' : 'Akshayam Style Verified Biodata'}
@@ -161,16 +171,6 @@ export default function AkshayamProfileView({
           </div>
 
           <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
-            {onBack && (
-              <button
-                onClick={onBack}
-                type="button"
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold transition-all cursor-pointer border border-primary/20"
-                title="Back to Dashboard"
-              >
-                <span>← {language === 'TA' ? 'எனது கணக்கு (Dashboard)' : 'Back to Dashboard'}</span>
-              </button>
-            )}
 
             <button
               onClick={handlePrint}

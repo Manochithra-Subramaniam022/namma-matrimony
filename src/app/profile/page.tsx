@@ -8,6 +8,7 @@ import { BRANDING } from '@/constants/branding';
 import {
   UserPlus,
   ArrowRight,
+  ArrowLeft,
   ShieldCheck,
   Heart,
   User,
@@ -201,7 +202,8 @@ export default function ProfilePage() {
             type="button"
             className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold bg-white/10 hover:bg-white/20 px-3.5 py-1.5 rounded-full transition-all cursor-pointer border border-[#D4AF37]/50"
           >
-            <span>← {language === 'TA' ? 'எனது சுயவிவரக் கணக்குக்குத் திரும்பு' : 'Back to My Profile Dashboard'}</span>
+            <ArrowLeft className="w-3.5 h-3.5 text-[#D4AF37]" />
+            <span>{language === 'TA' ? 'எனது சுயவிவரக் கணக்குக்குத் திரும்பு' : 'Back to My Profile Dashboard'}</span>
           </button>
 
           <Link
@@ -254,9 +256,27 @@ export default function ProfilePage() {
       {/* 1. TOP HEADER & NAVBAR */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-primary/10 shadow-xs">
         <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2">
-          <Link href="/" className="inline-flex items-center gap-1.5 shrink-0">
-            <BrandLogo size="md" />
-          </Link>
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== 'undefined' && window.history.length > 1) {
+                  window.history.back();
+                } else {
+                  window.location.href = '/';
+                }
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/5 hover:bg-primary/10 border border-primary/20 text-xs font-bold text-primary transition-all cursor-pointer shrink-0"
+              title={language === 'TA' ? 'பின்செல்க' : 'Go Back'}
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>{language === 'TA' ? 'பின்செல்க' : 'Back'}</span>
+            </button>
+
+            <Link href="/" className="inline-flex items-center gap-1.5 shrink-0">
+              <BrandLogo size="md" />
+            </Link>
+          </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Language Switcher */}
@@ -433,6 +453,14 @@ export default function ProfilePage() {
                 <Search className="w-4 h-4 text-primary" />
                 <span>{language === 'TA' ? 'ஏற்கனவே உள்ள பதிவுகளைக் கண்டறிக' : 'Find Existing Registrations'}</span>
               </button>
+
+              <Link
+                href="/"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 bg-primary/5 hover:bg-primary/10 text-primary border border-primary/20 py-3 px-5 rounded-full font-bold text-xs sm:text-sm transition-all cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4 text-primary" />
+                <span>{language === 'TA' ? 'முகப்புக்குத் திரும்பு' : 'Back to Home'}</span>
+              </Link>
             </div>
           </div>
         ) : (

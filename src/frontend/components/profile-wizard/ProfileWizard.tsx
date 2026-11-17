@@ -9,7 +9,7 @@ import AkshayamProfileView from '@/frontend/components/profile/AkshayamProfileVi
 import { useLanguage } from '@/frontend/context/LanguageContext';
 import { BRANDING } from '@/constants/branding';
 import BrandLogo from '../BrandLogo';
-import { ShieldCheck, Sparkles, CheckCircle2, Heart } from 'lucide-react';
+import { ShieldCheck, Sparkles, CheckCircle2, Heart, ArrowLeft } from 'lucide-react';
 
 interface ProfileWizardProps {
   language?: 'TA' | 'EN';
@@ -142,9 +142,29 @@ export default function ProfileWizard({
           {/* Header Bar */}
           {!hideHeader && (
             <div className="flex justify-between items-center mb-6 sm:mb-8 border-b border-primary/10 pb-3 sm:pb-4 gap-2">
-              <a href="/" className="inline-flex items-center gap-2 shrink-0">
-                <BrandLogo size="md" />
-              </a>
+              <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (currentStep > 0) {
+                      setCurrentStep(currentStep - 1);
+                    } else if (typeof window !== 'undefined' && window.history.length > 1) {
+                      window.history.back();
+                    } else {
+                      window.location.href = '/';
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/5 hover:bg-primary/10 border border-primary/20 text-xs font-bold text-primary transition-all cursor-pointer shrink-0"
+                  title={language === 'TA' ? 'பின்செல்க' : 'Go Back'}
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>{language === 'TA' ? 'பின்செல்க' : 'Back'}</span>
+                </button>
+
+                <a href="/" className="inline-flex items-center gap-2 shrink-0">
+                  <BrandLogo size="md" />
+                </a>
+              </div>
 
               <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                 {/* Bilingual Switcher */}
