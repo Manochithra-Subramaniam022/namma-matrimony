@@ -71,6 +71,8 @@ export default function ProfileWizard({
         const areaParam = urlParams.get('area');
         const doshamParam = urlParams.get('dosham');
         const financialParam = urlParams.get('financial');
+        const rasiParam = urlParams.get('rasi');
+        const nakshatraParam = urlParams.get('nakshatra');
 
         setGender(candidateGender);
         setFormData({
@@ -79,6 +81,8 @@ export default function ProfileWizard({
           city: areaParam && areaParam !== 'Any' ? areaParam : '',
           doshams: doshamParam && doshamParam !== 'Any' ? [doshamParam] : [],
           familyStatus: financialParam && financialParam !== 'Any' ? financialParam : 'MIDDLE_CLASS',
+          rasi: rasiParam && rasiParam !== 'Any' ? rasiParam : '',
+          nakshatra: nakshatraParam && nakshatraParam !== 'Any' ? nakshatraParam : '',
         });
       }
     } catch (e) {

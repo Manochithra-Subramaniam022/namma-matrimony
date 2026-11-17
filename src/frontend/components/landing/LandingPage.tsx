@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/frontend/context/LanguageContext';
 import { BRANDING } from '@/constants/branding';
@@ -19,7 +19,14 @@ import {
   AlertCircle,
   MapPin,
   Building,
+  Moon,
+  Star,
+  Calendar,
+  RotateCcw,
+  SlidersHorizontal,
+  CheckCircle2,
 } from 'lucide-react';
+import { rasiOptions, nakshatraByRasi, allNakshatras } from '@/frontend/utils/astrology';
 
 const AGE_OPTIONS = Array.from({ length: 55 - 18 + 1 }, (_, i) => 18 + i);
 
@@ -33,6 +40,39 @@ export default function LandingPage() {
   const [areaPreference, setAreaPreference] = useState('Any');
   const [financialCapacity, setFinancialCapacity] = useState('Any');
   const [doshamPreference, setDoshamPreference] = useState('Any');
+  const [rasiPreference, setRasiPreference] = useState('Any');
+  const [nakshatraPreference, setNakshatraPreference] = useState('Any');
+
+  const availableNakshatras = useMemo(() => {
+    if (!rasiPreference || rasiPreference === 'Any') {
+      return allNakshatras;
+    }
+    return nakshatraByRasi[rasiPreference] || allNakshatras;
+  }, [rasiPreference]);
+
+  const handleRasiChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newRasi = e.target.value;
+    setRasiPreference(newRasi);
+    if (newRasi !== 'Any' && nakshatraPreference !== 'Any') {
+      const allowed = nakshatraByRasi[newRasi] || [];
+      const stillValid = allowed.some((n) => n.value === nakshatraPreference || n.ta === nakshatraPreference);
+      if (!stillValid) {
+        setNakshatraPreference('Any');
+      }
+    }
+  };
+
+  const handleResetFilters = () => {
+    setLookingFor('BRIDE');
+    setAgeFrom('21');
+    setAgeTo('29');
+    setCastePreference('Any');
+    setAreaPreference('Any');
+    setFinancialCapacity('Any');
+    setDoshamPreference('Any');
+    setRasiPreference('Any');
+    setNakshatraPreference('Any');
+  };
 
   const numAgeFrom = parseInt(ageFrom, 10);
   const numAgeTo = parseInt(ageTo, 10);
@@ -158,26 +198,57 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Quick Search Widget */}
-          <div className="mt-8 sm:mt-12 max-w-4xl mx-auto bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-lg sm:shadow-xl border-2 border-[#D4AF37]/40 relative">
-            <div className="flex items-center gap-2 mb-4 sm:mb-6 border-b border-primary/10 pb-3 sm:pb-4">
-              <Search className="w-4 h-4 sm:w-5 sm:h-5 text-primary shrink-0" />
-              <h3 className="text-sm sm:text-lg font-black text-primary font-serif">
-                {language === 'TA' ? 'விரைவு வரன் தேடல் (Quick Match Finder)' : 'Find Your Compatible Partner'}
-              </h3>
+          {/* Quick Search Widget - Premium Matrimonial Filter */}
+          <div className="mt-8 sm:mt-12 max-w-5xl mx-auto bg-gradient-to-b from-white via-[#FFFDF9] to-[#FFFBF2] rounded-3xl p-4 sm:p-8 md:p-10 shadow-2xl border-2 border-[#D4AF37]/50 relative overflow-hidden">
+            {/* Ambient Gold Glows */}
+            <div className="absolute top-0 right-0 -mr-16 -mt-16 w-52 h-52 bg-[#D4AF37]/15 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-52 h-52 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            {/* Header: Title + Premium Badge + Reset Button */}
+            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between pb-4 sm:pb-5 mb-5 sm:mb-6 border-b border-primary/15 gap-3">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D4AF37]/20 border border-[#D4AF37]/40 text-primary text-[11px] font-black uppercase tracking-wider mb-2">
+                  <Sparkles className="w-3.5 h-3.5 text-[#D4AF37] fill-[#D4AF37]" />
+                  <span>{language === 'TA' ? 'பிரீமியம் வரன் வடிகட்டி' : 'Premium Match Filter'}</span>
+                </div>
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-primary font-serif tracking-tight flex items-center gap-2">
+                  <Search className="w-5 h-5 sm:w-6 sm:h-6 text-[#D4AF37] shrink-0" />
+                  <span>{language === 'TA' ? 'விரைவு வரன் தேடல்' : 'Quick Match Finder'}</span>
+                  <span className="text-xs sm:text-sm font-sans font-normal text-gray-500 hidden md:inline">
+                    {language === 'TA' ? '(ஜாதகம், சமூகம் & இருப்பிடம்)' : '(Astrology, Community & Location)'}
+                  </span>
+                </h3>
+              </div>
+
+              {/* Reset Filters CTA */}
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="self-start sm:self-center inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white hover:bg-gray-100 border border-gray-200 text-xs font-bold text-gray-600 hover:text-primary transition-all shadow-2xs group cursor-pointer"
+                title={language === 'TA' ? 'அனைத்து வடிகட்டிகளையும் மீட்டமை' : 'Reset all filter selections'}
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-gray-400 group-hover:rotate-180 transition-all duration-500" />
+                <span>{language === 'TA' ? 'மீட்டமை' : 'Reset Filters'}</span>
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-5">
+            {/* 8 Premium Filter Cards Grid */}
+            <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              
               {/* 1. Looking For */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5 flex items-center gap-1.5">
-                  <Heart className="w-3.5 h-3.5 text-primary shrink-0" />
-                  <span>{language === 'TA' ? 'நான் தேடுவது' : 'Looking For'}</span>
-                </label>
+              <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-primary/15 hover:border-[#D4AF37] transition-all shadow-2xs hover:shadow-xs flex flex-col justify-between">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <div className="w-6 h-6 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-200">
+                    <Heart className="w-3.5 h-3.5 fill-rose-600" />
+                  </div>
+                  <label className="text-xs font-black text-gray-700 uppercase tracking-wide">
+                    {language === 'TA' ? 'நான் தேடுவது' : 'Looking For'}
+                  </label>
+                </div>
                 <select
                   value={lookingFor}
                   onChange={(e) => setLookingFor(e.target.value)}
-                  className="w-full h-11 px-3 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-semibold text-xs sm:text-sm focus:border-primary focus:outline-none transition-all"
+                  className="w-full h-11 px-3 rounded-xl border border-gray-200 bg-[#FFFDF9] text-gray-900 font-bold text-xs sm:text-sm focus:border-primary focus:bg-white focus:outline-none transition-all cursor-pointer"
                 >
                   <option value="BRIDE">{language === 'TA' ? 'மணமகள் (Bride)' : 'Bride'}</option>
                   <option value="GROOM">{language === 'TA' ? 'மணமகன் (Groom)' : 'Groom'}</option>
@@ -185,25 +256,28 @@ export default function LandingPage() {
               </div>
 
               {/* 2. Age Limit with Real-Time Validation */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-bold text-gray-700 uppercase">
-                    {language === 'TA' ? 'வயது வரம்பு' : 'Age Limit'}
-                  </label>
-                  <span className={`text-[11px] font-bold ${isAgeInvalid ? 'text-red-600' : 'text-[#800020]'}`}>
-                    {isAgeInvalid
-                      ? (language === 'TA' ? 'தவறான வரம்பு' : 'Invalid Range')
-                      : `${ageFrom} - ${ageTo} ${language === 'TA' ? 'வயது' : 'Yrs'}`}
+              <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-primary/15 hover:border-[#D4AF37] transition-all shadow-2xs hover:shadow-xs flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20">
+                      <Calendar className="w-3.5 h-3.5" />
+                    </div>
+                    <label className="text-xs font-black text-gray-700 uppercase tracking-wide">
+                      {language === 'TA' ? 'வயது வரம்பு' : 'Age Limit'}
+                    </label>
+                  </div>
+                  <span className={`text-[11px] font-black px-2 py-0.5 rounded-full ${isAgeInvalid ? 'bg-red-100 text-red-700 border border-red-300' : 'bg-primary/5 text-primary border border-primary/20'}`}>
+                    {isAgeInvalid ? (language === 'TA' ? 'தவறு' : 'Invalid') : `${ageFrom} - ${ageTo} ${language === 'TA' ? 'வயது' : 'Yrs'}`}
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="flex items-center gap-1.5">
                   <select
                     value={ageFrom}
                     onChange={(e) => setAgeFrom(e.target.value)}
-                    className={`w-full h-11 px-2.5 rounded-xl border text-gray-900 font-semibold text-xs sm:text-sm focus:outline-none transition-all ${
+                    className={`w-full h-11 px-2.5 rounded-xl border text-gray-900 font-bold text-xs sm:text-sm focus:outline-none transition-all cursor-pointer ${
                       isAgeInvalid
                         ? 'border-red-400 bg-red-50/30 focus:border-red-500'
-                        : 'border-gray-300 bg-[#FFFDF9] focus:border-primary'
+                        : 'border-gray-200 bg-[#FFFDF9] focus:border-primary focus:bg-white'
                     }`}
                     aria-label={language === 'TA' ? 'குறைந்தபட்ச வயது' : 'Minimum Age'}
                   >
@@ -219,10 +293,10 @@ export default function LandingPage() {
                   <select
                     value={ageTo}
                     onChange={(e) => setAgeTo(e.target.value)}
-                    className={`w-full h-11 px-2.5 rounded-xl border text-gray-900 font-semibold text-xs sm:text-sm focus:outline-none transition-all ${
+                    className={`w-full h-11 px-2.5 rounded-xl border text-gray-900 font-bold text-xs sm:text-sm focus:outline-none transition-all cursor-pointer ${
                       isAgeInvalid
-                        ? 'border-red-500 bg-red-50/50 text-red-900 focus:border-red-600 focus:ring-1 focus:ring-red-500'
-                        : 'border-gray-300 bg-[#FFFDF9] focus:border-primary'
+                        ? 'border-red-500 bg-red-50/50 text-red-900 focus:border-red-600'
+                        : 'border-gray-200 bg-[#FFFDF9] focus:border-primary focus:bg-white'
                     }`}
                     aria-label={language === 'TA' ? 'அதிகபட்ச வயது' : 'Maximum Age'}
                   >
@@ -234,29 +308,28 @@ export default function LandingPage() {
                   </select>
                 </div>
                 {isAgeInvalid && (
-                  <div className="flex items-start gap-1 text-[11px] font-bold text-red-600 mt-1.5 bg-red-50 p-1.5 rounded-lg border border-red-200 animate-in fade-in leading-tight">
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-red-600" />
-                    <span>
-                      {language === 'TA'
-                        ? `அதிகபட்ச வயது (${ageTo}) குறைந்தபட்ச வயதை (${ageFrom}) விட அதிகமாக இருக்க வேண்டும்.`
-                        : `Max age (${ageTo}) should be higher than minimum age (${ageFrom}).`}
-                    </span>
-                  </div>
+                  <p className="text-[10px] font-bold text-red-600 mt-1">
+                    {language === 'TA' ? 'அதிகபட்ச வயது > குறைந்தபட்ச வயது' : 'Max age must be > min age'}
+                  </p>
                 )}
               </div>
 
               {/* 3. Community / Caste */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5 flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-primary shrink-0" />
-                  <span>{language === 'TA' ? 'சமூகம் / சாதி' : 'Community'}</span>
-                </label>
+              <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-primary/15 hover:border-[#D4AF37] transition-all shadow-2xs hover:shadow-xs flex flex-col justify-between">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <div className="w-6 h-6 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 border border-blue-200">
+                    <Users className="w-3.5 h-3.5" />
+                  </div>
+                  <label className="text-xs font-black text-gray-700 uppercase tracking-wide">
+                    {language === 'TA' ? 'சமூகம் / சாதி' : 'Community'}
+                  </label>
+                </div>
                 <select
                   value={castePreference}
                   onChange={(e) => setCastePreference(e.target.value)}
-                  className="w-full h-11 px-3 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-semibold text-xs sm:text-sm focus:border-primary focus:outline-none transition-all"
+                  className="w-full h-11 px-3 rounded-xl border border-gray-200 bg-[#FFFDF9] text-gray-900 font-bold text-xs sm:text-sm focus:border-primary focus:bg-white focus:outline-none transition-all cursor-pointer"
                 >
-                  <option value="Any">{language === 'TA' ? 'அனைத்து தமிழ் சமூகம் (All Tamil Communities)' : 'All Tamil Communities (Any)'}</option>
+                  <option value="Any">{language === 'TA' ? 'அனைத்து சமூகம் (All Tamil)' : 'All Tamil Communities (Any)'}</option>
                   <option value="Kongu Vellalar Gounder">கொங்கு வேளாளர் கவுண்டர்</option>
                   <option value="Vanniyar">வன்னியர்</option>
                   <option value="Nadar">நாடார்</option>
@@ -270,22 +343,26 @@ export default function LandingPage() {
                   <option value="Viswakarma">விஸ்வகர்மா</option>
                   <option value="Yadav">யாதவர்</option>
                   <option value="AdiDravidar">ஆதி திராவிடர்</option>
-                  <option value="Other">{language === 'TA' ? 'இதர தமிழ் சமூகங்கள் (Other)' : 'Other Tamil Communities'}</option>
+                  <option value="Other">{language === 'TA' ? 'இதர தமிழ் சமூகம்' : 'Other Tamil Communities'}</option>
                 </select>
               </div>
 
               {/* 4. Area / Location Filter */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5 flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
-                  <span>{language === 'TA' ? 'பகுதி / மாவட்டம் (Area)' : 'Area / District'}</span>
-                </label>
+              <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-primary/15 hover:border-[#D4AF37] transition-all shadow-2xs hover:shadow-xs flex flex-col justify-between">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200">
+                    <MapPin className="w-3.5 h-3.5" />
+                  </div>
+                  <label className="text-xs font-black text-gray-700 uppercase tracking-wide">
+                    {language === 'TA' ? 'பகுதி / மாவட்டம்' : 'Area / District'}
+                  </label>
+                </div>
                 <select
                   value={areaPreference}
                   onChange={(e) => setAreaPreference(e.target.value)}
-                  className="w-full h-11 px-3 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-semibold text-xs sm:text-sm focus:border-primary focus:outline-none transition-all"
+                  className="w-full h-11 px-3 rounded-xl border border-gray-200 bg-[#FFFDF9] text-gray-900 font-bold text-xs sm:text-sm focus:border-primary focus:bg-white focus:outline-none transition-all cursor-pointer"
                 >
-                  <option value="Any">{language === 'TA' ? 'அனைத்து பகுதிகள் (All Tamil Nadu / Any)' : 'All Areas / Any'}</option>
+                  <option value="Any">{language === 'TA' ? 'அனைத்து பகுதிகள் (All TN / Any)' : 'All Districts / Any'}</option>
                   <option value="Coimbatore">கோயம்புத்தூர் (Coimbatore)</option>
                   <option value="Erode">ஈரோடு (Erode)</option>
                   <option value="Tirupur">திருப்பூர் (Tirupur)</option>
@@ -301,78 +378,183 @@ export default function LandingPage() {
                   <option value="Tirunelveli">திருநெல்வேலி / தென் தமிழகம்</option>
                   <option value="Bangalore">பெங்களூர் / கர்நாடகா</option>
                   <option value="Abroad">வெளிநாடு (NRI / Abroad)</option>
-                  <option value="Other">இதர பகுதிகள் (Other Districts)</option>
+                  <option value="Other">இதர பகுதிகள்</option>
                 </select>
               </div>
 
               {/* 5. Financial Capacity in Plans Filter */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5 flex items-center gap-1.5">
-                  <Building className="w-3.5 h-3.5 text-primary shrink-0" />
-                  <span>{language === 'TA' ? 'பொருளாதார நிலை (Financial Capacity)' : 'Financial Capacity in Plans'}</span>
-                </label>
+              <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-primary/15 hover:border-[#D4AF37] transition-all shadow-2xs hover:shadow-xs flex flex-col justify-between">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <div className="w-6 h-6 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 border border-amber-200">
+                    <Building className="w-3.5 h-3.5" />
+                  </div>
+                  <label className="text-xs font-black text-gray-700 uppercase tracking-wide">
+                    {language === 'TA' ? 'பொருளாதார நிலை' : 'Financial Status'}
+                  </label>
+                </div>
                 <select
                   value={financialCapacity}
                   onChange={(e) => setFinancialCapacity(e.target.value)}
-                  className="w-full h-11 px-3 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-semibold text-xs sm:text-sm focus:border-primary focus:outline-none transition-all"
+                  className="w-full h-11 px-3 rounded-xl border border-gray-200 bg-[#FFFDF9] text-gray-900 font-bold text-xs sm:text-sm focus:border-primary focus:bg-white focus:outline-none transition-all cursor-pointer"
                 >
-                  <option value="Any">{language === 'TA' ? 'அனைத்து நிலைகள் (Any Financial Status)' : 'Any Financial Status / Plans'}</option>
+                  <option value="Any">{language === 'TA' ? 'அனைத்து நிலைகள் (Any Status)' : 'Any Status / Plan'}</option>
                   <option value="MIDDLE_CLASS">{language === 'TA' ? 'நடுத்தர குடும்பம் (Middle Class)' : 'Middle Class'}</option>
-                  <option value="UPPER_MIDDLE_CLASS">{language === 'TA' ? 'உயர் நடுத்தர குடும்பம் (Upper Middle Class)' : 'Upper Middle Class'}</option>
-                  <option value="RICH">{language === 'TA' ? 'வசதியான குடும்பம் (Rich / Well Settled)' : 'Rich / Well Settled'}</option>
-                  <option value="AFFLUENT">{language === 'TA' ? 'பெரும் செல்வந்தர் (Affluent / VIP)' : 'Affluent / VIP'}</option>
-                  <option value="ASSETS_50L_1CR">{language === 'TA' ? 'சொத்து: ரூ. 50L - 1 கோடி (Assets 50L - 1 Cr)' : 'Assets: ₹50L - ₹1 Crore'}</option>
-                  <option value="ASSETS_1CR_3CR">{language === 'TA' ? 'சொத்து: ரூ. 1 கோடி - 3 கோடி (Assets 1 - 3 Cr)' : 'Assets: ₹1 Cr - ₹3 Crores'}</option>
-                  <option value="ASSETS_3CR_PLUS">{language === 'TA' ? 'சொத்து: ரூ. 3+ கோடி (Assets 3+ Crores)' : 'Assets: ₹3+ Crores'}</option>
+                  <option value="UPPER_MIDDLE_CLASS">{language === 'TA' ? 'உயர் நடுத்தர குடும்பம்' : 'Upper Middle Class'}</option>
+                  <option value="RICH">{language === 'TA' ? 'வசதியான குடும்பம் (Rich)' : 'Rich / Well Settled'}</option>
+                  <option value="AFFLUENT">{language === 'TA' ? 'பெரும் செல்வந்தர் (VIP)' : 'Affluent / VIP'}</option>
+                  <option value="ASSETS_50L_1CR">{language === 'TA' ? 'சொத்து: ரூ. 50L - 1 கோடி' : 'Assets: ₹50L - ₹1 Cr'}</option>
+                  <option value="ASSETS_1CR_3CR">{language === 'TA' ? 'சொத்து: ரூ. 1 - 3 கோடி' : 'Assets: ₹1 - ₹3 Cr'}</option>
+                  <option value="ASSETS_3CR_PLUS">{language === 'TA' ? 'சொத்து: ரூ. 3+ கோடி' : 'Assets: ₹3+ Cr'}</option>
                 </select>
               </div>
 
               {/* 6. Sutham or Ragu Kethu / Dosham Filter */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5 flex items-center gap-1.5">
-                  <Compass className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" />
-                  <span>{language === 'TA' ? 'ஜாதகம்: சுத்தம் / ராகு கேது' : 'Horoscope: Sutham / Ragu Kethu'}</span>
-                </label>
+              <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-primary/15 hover:border-[#D4AF37] transition-all shadow-2xs hover:shadow-xs flex flex-col justify-between">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <div className="w-6 h-6 rounded-lg bg-[#D4AF37]/20 text-primary flex items-center justify-center shrink-0 border border-[#D4AF37]/40">
+                    <Compass className="w-3.5 h-3.5 text-[#D4AF37]" />
+                  </div>
+                  <label className="text-xs font-black text-gray-700 uppercase tracking-wide">
+                    {language === 'TA' ? 'சுத்தம் / ராகு கேது' : 'Dosham Filter'}
+                  </label>
+                </div>
                 <select
                   value={doshamPreference}
                   onChange={(e) => setDoshamPreference(e.target.value)}
-                  className="w-full h-11 px-3 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-semibold text-xs sm:text-sm focus:border-primary focus:outline-none transition-all"
+                  className="w-full h-11 px-3 rounded-xl border border-gray-200 bg-[#FFFDF9] text-gray-900 font-bold text-xs sm:text-sm focus:border-primary focus:bg-white focus:outline-none transition-all cursor-pointer"
                 >
                   <option value="Any">{language === 'TA' ? 'அனைத்து ஜாதகம் (Any Horoscope)' : 'Any Horoscope'}</option>
-                  <option value="SUTHAM">{language === 'TA' ? 'சுத்த ஜாதகம் (Sutha Jathagam - தோஷமில்லை)' : 'Sutham (Clean / No Dosham)'}</option>
-                  <option value="RAGU_KETHU">{language === 'TA' ? 'ராகு - கேது தோஷம் (Ragu Kethu Dosham)' : 'Ragu Kethu Dosham'}</option>
-                  <option value="SEVVAI">{language === 'TA' ? 'செவ்வாய் தோஷம் (Sevvai Dosham)' : 'Sevvai Dosham'}</option>
-                  <option value="SEVVAI_RAGU_KETHU">{language === 'TA' ? 'செவ்வாய் & ராகு-கேது இரண்டும் (Both)' : 'Sevvai & Ragu Kethu'}</option>
+                  <option value="SUTHAM">{language === 'TA' ? 'சுத்த ஜாதகம் (தோஷமில்லை)' : 'Sutham (No Dosham)'}</option>
+                  <option value="RAGU_KETHU">{language === 'TA' ? 'ராகு - கேது தோஷம்' : 'Ragu Kethu Dosham'}</option>
+                  <option value="SEVVAI">{language === 'TA' ? 'செவ்வாய் தோஷம்' : 'Sevvai Dosham'}</option>
+                  <option value="SEVVAI_RAGU_KETHU">{language === 'TA' ? 'செவ்வாய் & ராகு-கேது' : 'Sevvai & Ragu Kethu'}</option>
                 </select>
               </div>
 
-              {/* 7. Search Matches CTA Button */}
-              <div className="col-span-1 sm:col-span-2 lg:col-span-3 pt-2 sm:pt-3">
-                {isAgeInvalid ? (
-                  <button
-                    type="button"
-                    disabled
-                    className="w-full h-12 bg-gray-200 text-gray-400 rounded-xl sm:rounded-2xl font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 cursor-not-allowed border border-gray-300 select-none transition-all"
-                    title={
-                      language === 'TA'
-                        ? 'அதிகபட்ச வயது குறைந்தபட்ச வயதை விட அதிகமாக இருக்க வேண்டும்'
-                        : 'Max age should be higher than minimum age'
-                    }
-                  >
-                    <Search className="w-4 h-4 text-gray-400" />
-                    <span>{language === 'TA' ? 'பொருத்தமான வரன்களைக் காண்க' : 'Search Matching Profiles'}</span>
-                  </button>
-                ) : (
-                  <Link
-                    href={`/register?lookingFor=${lookingFor}&minAge=${ageFrom}&maxAge=${ageTo}&caste=${encodeURIComponent(castePreference)}&area=${encodeURIComponent(areaPreference)}&financial=${encodeURIComponent(financialCapacity)}&dosham=${encodeURIComponent(doshamPreference)}`}
-                    className="w-full h-12 bg-primary hover:bg-primary-light text-white rounded-xl sm:rounded-2xl font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all hover:scale-[1.01] cursor-pointer"
-                  >
-                    <Search className="w-4 h-4 text-[#D4AF37]" />
-                    <span>{language === 'TA' ? 'பொருத்தமான வரன்களைக் காண்க' : 'Find Matching Profiles'}</span>
-                    <ArrowRight className="w-4 h-4 text-white" />
-                  </Link>
+              {/* 7. Raasi (Zodiac Sign) Filter */}
+              <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-primary/15 hover:border-[#D4AF37] transition-all shadow-2xs hover:shadow-xs flex flex-col justify-between">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <div className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0 border border-indigo-200">
+                    <Moon className="w-3.5 h-3.5" />
+                  </div>
+                  <label className="text-xs font-black text-gray-700 uppercase tracking-wide">
+                    {language === 'TA' ? 'ராசி (Raasi)' : 'Raasi (Zodiac)'}
+                  </label>
+                </div>
+                <select
+                  value={rasiPreference}
+                  onChange={handleRasiChange}
+                  className="w-full h-11 px-3 rounded-xl border border-gray-200 bg-[#FFFDF9] text-gray-900 font-bold text-xs sm:text-sm focus:border-primary focus:bg-white focus:outline-none transition-all cursor-pointer"
+                >
+                  <option value="Any">{language === 'TA' ? 'அனைத்து ராசி (Any Raasi)' : 'All Zodiac Signs (Any)'}</option>
+                  {rasiOptions.map((r) => (
+                    <option key={r.value} value={r.value}>
+                      {r.ta} ({r.en})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 8. Nakshatram (Birth Star) Filter */}
+              <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-primary/15 hover:border-[#D4AF37] transition-all shadow-2xs hover:shadow-xs flex flex-col justify-between">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <div className="w-6 h-6 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-300">
+                    <Star className="w-3.5 h-3.5 fill-amber-500/20" />
+                  </div>
+                  <label className="text-xs font-black text-gray-700 uppercase tracking-wide">
+                    {language === 'TA' ? 'நட்சத்திரம் (Star)' : 'Nakshatram (Star)'}
+                  </label>
+                </div>
+                <select
+                  value={nakshatraPreference}
+                  onChange={(e) => setNakshatraPreference(e.target.value)}
+                  className="w-full h-11 px-3 rounded-xl border border-gray-200 bg-[#FFFDF9] text-gray-900 font-bold text-xs sm:text-sm focus:border-primary focus:bg-white focus:outline-none transition-all cursor-pointer"
+                >
+                  <option value="Any">
+                    {rasiPreference !== 'Any'
+                      ? (language === 'TA' ? `${rasiPreference} - அனைத்து நட்சத்திரங்கள்` : `All ${rasiPreference} Stars`)
+                      : (language === 'TA' ? 'அனைத்து நட்சத்திரம் (Any)' : 'All Stars (Any)')}
+                  </option>
+                  {availableNakshatras.map((n, nIdx) => (
+                    <option key={`${n.value}-${nIdx}`} value={n.value}>
+                      {n.ta} ({n.en})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Active Criteria Preview Bar */}
+            <div className="relative z-10 mt-4 sm:mt-5 p-2.5 sm:p-3 rounded-xl bg-white/80 border border-[#D4AF37]/30 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-1.5 text-gray-600 flex-wrap font-medium">
+                <span className="font-bold text-primary flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>{language === 'TA' ? 'தேர்வு:' : 'Active:'}</span>
+                </span>
+                <span className="bg-primary/5 text-primary px-2 py-0.5 rounded-md font-bold">
+                  {lookingFor === 'BRIDE' ? (language === 'TA' ? 'மணமகள்' : 'Bride') : (language === 'TA' ? 'மணமகன்' : 'Groom')}
+                </span>
+                <span>•</span>
+                <span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded-md font-bold">
+                  {ageFrom} - {ageTo} {language === 'TA' ? 'வயது' : 'Yrs'}
+                </span>
+                {castePreference !== 'Any' && (
+                  <>
+                    <span>•</span>
+                    <span className="bg-blue-50 text-blue-800 px-2 py-0.5 rounded-md font-bold">{castePreference}</span>
+                  </>
+                )}
+                {areaPreference !== 'Any' && (
+                  <>
+                    <span>•</span>
+                    <span className="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-md font-bold">{areaPreference}</span>
+                  </>
+                )}
+                {rasiPreference !== 'Any' && (
+                  <>
+                    <span>•</span>
+                    <span className="bg-indigo-50 text-indigo-800 px-2 py-0.5 rounded-md font-bold">ராசி: {rasiPreference}</span>
+                  </>
+                )}
+                {nakshatraPreference !== 'Any' && (
+                  <>
+                    <span>•</span>
+                    <span className="bg-amber-50 text-amber-800 px-2 py-0.5 rounded-md font-bold">நட்சத்திரம்: {nakshatraPreference}</span>
+                  </>
                 )}
               </div>
+
+              <span className="text-[11px] font-bold text-[#800020] uppercase tracking-wider">
+                100% Free Lifetime
+              </span>
+            </div>
+
+            {/* Search Matches CTA Button */}
+            <div className="relative z-10 pt-4 sm:pt-5">
+              {isAgeInvalid ? (
+                <button
+                  type="button"
+                  disabled
+                  className="w-full h-13 sm:h-14 bg-gray-200 text-gray-400 rounded-2xl font-black text-sm sm:text-base flex items-center justify-center gap-2 cursor-not-allowed border border-gray-300 select-none transition-all"
+                  title={
+                    language === 'TA'
+                      ? 'அதிகபட்ச வயது குறைந்தபட்ச வயதை விட அதிகமாக இருக்க வேண்டும்'
+                      : 'Max age should be higher than minimum age'
+                  }
+                >
+                  <Search className="w-4 h-4 text-gray-400" />
+                  <span>{language === 'TA' ? 'பொருத்தமான வரன்களைக் காண்க' : 'Search Matching Profiles'}</span>
+                </button>
+              ) : (
+                <Link
+                  href={`/register?lookingFor=${lookingFor}&minAge=${ageFrom}&maxAge=${ageTo}&caste=${encodeURIComponent(castePreference)}&area=${encodeURIComponent(areaPreference)}&financial=${encodeURIComponent(financialCapacity)}&dosham=${encodeURIComponent(doshamPreference)}&rasi=${encodeURIComponent(rasiPreference)}&nakshatra=${encodeURIComponent(nakshatraPreference)}`}
+                  className="w-full h-13 sm:h-14 bg-gradient-to-r from-primary via-[#950026] to-primary hover:from-primary-light hover:to-primary text-white rounded-2xl font-black text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-xl hover:shadow-2xl transition-all hover:scale-[1.01] cursor-pointer border-2 border-[#D4AF37]/50"
+                >
+                  <Search className="w-5 h-5 text-[#D4AF37]" />
+                  <span>{language === 'TA' ? 'பொருத்தமான வரன்களைக் காண்க' : 'Find Matching Profiles'}</span>
+                  <ArrowRight className="w-5 h-5 text-white" />
+                </Link>
+              )}
             </div>
           </div>
         </div>
