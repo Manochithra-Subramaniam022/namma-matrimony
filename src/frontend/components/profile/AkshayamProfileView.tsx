@@ -29,7 +29,6 @@ import {
   ArrowLeft,
   Trash2
 } from 'lucide-react';
-import { JathagamChart, HouseData } from '@/frontend/components/JathagamChart';
 import BrandLogo from '@/frontend/components/BrandLogo';
 import { BRANDING } from '@/constants/branding';
 
@@ -76,21 +75,37 @@ export default function AkshayamProfileView({
   };
   const heightDisplay = formatHeight(profile?.heightCm || profile?.height);
 
-  // Default empty houses if not provided
-  const defaultEmptyHouses: HouseData[] = Array.from({ length: 12 }, (_, i) => ({
-    houseIndex: i,
-    planets: [],
-  }));
+  // Clean Date of Birth (No raw ISO timestamp like T00:00:00)
+  const formatCleanDate = (dateStr?: string) => {
+    if (!dateStr) return '';
+    const clean = String(dateStr).split('T')[0].trim();
+    const parts = clean.split('-');
+    if (parts.length === 3 && parts[0].length === 4) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return clean;
+  };
+  const cleanDob = formatCleanDate(profile?.dob);
 
-  const rasiHouses: HouseData[] =
-    Array.isArray(profile?.rasiHouses) && profile.rasiHouses.length > 0
-      ? profile.rasiHouses
-      : defaultEmptyHouses;
-
-  const amsamHouses: HouseData[] =
-    Array.isArray(profile?.amsamHouses) && profile.amsamHouses.length > 0
-      ? profile.amsamHouses
-      : defaultEmptyHouses;
+  // Clean Marital Status (No raw enum strings like NEVER_MARRIED)
+  const formatMaritalStatus = (status?: string) => {
+    if (!status) return language === 'TA' ? 'திருமணமாகாதவர்' : 'Unmarried';
+    const s = String(status).toUpperCase().trim();
+    if (s.includes('NEVER') || s.includes('UNMARRIED')) {
+      return language === 'TA' ? 'திருமணமாகாதவர் (Unmarried)' : 'Never Married';
+    }
+    if (s.includes('DIVORCE')) {
+      return language === 'TA' ? 'விவாகரத்து (Divorced)' : 'Divorced';
+    }
+    if (s.includes('WIDOW')) {
+      return language === 'TA' ? 'விதவை / விதவர் (Widowed)' : 'Widowed';
+    }
+    if (s.includes('AWAITING')) {
+      return language === 'TA' ? 'விவாகரத்து எதிர்பார்ப்பு' : 'Awaiting Divorce';
+    }
+    return status;
+  };
+  const cleanMaritalStatus = formatMaritalStatus(profile?.maritalStatus);
 
   // Format WhatsApp Share Message
   const handleShareWhatsApp = () => {
@@ -156,39 +171,34 @@ export default function AkshayamProfileView({
         <div className="h-3 w-full bg-gradient-to-r from-primary via-[#D4AF37] to-primary"></div>
 
         {/* 1. TOP ACTION TOOLBAR (Hidden in Print) */}
-        <div className="no-print bg-[#FFFDF9] border-b border-primary/10 px-4 sm:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 sm:gap-3">
+        <div className="no-print bg-[#FFFDF9] border-b border-primary/10 px-3 sm:px-6 py-2.5 flex items-center justify-between gap-2 shadow-xs">
+          {onBack && (
             <button
-              onClick={onBack ? onBack : () => (typeof window !== 'undefined' && window.history.length > 1 ? window.history.back() : (window.location.href = '/profile'))}
+              onClick={onBack}
               type="button"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold transition-all cursor-pointer border border-primary/20"
-              title={language === 'TA' ? 'பின்செல்க' : 'Go Back'}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold transition-all cursor-pointer border border-primary/20 shrink-0"
+              title={language === 'TA' ? 'பட்டியலுக்குத் திரும்பு' : 'Back to List'}
             >
               <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
               <span>{language === 'TA' ? 'பின்செல்க' : 'Back'}</span>
             </button>
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">
-              {language === 'TA' ? 'அக்சயம் பாணி வரன் பயோடேட்டா' : 'Akshayam Style Verified Biodata'}
-            </span>
-          </div>
+          )}
 
-          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
-
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
             <button
               onClick={handlePrint}
               type="button"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary text-white text-xs font-bold shadow-xs hover:bg-primary-light transition-all cursor-pointer"
-              title="Print or Save as PDF"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-white text-xs font-bold shadow-xs hover:bg-primary-light transition-all cursor-pointer"
+              title="Print Biodata"
             >
               <Printer className="w-3.5 h-3.5 text-[#D4AF37]" />
-              <span>{language === 'TA' ? 'அச்சிடுக (Print / PDF)' : 'Print Biodata'}</span>
+              <span className="hidden sm:inline">{language === 'TA' ? 'அச்சிடு' : 'Print'}</span>
             </button>
 
             <button
               onClick={handleShareWhatsApp}
               type="button"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-600 text-white text-xs font-bold shadow-xs hover:bg-emerald-700 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-600 text-white text-xs font-bold shadow-xs hover:bg-emerald-700 transition-all cursor-pointer"
               title="Share via WhatsApp"
             >
               <Share2 className="w-3.5 h-3.5" />
@@ -199,11 +209,11 @@ export default function AkshayamProfileView({
               <button
                 onClick={onEdit}
                 type="button"
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-all cursor-pointer"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold transition-all cursor-pointer"
                 title="Edit Details"
               >
                 <Edit3 className="w-3.5 h-3.5" />
-                <span>{language === 'TA' ? 'மாற்றுக' : 'Edit'}</span>
+                <span>{language === 'TA' ? 'திருத்து' : 'Edit'}</span>
               </button>
             )}
 
@@ -211,76 +221,66 @@ export default function AkshayamProfileView({
               <button
                 onClick={onDelete}
                 type="button"
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-bold transition-all cursor-pointer"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-bold transition-all cursor-pointer"
                 title="Delete Profile"
               >
                 <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                <span>{language === 'TA' ? 'நீக்குக' : 'Delete'}</span>
+                <span>{language === 'TA' ? 'நீக்கு' : 'Delete'}</span>
               </button>
             )}
-
-            <a
-              href="/"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-all"
-              title="Homepage"
-            >
-              <Home className="w-3.5 h-3.5" />
-              <span>{language === 'TA' ? 'முகப்பு' : 'Home'}</span>
-            </a>
           </div>
         </div>
 
         {/* 2. TRADITIONAL AUSPICIOUS HEADER BANNER */}
-        <div className="bg-gradient-to-b from-[#580016] to-primary text-white p-5 sm:p-7 text-center relative overflow-hidden border-b-2 border-[#D4AF37]">
-          <div className="absolute top-0 right-0 -mr-12 -mt-12 w-48 h-48 bg-[#D4AF37]/20 rounded-full blur-2xl pointer-events-none"></div>
-          <div className="absolute bottom-0 left-0 -ml-12 -mb-12 w-48 h-48 bg-[#D4AF37]/20 rounded-full blur-2xl pointer-events-none"></div>
-
-          {/* Sacred Invocations */}
-          <div className="text-[11px] sm:text-xs font-serif font-bold text-[#F3E5AB] tracking-widest mb-1.5 flex items-center justify-center gap-2">
-            <span>✤</span>
-            <span>|| ஸ்ரீ விநாயகர் துணை || வாழ்க வளமுடன் || ஸ்ரீ குலதெய்வம் துணை ||</span>
-            <span>✤</span>
+        <div className="bg-gradient-to-b from-[#580016] to-primary text-white p-3.5 sm:p-5 text-center relative overflow-hidden border-b-2 border-[#D4AF37]">
+          {/* Sacred Invocations - Clean without unwanted symbols or pipes */}
+          <div className="text-[11px] sm:text-xs font-serif font-bold text-[#F3E5AB] tracking-wide mb-1 flex items-center justify-center gap-2">
+            <span>ஸ்ரீ விநாயகர் துணை</span>
+            <span className="text-[#D4AF37]">•</span>
+            <span>வாழ்க வளமுடன்</span>
+            <span className="text-[#D4AF37]">•</span>
+            <span>ஸ்ரீ குலதெய்வம் துணை</span>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mb-1">
-            <h1 className="text-xl sm:text-3xl font-serif font-black text-white tracking-tight">
+          <div className="flex flex-wrap items-center justify-center gap-1.5 mb-0.5">
+            <h1 className="text-lg sm:text-2xl font-serif font-black text-white tracking-tight">
               {BRANDING.brandNameTamil}
             </h1>
-            <span className="text-[#D4AF37] font-serif text-lg sm:text-2xl hidden sm:inline">•</span>
-            <span className="text-sm sm:text-xl font-bold text-amber-200 font-serif">
+            <span className="text-[#D4AF37] font-serif text-sm hidden sm:inline">•</span>
+            <span className="text-xs sm:text-base font-bold text-amber-200 font-serif">
               {BRANDING.brandName}
             </span>
           </div>
 
-          <p className="text-[11px] sm:text-xs text-rose-100 font-medium max-w-lg mx-auto">
+          <p className="text-[10px] sm:text-xs text-rose-100/90 font-medium max-w-lg mx-auto">
             {language === 'TA'
               ? 'மக்களுக்கு உதவும் 100% முற்றிலும் இலவச திருமண தகவல் மையம்'
               : '100% Free Public Community Matrimonial Service'}
           </p>
 
           {/* ID & Verification Badge */}
-          <div className="mt-3 inline-flex items-center gap-2 sm:gap-3 bg-black/30 backdrop-blur-xs px-4 py-1.5 rounded-full border border-[#D4AF37]/60 shadow-sm">
-            <span className="text-[11px] font-bold text-amber-300 uppercase tracking-widest">
-              {language === 'TA' ? 'பதிவு குறிப்பு எண்' : 'Profile ID'}:
+          <div className="mt-2 inline-flex items-center gap-2 bg-black/25 px-3 py-1 rounded-full border border-[#D4AF37]/50 shadow-xs">
+            <span className="text-[10px] sm:text-[11px] font-bold text-amber-300 uppercase tracking-wider">
+              {language === 'TA' ? 'பதிவு எண்' : 'ID'}:
             </span>
-            <span className="text-base sm:text-lg font-black font-mono text-[#D4AF37] tracking-wider">
+            <span className="text-sm sm:text-base font-black font-mono text-[#D4AF37]">
               {displayId}
             </span>
-            <span className="hidden sm:inline text-white/40">|</span>
-            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-emerald-300 font-bold">
-              <CheckCircle2 className="w-3.5 h-3.5" /> 100% Verified
+            <span className="text-white/30">•</span>
+            <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] text-emerald-300 font-bold">
+              <CheckCircle2 className="w-3 h-3" /> சரிபார்க்கப்பட்டது
             </span>
           </div>
         </div>
 
         {/* 3. HERO CANDIDATE OVERVIEW CARD */}
-        <div className="p-4 sm:p-8 bg-[#FFFDF9] border-b border-primary/10">
-          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-8">
+        <div className="p-4 sm:p-6 bg-[#FFFDF9] border-b border-primary/10">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
             
             {/* Candidate Photograph */}
             <div className="shrink-0 text-center">
               <div
-                className="relative w-36 h-44 sm:w-44 sm:h-52 rounded-2xl overflow-hidden border-4 border-[#D4AF37] shadow-lg bg-gray-100 group cursor-pointer"
+                className="relative w-32 h-40 sm:w-40 sm:h-48 rounded-2xl overflow-hidden border-3 border-[#D4AF37] shadow-md bg-gray-100 group cursor-pointer"
                 onClick={() => profile?.photoUrl && setPhotoModalOpen(true)}
               >
                 {profile?.photoUrl ? (
@@ -290,10 +290,10 @@ export default function AkshayamProfileView({
                     className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300"
                   />
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary p-4">
-                    <User className="w-14 h-14 sm:w-16 sm:h-16 text-[#D4AF37] mb-2" />
-                    <span className="text-xs font-bold text-gray-500">புகைப்படம் இணைக்கப்படவில்லை</span>
-                    <span className="text-[10px] text-gray-400 mt-1">(Photo Protected)</span>
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-primary/5 text-primary p-3">
+                    <User className="w-12 h-12 sm:w-14 sm:h-14 text-[#D4AF37] mb-1.5" />
+                    <span className="text-[11px] font-bold text-gray-500">புகைப்படம் இணைக்கப்படவில்லை</span>
+                    <span className="text-[9px] text-gray-400 mt-0.5">(Photo Protected)</span>
                   </div>
                 )}
 
@@ -303,36 +303,36 @@ export default function AkshayamProfileView({
                   </div>
                 )}
 
-                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-1.5 text-center">
+                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-1 text-center">
                   <span className="text-[10px] text-white/90 font-bold tracking-wide">
                     {displayId}
                   </span>
                 </div>
               </div>
 
-              <div className="mt-2 text-center">
-                <span className="inline-block text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                  ✓ நேரில் சரிபார்க்கப்பட்டது
+              <div className="mt-1.5 text-center">
+                <span className="inline-block text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                  ✓ சரிபார்க்கப்பட்டது
                 </span>
               </div>
             </div>
 
             {/* Candidate Highlights */}
-            <div className="flex-1 text-center sm:text-left space-y-2.5 sm:space-y-3 min-w-0">
+            <div className="flex-1 text-center sm:text-left space-y-2 sm:space-y-2.5 min-w-0">
               <div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-bold mb-1">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-bold mb-1">
                   <span>{gender}</span>
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-serif font-black text-primary tracking-tight truncate">
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-serif font-black text-primary tracking-tight break-words">
                   {fullName}
                 </h2>
               </div>
 
               {/* Quick Summary Badges */}
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xs font-bold text-gray-700">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 sm:gap-2 text-xs font-bold text-gray-700">
                 {age && (
                   <span className="bg-white border border-gray-200 px-2.5 py-1 rounded-xl shadow-2xs">
-                    🎂 {age} வயது ({profile?.dob || ''})
+                    🎂 {age} வயது {cleanDob ? `• (${cleanDob})` : ''}
                   </span>
                 )}
                 {heightDisplay && (
@@ -341,7 +341,7 @@ export default function AkshayamProfileView({
                   </span>
                 )}
                 <span className="bg-white border border-gray-200 px-2.5 py-1 rounded-xl shadow-2xs">
-                  💍 {profile?.maritalStatus === 'UNMARRIED' || !profile?.maritalStatus ? 'திருமணமாகாதவர் (Never Married)' : profile?.maritalStatus}
+                  💍 {cleanMaritalStatus}
                 </span>
               </div>
 
@@ -415,7 +415,7 @@ export default function AkshayamProfileView({
               <div className="p-2.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
                 <span className="text-[10px] text-gray-400 font-bold uppercase block">பிறந்த தேதி & வயது</span>
                 <span className="font-bold text-gray-900 text-sm">
-                  {profile?.dob || 'Not specified'} {age ? `(${age} Yrs)` : ''}
+                  {cleanDob || 'Not specified'} {age ? `(${age} வயது)` : ''}
                 </span>
               </div>
               <div className="p-2.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
@@ -457,14 +457,14 @@ export default function AkshayamProfileView({
             </div>
           </div>
 
-          {/* SECTION 2: JATHAGAM & ASTROLOGY DETAILS WITH SOUTH INDIAN 4x4 CHART */}
+          {/* SECTION 2: JATHAGAM & ASTROLOGY DETAILS */}
           <div className="bg-white rounded-2xl border-2 border-[#D4AF37]/50 shadow-sm overflow-hidden page-break">
             <div className="bg-gradient-to-r from-primary via-[#580016] to-primary text-white px-4 py-2.5 sm:px-6 sm:py-3 flex items-center justify-between">
               <h3 className="text-sm sm:text-base font-serif font-black flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-[#D4AF37]" />
-                <span>2. ஜோதிடம் & ஜாதக கட்டங்கள் (Horoscope & Astrological Details)</span>
+                <span>2. ஜோதிடம் & ஜாதக விவரங்கள் (Astrological Details)</span>
               </h3>
-              <span className="text-[11px] text-[#F3E5AB] font-bold">10 பொருத்தங்கள்</span>
+              <span className="text-[11px] text-[#F3E5AB] font-bold">ஜாதக விவரங்கள்</span>
             </div>
 
             <div className="p-4 sm:p-6 space-y-6">
@@ -508,28 +508,6 @@ export default function AkshayamProfileView({
                 </div>
               )}
 
-              {/* Side-by-side 4x4 South Indian Horoscope Charts */}
-              <div>
-                <div className="text-center mb-4">
-                  <span className="text-xs font-black uppercase text-primary tracking-widest bg-primary/5 px-4 py-1 rounded-full border border-primary/20">
-                    தென்னிந்திய 12-கட்ட ஜாதக அமைப்பு (Horoscope Charts)
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center justify-center">
-                  {/* Rasi Chart */}
-                  <div className="bg-[#FFFDF9] p-4 rounded-2xl border border-primary/15 flex flex-col items-center">
-                    <span className="text-sm font-black text-primary font-serif mb-2">🪐 ராசி கட்டம் (Rasi Chart)</span>
-                    <JathagamChart title="ராசி" houses={rasiHouses} />
-                  </div>
-
-                  {/* Navamsam Chart */}
-                  <div className="bg-[#FFFDF9] p-4 rounded-2xl border border-primary/15 flex flex-col items-center">
-                    <span className="text-sm font-black text-primary font-serif mb-2">🪐 நவாம்சம் / அம்சம் (Navamsam Chart)</span>
-                    <JathagamChart title="அம்சம்" houses={amsamHouses} />
-                  </div>
-                </div>
-              </div>
 
               {/* Jathagam Copy Document Attachment */}
               {profile?.horoscopeUrl && (

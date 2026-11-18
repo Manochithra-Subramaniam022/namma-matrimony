@@ -368,27 +368,6 @@ export default function ProfileDrawer({ isOpen, onClose }: ProfileDrawerProps) {
         {activeViewCandidate ? (
           /* AKSHAYAM BIODATA VIEW INSIDE DRAWER */
           <div className="flex-1 overflow-y-auto flex flex-col bg-[#FFFDF9]">
-            {/* Sticky subheader to go back to candidate list */}
-            <div className="sticky top-0 z-20 bg-[#580016] text-white px-3 sm:px-4 py-2 flex items-center justify-between border-b border-[#D4AF37]/40 shadow-xs">
-              <button
-                type="button"
-                onClick={() => setActiveViewCandidate(null)}
-                className="inline-flex items-center gap-1.5 text-xs font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition-all cursor-pointer border border-[#D4AF37]/50"
-              >
-                <ArrowLeft className="w-3.5 h-3.5 text-[#D4AF37]" />
-                <span>{language === 'TA' ? 'வரன்கள் பட்டியலுக்குத் திரும்பு' : 'Back to Candidate List'}</span>
-              </button>
-
-              <Link
-                href="/register?new=true"
-                onClick={onClose}
-                className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold bg-[#D4AF37] text-gray-900 hover:bg-[#c49f2e] px-2.5 py-1.5 rounded-full transition-all cursor-pointer shadow-xs"
-              >
-                <PlusCircle className="w-3 h-3" />
-                <span>{language === 'TA' ? '+ புதிய வரன்' : '+ New Profile'}</span>
-              </Link>
-            </div>
-
             <div className="flex-1">
               <AkshayamProfileView
                 profile={activeViewCandidate}

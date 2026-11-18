@@ -1049,23 +1049,22 @@ export function Step1PersonalInfo({
         </div>
       </div>
 
-      {/* 5. DOCUMENT & PROTECTIVE WATERMARKED PHOTO UPLOADS */}
+      {/* 5. DOCUMENT & PHOTO UPLOADS */}
       <div className="bg-white p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-primary/15 shadow-sm space-y-4 sm:space-y-6">
         <div className="border-b border-primary/10 pb-3 sm:pb-4">
           <h3 className="text-base sm:text-xl font-black text-primary font-serif">
-            {language === 'TA' ? '5. ஆவணங்கள் & புகைப்படப் பதிவேற்றம்' : '5. Document & Protective Photo Uploads'}
+            {language === 'TA' ? '5. ஆவணங்கள் & புகைப்படப் பதிவேற்றம்' : '5. Document & Photo Uploads'}
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
             {language === 'TA'
-              ? 'பதிவேற்றப்படும் புகைப்படங்கள் தானாகவே நீர் அடையாளத்துடன் (Watermark) பாதுகாக்கப்படும்'
-              : 'Uploaded photos are automatically secured with protective client-side brand watermark.'}
+              ? 'வரனின் புகைப்படம் மற்றும் ஜாதக நகலை இங்கே பதிவேற்றலாம்'
+              : 'Upload profile photograph and horoscope copy here.'}
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           <FileUpload
             label={language === 'TA' ? 'வரனின் புகைப்படம் (Profile Photo)' : 'Profile Photograph'}
-            subLabel="JPEG/PNG (Max 10MB) - Watermarked"
             accept="image/*"
             required={true}
             maxSizeMB={10}
@@ -1077,7 +1076,6 @@ export function Step1PersonalInfo({
 
           <FileUpload
             label={language === 'TA' ? 'ஜாதக நகல் (Horoscope PDF / Photo)' : 'Jathagam Copy (PDF / Image)'}
-            subLabel="PDF or JPG format (Max 10MB)"
             accept="image/*,application/pdf"
             maxSizeMB={10}
             bucket="horoscope"
@@ -1087,7 +1085,6 @@ export function Step1PersonalInfo({
 
           <FileUpload
             label={language === 'TA' ? 'அரசு அடையாள அட்டை (Govt ID Proof - Optional)' : 'Govt ID Proof (Aadhaar / Voter ID)'}
-            subLabel="For 100% verified profile badge (Max 50MB)"
             accept="image/*,application/pdf"
             maxSizeMB={50}
             bucket="Govt id, Community Certificate"
@@ -1097,7 +1094,6 @@ export function Step1PersonalInfo({
 
           <FileUpload
             label={language === 'TA' ? 'சாதிச் சான்றிதழ் (Caste Certificate - Optional)' : 'Caste Certificate (Optional)'}
-            subLabel="Optional community verification (Max 50MB)"
             accept="image/*,application/pdf"
             maxSizeMB={50}
             bucket="Govt id, Community Certificate"

@@ -81,7 +81,7 @@ export function addWatermark(file: File, watermarkText = 'NAMMA MATRIMONY'): Pro
 
 export function FileUpload({
   label,
-  subLabel = 'JPEG, PNG, PDF (Max 5MB)',
+  subLabel = '',
   accept = 'image/*,application/pdf',
   maxSizeMB = 5,
   initialUrl,
@@ -255,7 +255,7 @@ export function FileUpload({
             <div className="flex flex-col items-center gap-2 text-primary">
               <Loader2 className="w-8 h-8 animate-spin text-[#D4AF37]" />
               <span className="text-xs font-bold">
-                {bucket ? 'Watermarking & Uploading to Cloud...' : 'Applying Protective Watermark...'}
+                {bucket ? 'Uploading...' : 'Processing...'}
               </span>
             </div>
           ) : (
@@ -267,7 +267,6 @@ export function FileUpload({
                 <p className="text-xs sm:text-sm font-bold text-gray-800 group-hover:text-primary transition-colors">
                   Click to upload or drag & drop
                 </p>
-                <p className="text-[11px] text-gray-400 mt-0.5">Protected with client-side watermark</p>
               </div>
             </>
           )}
