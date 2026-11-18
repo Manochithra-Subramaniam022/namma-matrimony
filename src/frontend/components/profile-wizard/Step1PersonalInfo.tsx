@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Trash2, Eye, EyeOff, CheckCircle2, ShieldCheck, Sparkles, AlertCircle, FileText, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, Eye, EyeOff, CheckCircle2, ShieldCheck, Sparkles, AlertCircle, FileText, ArrowLeft, Phone } from 'lucide-react';
 import { FileUpload } from '../FileUpload';
 import { HouseData } from '../JathagamChart';
 import { rasiOptions, nakshatraByRasi, allNakshatras } from '@/frontend/utils/astrology';
@@ -17,11 +17,19 @@ const KVG_KOOTTAMS = [
 
 const step1Schema = z.object({
   // Contact & Auth
-  whatsappNumber: z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit WhatsApp number'),
+  whatsappNumber: z.string().refine(
+    (val) => {
+      const clean = (val || '').replace(/\D/g, '');
+      return clean.length === 10 && /^[6-9]/.test(clean);
+    },
+    {
+      message: 'வரன் பதிவு செய்ய சரியான 10 இலக்க மொபைல் எண் கட்டாயம் தேவை (Valid 10-digit mobile number starting with 6-9 is mandatory)',
+    }
+  ),
   secondaryMobile: z.string().optional(),
   email: z.string().email('Invalid email').optional().or(z.literal('')),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string().min(6, 'Please confirm your password'),
+  password: z.string().optional().default('123456'),
+  confirmPassword: z.string().optional().default('123456'),
   hideMobile: z.boolean().default(false),
   hideAddress: z.boolean().default(false),
   hidePhoto: z.boolean().default(false),
@@ -90,8 +98,13 @@ const step1Schema = z.object({
   horoscopeUrl: z.string().optional(),
   idProofUrl: z.string().optional(),
   casteCertificateUrl: z.string().optional(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Passwords do not match',
+}).refine((data) => {
+  if (data.password && data.confirmPassword && data.password !== data.confirmPassword) {
+    return false;
+  }
+  return true;
+}, {
+  message: 'கடவுச்சொல் பொருந்தவில்லை (Passwords do not match)',
   path: ['confirmPassword'],
 });
 
@@ -127,11 +140,11 @@ export function Step1PersonalInfo({
   } = useForm<Step1FormValues>({
     resolver: zodResolver(step1Schema) as any,
     defaultValues: {
-      whatsappNumber: initialData?.whatsappNumber || '',
+      whatsappNumber: initialData?.whatsappNumber || (typeof window !== 'undefined' ? localStorage.getItem('namma_user_mobile') || '' : ''),
       secondaryMobile: initialData?.secondaryMobile || '',
       email: initialData?.email || '',
-      password: initialData?.password || '',
-      confirmPassword: initialData?.confirmPassword || '',
+      password: initialData?.password || '123456',
+      confirmPassword: initialData?.confirmPassword || '123456',
       hideMobile: initialData?.hideMobile ?? false,
       hideAddress: initialData?.hideAddress ?? false,
       hidePhoto: initialData?.hidePhoto ?? false,
@@ -204,6 +217,9 @@ export function Step1PersonalInfo({
   const watchDoshams = watch('doshams');
   const watchPorutham = watch('poruthaNakshatram');
   const watchDob = watch('dob');
+  const watchMobile = watch('whatsappNumber') || '';
+  const cleanMobileDigits = watchMobile.replace(/\D/g, '').slice(0, 10);
+  const isMobileValid = cleanMobileDigits.length === 10 && /^[6-9]/.test(cleanMobileDigits);
 
   useEffect(() => {
     onGenderChange?.(watchGender);
@@ -288,7 +304,7 @@ export function Step1PersonalInfo({
               {language === 'TA' ? '1. தொடர்பு & கணக்கு விவரங்கள்' : '1. Contact & Account Details'}
             </h3>
             <p className="text-xs text-gray-500 mt-0.5">
-              {language === 'TA' ? 'சுயவிவர உள்நுழைவு மற்றும் தொடர்புக்குப் பயன்படும்' : 'Used for profile login and primary contact'}
+              {language === 'TA' ? 'சுயவிவர கணக்கு உருவாக்கம் மற்றும் தொடர்புக்குப் பயன்படும்' : 'Used for profile creation, account login, and candidate contact'}
             </p>
           </div>
           <span className="text-[11px] sm:text-xs font-bold text-[#D4AF37] bg-primary/5 px-2.5 sm:px-3 py-1 rounded-full border border-[#D4AF37]/30 shrink-0">
@@ -296,26 +312,85 @@ export function Step1PersonalInfo({
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-6">
-          <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5 after:content-['*'] after:ml-1 after:text-primary">
-              {language === 'TA' ? 'முதன்மை தொடர்பு எண் (Mobile Number)' : 'Primary Mobile Number'}
-            </label>
-            <div className="flex">
-              <span className="inline-flex items-center px-3 sm:px-3.5 rounded-l-xl border border-r-0 border-gray-300 bg-gray-50 text-gray-700 font-bold text-xs sm:text-sm shrink-0">
-                +91
+        {/* IMPORTANT NOTICE: Mobile Number is Essential */}
+        <div className="bg-gradient-to-r from-amber-50/90 via-rose-50/40 to-amber-50/90 border-2 border-[#D4AF37] rounded-xl sm:rounded-2xl p-3.5 sm:p-4.5 flex items-start gap-3 shadow-xs">
+          <div className="w-10 h-10 rounded-xl bg-primary text-[#D4AF37] flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+            <Phone className="w-5 h-5" />
+          </div>
+          <div className="space-y-1 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h4 className="text-xs sm:text-sm font-black text-primary font-serif">
+                {language === 'TA' ? 'வரன் பதிவு செய்ய மொபைல் எண் மிக முக்கியம்' : 'Mobile Number is Essential to Create Profile'}
+              </h4>
+              <span className="bg-primary text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                {language === 'TA' ? 'கட்டாயத் தேவை' : 'Mandatory'}
               </span>
-              <input
-                type="tel"
-                maxLength={10}
-                {...register('whatsappNumber')}
-                placeholder="9876543210"
-                className="w-full h-11 px-3 sm:px-3.5 rounded-r-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:bg-white focus:outline-none transition-all"
-              />
             </div>
-            {errors.whatsappNumber && <p className="text-xs text-red-600 font-semibold mt-1">{errors.whatsappNumber.message}</p>}
+            <p className="text-xs text-amber-950/90 font-medium leading-relaxed">
+              {language === 'TA'
+                ? 'உங்கள் வரன் சுயவிவரக் கணக்கு (Profile Account) உருவாக்க, வரன்களை நிர்வகிக்க, மற்றும் வரன் பொருத்தம் குறித்த முக்கிய தொடர்புகளைப் பெற இந்த 10 இலக்க மொபைல் எண் கட்டாயமாகும்.'
+                : 'Your candidate profile account is registered and accessed using this 10-digit mobile number. It is required for profile management, dashboard access, and authentic communications.'}
+            </p>
+          </div>
+        </div>
+
+        {/* PRIMARY MOBILE NUMBER (PROMINENT INPUT CARD) */}
+        <div className="bg-[#FFFDF9] border-2 border-primary/25 hover:border-primary/45 rounded-2xl p-4 sm:p-5 transition-all shadow-xs space-y-2">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <label className="text-xs sm:text-sm font-black text-primary uppercase flex items-center gap-1.5 after:content-['*'] after:ml-0.5 after:text-rose-600">
+              <Phone className="w-4 h-4 text-[#D4AF37]" />
+              <span>{language === 'TA' ? 'முதன்மை மொபைல் எண் (Primary Mobile Number)' : 'Primary Mobile Number'}</span>
+            </label>
+
+            {/* Live status badge */}
+            {isMobileValid ? (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 animate-in fade-in">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>{language === 'TA' ? 'சரியான மொபைல் எண்' : 'Valid 10-digit Mobile'}</span>
+              </span>
+            ) : cleanMobileDigits.length > 0 ? (
+              <span className="text-[11px] font-bold text-amber-700 bg-amber-100/80 px-2.5 py-0.5 rounded-full">
+                {cleanMobileDigits.length}/10 {language === 'TA' ? 'இலக்கங்கள்' : 'digits'}
+              </span>
+            ) : (
+              <span className="text-[10px] font-black uppercase text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                {language === 'TA' ? 'கட்டாயம்' : 'Required'}
+              </span>
+            )}
           </div>
 
+          <div className="flex">
+            <span className="inline-flex items-center px-3.5 sm:px-4 rounded-l-xl border-2 border-r-0 border-gray-300 bg-gray-100 text-gray-800 font-bold text-sm shrink-0">
+              +91
+            </span>
+            <input
+              type="tel"
+              maxLength={10}
+              {...register('whatsappNumber')}
+              onChange={(e) => {
+                const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
+                setValue('whatsappNumber', cleaned, { shouldValidate: true });
+              }}
+              placeholder="9876543210"
+              className="w-full h-12 px-3.5 sm:px-4 rounded-r-xl border-2 border-gray-300 bg-white text-gray-900 font-bold font-mono text-base tracking-wider focus:border-primary focus:outline-none transition-all"
+            />
+          </div>
+
+          {errors.whatsappNumber ? (
+            <p className="text-xs text-rose-600 font-bold mt-2 flex items-center gap-1">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              <span>{errors.whatsappNumber.message}</span>
+            </p>
+          ) : (
+            <p className="text-[11px] text-gray-500 mt-1">
+              {language === 'TA'
+                ? 'சுயவிவர கணக்கு மேலாண்மை, பயோடேட்டா பார்வை மற்றும் வரன் பொருத்தம் குறித்த தகவல்கள் இந்த எண்ணிற்கே உறுதி செய்யப்படும்.'
+                : 'Profile account management, biodata viewing, and match notifications will be anchored to this number.'}
+            </p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-6 pt-1">
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
               {language === 'TA' ? 'கூடுதல் தொலைபேசி எண் (Secondary Mobile)' : 'Secondary Mobile Number (Optional)'}
@@ -324,6 +399,10 @@ export function Step1PersonalInfo({
               type="tel"
               maxLength={10}
               {...register('secondaryMobile')}
+              onChange={(e) => {
+                const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
+                setValue('secondaryMobile', cleaned);
+              }}
               placeholder="9876543210"
               className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:bg-white focus:outline-none transition-all"
             />
@@ -341,10 +420,10 @@ export function Step1PersonalInfo({
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 sm:col-span-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 sm:col-span-2">
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5 after:content-['*'] after:ml-1 after:text-primary">
-                {language === 'TA' ? 'கடவுச்சொல்' : 'Password'}
+              <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                {language === 'TA' ? 'கடவுச்சொல் (விருப்பத்தேர்வு)' : 'Password (Optional)'}
               </label>
               <div className="relative">
                 <input
@@ -365,8 +444,8 @@ export function Step1PersonalInfo({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5 after:content-['*'] after:ml-1 after:text-primary">
-                {language === 'TA' ? 'உறுதி செய்க' : 'Confirm'}
+              <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                {language === 'TA' ? 'கடவுச்சொல் உறுதி செய்க' : 'Confirm Password'}
               </label>
               <div className="relative">
                 <input

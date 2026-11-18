@@ -41,6 +41,18 @@ export function Step4Payment({
       paidStatus: 'FREE_COMMUNITY_SERVICE',
     };
 
+    const rawMobile = payload.whatsappNumber || payload.mobileNumber || '';
+    const cleanMobile = rawMobile.replace(/\D/g, '').slice(-10);
+    if (!cleanMobile || cleanMobile.length < 10) {
+      alert(
+        language === 'TA'
+          ? 'வரன் பதிவு செய்ய 10 இலக்க மொபைல் எண் கட்டாயம் தேவை! தயவுசெய்து படி 1-க்குச் சென்று மொபைல் எண்ணை உள்ளிடவும்.'
+          : 'A valid 10-digit mobile number is mandatory to create a profile! Please return to Step 1 and provide your mobile number.'
+      );
+      setIsSubmitting(false);
+      return;
+    }
+
     let assignedId = refId || 'nm-0001';
 
     try {
@@ -152,12 +164,22 @@ export function Step4Payment({
             </p>
           </div>
 
-          <div className="bg-[#FFFDF9] p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-primary/10">
-            <span className="text-[11px] font-bold text-gray-400 uppercase block mb-1">
-              {language === 'TA' ? 'தொடர்பு எண்' : 'Primary Mobile'}
-            </span>
-            <p className="font-bold text-gray-900 font-mono text-sm">
-              {initialData?.whatsappNumber || 'Not specified'}
+          <div className="bg-amber-50/80 p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-[#D4AF37]/70 shadow-xs">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[11px] font-bold text-primary uppercase block">
+                {language === 'TA' ? 'பதிவு மொபைல் எண்' : 'Primary Mobile'}
+              </span>
+              <span className="text-[10px] font-bold bg-primary text-white px-2 py-0.5 rounded-full">
+                {language === 'TA' ? 'கணக்கு எண்' : 'Account Key'}
+              </span>
+            </div>
+            <p className="font-bold text-primary font-mono text-sm sm:text-base">
+              +91 {initialData?.whatsappNumber || initialData?.mobileNumber || 'Not specified'}
+            </p>
+            <p className="text-[10px] text-amber-900/80 font-medium mt-1">
+              {language === 'TA'
+                ? 'இந்த எண்ணே உங்கள் சுயவிவரக் கணக்கின் முதன்மை அடையாளமாகும்.'
+                : 'This number is your profile account key.'}
             </p>
           </div>
 

@@ -107,6 +107,12 @@ export default function ProfileWizard({
 
   const handleStep1Next = (data: any) => {
     updateFormData(data);
+    if (data.whatsappNumber) {
+      const clean = data.whatsappNumber.replace(/\D/g, '').slice(-10);
+      if (clean.length === 10) {
+        localStorage.setItem('namma_user_mobile', clean);
+      }
+    }
     if (data.gender) setGender(data.gender);
     setCurrentStep(1);
   };
@@ -302,8 +308,8 @@ export default function ProfileWizard({
               </p>
               <p className="text-xs text-gray-600 mt-0.5 leading-relaxed font-medium">
                 {language === 'TA'
-                  ? 'உங்கள் தொலைபேசி எண் மற்றும் வீட்டு முகவரி இயல்பாகவே மறைக்கப்படும். பரஸ்பர சம்மதத்துடன் மட்டுமே பகிரப்படும்.'
-                  : 'Your mobile number and exact address remain confidential and are shared strictly upon mutual confirmation.'}
+                  ? 'சுயவிவரக் கணக்கு உருவாக்க மொபைல் எண் மிக முக்கியம். உங்கள் தொலைபேசி எண் மற்றும் வீட்டு முகவரி இயல்பாகவே மறைக்கப்படும். பரஸ்பர சம்மதத்துடன் மட்டுமே பகிரப்படும்.'
+                  : 'Mobile number is essential to create and manage your profile. Your contact number remains confidential and is shared strictly upon mutual confirmation.'}
               </p>
             </div>
           </div>

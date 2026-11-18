@@ -135,7 +135,7 @@ export async function registerProfileWithPrisma(formData: any) {
     }
 
     if (!formData.whatsappNumber && !formData.mobileNumber) {
-      throw new Error('Mobile or WhatsApp number is required for registration.');
+      throw new Error('வரன் பதிவு செய்ய மொபைல் எண் மிக முக்கியம் / Mobile number is mandatory to create a profile.');
     }
 
     const displayId = await getNextRegistrationId();
@@ -144,8 +144,8 @@ export async function registerProfileWithPrisma(formData: any) {
       ? formData.whatsappNumber.replace(/\D/g, '').slice(-10)
       : formData.mobileNumber.replace(/\D/g, '').slice(-10);
 
-    if (cleanMobile.length < 10) {
-      throw new Error('Please provide a valid 10-digit mobile number.');
+    if (cleanMobile.length < 10 || !/^[6-9]/.test(cleanMobile)) {
+      throw new Error('சரியான 10 இலக்க மொபைல் எண் கட்டாயம் (6-9 இல் தொடங்க வேண்டும்) / A valid 10-digit mobile number starting with 6-9 is required to create a profile.');
     }
 
     const email = formData.email || `${cleanMobile}@nammamatrimony.local`;
