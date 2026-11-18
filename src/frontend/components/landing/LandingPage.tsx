@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useLanguage } from '@/frontend/context/LanguageContext';
 import { BRANDING } from '@/constants/branding';
 import BrandLogo from '../BrandLogo';
+import ProfileDrawer from '@/frontend/components/profile/ProfileDrawer';
 import {
   Sparkles,
   ShieldCheck,
@@ -32,6 +33,7 @@ const AGE_OPTIONS = Array.from({ length: 55 - 18 + 1 }, (_, i) => 18 + i);
 
 export default function LandingPage() {
   const { language, toggleLanguage } = useLanguage();
+  const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState(false);
 
   const [lookingFor, setLookingFor] = useState('BRIDE');
   const [ageFrom, setAgeFrom] = useState('21');
@@ -108,15 +110,16 @@ export default function LandingPage() {
               <span>{language === 'TA' ? 'English' : 'தமிழ்'}</span>
             </button>
 
-            {/* My Profile Dashboard Link */}
-            <Link
-              href="/profile"
-              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full bg-primary/5 hover:bg-primary/10 border border-primary/20 text-[11px] sm:text-xs md:text-sm font-bold text-primary transition-all shrink-0 whitespace-nowrap"
-              title="View Registered Profiles Dashboard"
+            {/* My Profile Dashboard Drawer Trigger */}
+            <button
+              type="button"
+              onClick={() => setIsProfileDrawerOpen(true)}
+              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full bg-primary/5 hover:bg-primary/10 border border-primary/20 text-[11px] sm:text-xs md:text-sm font-bold text-primary transition-all shrink-0 whitespace-nowrap cursor-pointer hover:shadow-xs"
+              title={language === 'TA' ? 'எனது சுயவிவரக் கணக்கு (வலப்புறம் திறக்கும்)' : 'My Profile Dashboard (Opens from right)'}
             >
               <User className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" />
               <span>{language === 'TA' ? 'சுயவிவரக் கணக்கு' : 'My Profile'}</span>
-            </Link>
+            </button>
 
             {/* Free Register CTA */}
             <Link
@@ -723,9 +726,13 @@ export default function LandingPage() {
               {language === 'TA' ? 'இலவச பதிவு' : 'Free Registration'}
             </Link>
             <span className="hidden sm:inline text-gray-300">•</span>
-            <Link href="/profile" className="text-primary font-bold hover:underline">
+            <button
+              type="button"
+              onClick={() => setIsProfileDrawerOpen(true)}
+              className="text-primary font-bold hover:underline cursor-pointer"
+            >
               {language === 'TA' ? 'எனது சுயவிவரம் (பயோடேட்டா)' : 'My Profile / Biodata'}
-            </Link>
+            </button>
             <span className="hidden sm:inline text-gray-300">•</span>
             <Link href="/admin" className="text-gray-400 hover:text-primary transition-colors">
               {language === 'TA' ? 'நிர்வாக பலகை' : 'Admin Console'}
@@ -742,6 +749,12 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* Slide-over Profile Drawer from the Right */}
+      <ProfileDrawer
+        isOpen={isProfileDrawerOpen}
+        onClose={() => setIsProfileDrawerOpen(false)}
+      />
     </div>
   );
 }
