@@ -1174,15 +1174,11 @@ export default function AdminConsole() {
                               : isNri
                               ? 'NRI'
                               : (language === 'TA' ? 'தனியார்' : 'Private');
-                            const rawIncome = candidate.annualIncome || candidate.salary || candidate.income;
+                            const rawIncome = candidate.monthlyIncome || candidate.salary || candidate.income || candidate.annualIncome;
                             const formatIncome = (val: any) => {
-                              if (!val || val === 'Not mentioned' || val === 'nil') return null;
-                              const num = parseFloat(String(val).replace(/[^0-9.]/g, ''));
-                              if (!isNaN(num) && num >= 100000) {
-                                if (num >= 10000000) return `₹${(num / 10000000).toFixed(1)} Cr / ஆண்டு`;
-                                return `₹${(num / 100000).toFixed(1)} Lakhs / ஆண்டு`;
-                              }
-                              return String(val);
+                              if (!val || val === 'Not mentioned' || val === 'nil' || val === 'none') return null;
+                              const s = String(val).trim();
+                              return s.startsWith('₹') ? `${s}/மாதம்` : `₹${s}/மாதம்`;
                             };
                             const income = formatIncome(rawIncome);
 

@@ -642,18 +642,6 @@ export function Step2FamilyDetails({
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
-                  {language === 'TA' ? 'ஆண்டு வருமானம் / விற்றுமுதல் (Annual Profit / Turnover)' : 'Annual Profit / Turnover'}
-                </label>
-                <input
-                  type="text"
-                  {...register('annualIncome')}
-                  placeholder="e.g. ₹20 LPA / Turnover ₹2 Cr+"
-                  className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
                   {language === 'TA' ? 'கூகுள் வரைபட இருப்பிடம் (Google Map Link)' : 'Business Google Map Link'}
                 </label>
                 <input
@@ -812,18 +800,6 @@ export function Step2FamilyDetails({
                   type="text"
                   {...register('monthlyIncome')}
                   placeholder="e.g. 85,000"
-                  className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
-                  {language === 'TA' ? 'ஆண்டு வருமானம் (Annual CTC in LPA)' : 'Annual CTC (LPA)'}
-                </label>
-                <input
-                  type="text"
-                  {...register('annualIncome')}
-                  placeholder="e.g. 12 LPA"
                   className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
                 />
               </div>

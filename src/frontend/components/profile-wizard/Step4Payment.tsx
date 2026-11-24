@@ -215,7 +215,7 @@ export function Step4Payment({
               {language === 'TA' ? 'பணி & வருமானம்' : 'Career & Income'}
             </span>
             <p className="font-bold text-gray-900 text-sm">
-              {initialData?.designation || initialData?.workNature || 'Employed'} {initialData?.annualIncome ? `(${initialData.annualIncome})` : ''}
+              {initialData?.designation || initialData?.workNature || 'Employed'} {initialData?.monthlyIncome ? `(${initialData.monthlyIncome}/மாதம்)` : (initialData?.annualIncome ? `(${initialData.annualIncome})` : '')}
             </p>
           </div>
         </div>

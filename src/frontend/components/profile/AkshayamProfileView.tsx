@@ -406,9 +406,7 @@ export default function AkshayamProfileView({
   const workDesignation = fam.designation || profile?.designation || jData?.designation || null;
   const companyName = fam.organisation || profile?.companyName || profile?.organisation || jData?.companyName || null;
   const workCity = fam.workingAddress || profile?.workCity || profile?.workingAddress || jData?.workCity || null;
-  const rawAnnualIncome = fam.salary || profile?.annualIncome || profile?.salary || jData?.annualIncome || null;
-  const annualIncome = isNoneValue(rawAnnualIncome) ? null : formatCurrencyDisplay(rawAnnualIncome);
-  const rawMonthlyIncome = profile?.monthlyIncome || fam.monthlyIncome || jData?.monthlyIncome || null;
+  const rawMonthlyIncome = profile?.monthlyIncome || fam.monthlyIncome || jData?.monthlyIncome || fam.salary || profile?.salary || null;
   const monthlyIncome = isNoneValue(rawMonthlyIncome) ? null : formatCurrencyDisplay(rawMonthlyIncome);
   const workMapLink = fam.googleLocation || profile?.workMapLink || jData?.workMapLink || null;
   const workSector = profile?.workSector || jData?.workSector || fam.workSector || null;
@@ -879,7 +877,7 @@ export default function AkshayamProfileView({
               </div>
 
               {/* Education & Profession Snippet */}
-              {(educationDisplay || workDesignation || companyName || annualIncome) && (
+              {(educationDisplay || workDesignation || companyName || monthlyIncome) && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   {educationDisplay && (
                     <div className="flex items-center gap-2 text-gray-700 bg-white p-2 rounded-lg border border-gray-100">
@@ -889,16 +887,16 @@ export default function AkshayamProfileView({
                       </span>
                     </div>
                   )}
-                  {(workDesignation || companyName || annualIncome) && (
+                  {(workDesignation || companyName || monthlyIncome) && (
                     <div className="flex items-center gap-2 text-gray-700 bg-white p-2 rounded-lg border border-gray-100">
                       <Briefcase className="w-4 h-4 text-primary shrink-0" />
                       <span className="truncate font-semibold">
                         {workDesignation || ''}
                         {companyName ? (workDesignation ? ` @ ${companyName}` : companyName) : ''}
-                        {annualIncome
+                        {monthlyIncome
                           ? (workDesignation || companyName
-                              ? ` (${annualIncome})`
-                              : `${language === 'TA' ? 'ஆண்டு வருமானம்' : 'Annual Income'}: ${annualIncome}`)
+                              ? ` (${monthlyIncome}/மாதம்)`
+                              : `${language === 'TA' ? 'மாத வருமானம்' : 'Monthly Income'}: ${monthlyIncome}`)
                           : ''}
                       </span>
                     </div>
@@ -1229,27 +1227,15 @@ export default function AkshayamProfileView({
                     </div>
                   )}
 
-                  {/* Field 6: Annual Income / Profit */}
-                  {annualIncome && (
-                    <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                      <span className="text-[10px] text-gray-400 font-bold uppercase block">
-                        {isBusiness
-                          ? (language === 'TA' ? 'ஆண்டு வருமானம் / லாபம்' : 'Annual Income / Profit')
-                          : (language === 'TA' ? 'ஆண்டு வருமானம் (Annual CTC)' : 'Annual CTC')}
-                      </span>
-                      <span className="font-bold text-emerald-800 text-sm">
-                        {annualIncome}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Field 7: Monthly Income */}
+                  {/* Monthly Income */}
                   {monthlyIncome && (
                     <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
                       <span className="text-[10px] text-gray-400 font-bold uppercase block">
-                        {language === 'TA' ? 'மாத வருமானம்' : 'Monthly Income'}
+                        {isBusiness
+                          ? (language === 'TA' ? 'மாத வருமானம் / லாபம்' : 'Monthly Income / Profit')
+                          : (language === 'TA' ? 'மாத வருமானம் (Monthly Income)' : 'Monthly Income')}
                       </span>
-                      <span className="font-bold text-gray-900 text-sm">{monthlyIncome}</span>
+                      <span className="font-bold text-emerald-800 text-sm">{monthlyIncome}</span>
                     </div>
                   )}
                 </div>
