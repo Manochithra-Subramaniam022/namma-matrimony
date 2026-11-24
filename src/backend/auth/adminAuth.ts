@@ -1,8 +1,8 @@
 import crypto from 'crypto';
 import { NextRequest } from 'next/server';
 
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin@123';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'SELSOFT';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Nammamatrimony$0112';
 const ADMIN_SECRET = process.env.ADMIN_SECRET_KEY || 'namma_matrimony_admin_secret_key_2026';
 const TOKEN_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours valid session
 
@@ -12,10 +12,10 @@ export function getAdminUsername(): string {
 
 export function checkAdminCredentials(username?: string, password?: string): boolean {
   if (!username || !password) return false;
-  return username.trim() === ADMIN_USERNAME.trim() && password.trim() === ADMIN_PASSWORD.trim();
+  return username.trim().toLowerCase() === ADMIN_USERNAME.trim().toLowerCase() && password.trim() === ADMIN_PASSWORD.trim();
 }
 
-export function createAdminToken(username = 'admin'): string {
+export function createAdminToken(username = 'SELSOFT'): string {
   const timestamp = Date.now().toString();
   const payload = `${username}:${timestamp}`;
   const hmac = crypto.createHmac('sha256', ADMIN_SECRET).update(payload).digest('hex');

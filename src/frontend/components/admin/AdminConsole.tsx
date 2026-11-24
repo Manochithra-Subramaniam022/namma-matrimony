@@ -46,7 +46,7 @@ export default function AdminConsole() {
 
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [adminUsername, setAdminUsername] = useState('admin');
+  const [adminUsername, setAdminUsername] = useState('SELSOFT');
   const [adminPassword, setAdminPassword] = useState('');
   const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
