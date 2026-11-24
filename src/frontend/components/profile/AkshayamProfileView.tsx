@@ -264,16 +264,18 @@ export default function AkshayamProfileView({
     return map[rel.toUpperCase()] || rel;
   };
 
-  // Native Place & Family Setup (No assumptions)
-  const nativePlace = fam.workingAddress || jData?.nativePlace || profile?.nativePlace || profile?.city || null;
-  const familyType = fam.familyType || jData?.familyType || profile?.familyType || (profile?.familyStatus === 'NUCLEAR' ? 'தனிக்குடும்பம் (Nuclear)' : (profile?.familyStatus === 'JOINT' ? 'கூட்டுக் குடும்பம் (Joint)' : null));
-
   // Helper to filter out placeholder strings entered by users or DB defaults
   const isNoneValue = (val?: string | null) => {
     if (!val) return true;
     const clean = String(val).trim().toLowerCase();
     return ['none', 'nil', 'nothing', 'no', 'null', '0', 'n/a', '-', 'undefined'].includes(clean);
   };
+
+  // Native Place (No assumptions - only what user entered)
+  const rawNativePlace = fam.workingAddress || jData?.nativePlace || profile?.nativePlace || profile?.city || null;
+  const nativePlace = isNoneValue(rawNativePlace) ? null : rawNativePlace;
+  // Note: Family structure (குடும்ப அமைப்பு) and Family value (குடும்ப மதிப்பு) are completely omitted
+  // as the candidate registration forms do not collect them and no assumptions should be made.
 
   // Helper to format currency numbers nicely
   const formatCurrencyDisplay = (val?: string | number | null) => {
@@ -1277,22 +1279,24 @@ export default function AkshayamProfileView({
                     <span className="text-[11px] font-bold text-gray-400 uppercase">
                       {language === 'TA' ? 'தந்தை பெயர்' : 'Father Name'}
                     </span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isFatherLate ? 'bg-gray-200 text-gray-700' : 'bg-emerald-100 text-emerald-800'}`}>
-                      {isFatherLate ? (language === 'TA' ? 'மறைந்தார் (Late)' : 'Late') : (language === 'TA' ? 'உயிருடன் (Alive)' : 'Alive')}
-                    </span>
+                    {fatherName && (
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isFatherLate ? 'bg-gray-200 text-gray-700' : 'bg-emerald-100 text-emerald-800'}`}>
+                        {isFatherLate ? (language === 'TA' ? 'மறைந்தார் (Late)' : 'Late') : (language === 'TA' ? 'உயிருடன் (Alive)' : 'Alive')}
+                      </span>
+                    )}
                   </div>
                   <p className="font-black text-gray-900 text-base">
                     {fatherName || (language === 'TA' ? 'பெயர் குறிப்பிடப்படவில்லை' : 'Not specified')}
                   </p>
                   {!isFatherLate && (
                     <>
-                      {fatherOccupation && (
+                      {fatherOccupation && !isNoneValue(fatherOccupation) && (
                         <p className="text-gray-700">
                           {language === 'TA' ? 'தொழில்:' : 'Occupation:'}{' '}
                           <span className="font-bold">{fatherOccupation}</span>
                         </p>
                       )}
-                      {fatherMobile && !isMobileHidden && (
+                      {fatherMobile && !isMobileHidden && !isNoneValue(fatherMobile) && (
                         <p className="text-gray-700">
                           {language === 'TA' ? 'தொடர்பு:' : 'Contact:'}{' '}
                           <span className="font-bold font-mono">{fatherMobile}</span>
@@ -1308,22 +1312,24 @@ export default function AkshayamProfileView({
                     <span className="text-[11px] font-bold text-gray-400 uppercase">
                       {language === 'TA' ? 'தாய் பெயர்' : 'Mother Name'}
                     </span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isMotherLate ? 'bg-gray-200 text-gray-700' : 'bg-emerald-100 text-emerald-800'}`}>
-                      {isMotherLate ? (language === 'TA' ? 'மறைந்தார் (Late)' : 'Late') : (language === 'TA' ? 'உயிருடன் (Alive)' : 'Alive')}
-                    </span>
+                    {motherName && (
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isMotherLate ? 'bg-gray-200 text-gray-700' : 'bg-emerald-100 text-emerald-800'}`}>
+                        {isMotherLate ? (language === 'TA' ? 'மறைந்தார் (Late)' : 'Late') : (language === 'TA' ? 'உயிருடன் (Alive)' : 'Alive')}
+                      </span>
+                    )}
                   </div>
                   <p className="font-black text-gray-900 text-base">
                     {motherName || (language === 'TA' ? 'பெயர் குறிப்பிடப்படவில்லை' : 'Not specified')}
                   </p>
                   {!isMotherLate && (
                     <>
-                      {motherOccupation && (
+                      {motherOccupation && !isNoneValue(motherOccupation) && (
                         <p className="text-gray-700">
                           {language === 'TA' ? 'தொழில்:' : 'Occupation:'}{' '}
                           <span className="font-bold">{motherOccupation}</span>
                         </p>
                       )}
-                      {motherMobile && !isMobileHidden && (
+                      {motherMobile && !isMobileHidden && !isNoneValue(motherMobile) && (
                         <p className="text-gray-700">
                           {language === 'TA' ? 'தொடர்பு:' : 'Contact:'}{' '}
                           <span className="font-bold font-mono">{motherMobile}</span>
@@ -1363,27 +1369,17 @@ export default function AkshayamProfileView({
                 ) : (
                   <p className="text-gray-700 font-semibold">
                     {language === 'TA'
-                      ? 'உடன்பிறப்புகள் இல்லை (Only Child / விவரம் இல்லை)'
-                      : 'No siblings (Only Child / Not specified)'}
+                      ? 'உடன்பிறப்புகள் இல்லை'
+                      : 'No siblings'}
                   </p>
                 )}
               </div>
 
-              {/* Native Place & Family Setup (NO kudumba mathipu) */}
-              {(nativePlace || familyType) && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {nativePlace && (
-                    <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                      <span className="text-[10px] text-gray-400 font-bold uppercase block">பூர்வீகம் (Native Place)</span>
-                      <span className="font-bold text-gray-900">{nativePlace}</span>
-                    </div>
-                  )}
-                  {familyType && (
-                    <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                      <span className="text-[10px] text-gray-400 font-bold uppercase block">குடும்ப அமைப்பு</span>
-                      <span className="font-bold text-gray-900">{familyType}</span>
-                    </div>
-                  )}
+              {/* Native Place (Only if entered by candidate) */}
+              {nativePlace && (
+                <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                  <span className="text-[10px] text-gray-400 font-bold uppercase block">பூர்வீகம் (Native Place)</span>
+                  <span className="font-bold text-gray-900">{nativePlace}</span>
                 </div>
               )}
 

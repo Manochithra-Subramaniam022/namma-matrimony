@@ -171,7 +171,7 @@ export async function getAllProfilesForAdmin(options?: {
         businessDetails: p.jathagamData?.businessDetails || null,
         designation: family?.designation || p.jathagamData?.designation || p.designation || null,
         companyName: family?.organisation || p.jathagamData?.companyName || p.companyName || null,
-        monthlyIncome: p.jathagamData?.monthlyIncome || family?.salary || p.monthlyIncome || null,
+        monthlyIncome: p.monthlyIncome || p.jathagamData?.monthlyIncome || family?.salary || null,
         annualIncome: null,
         workCity: family?.workingAddress || p.jathagamData?.workCity || p.workCity || null,
         workMapLink: family?.googleLocation || p.jathagamData?.workMapLink || p.workMapLink || null,
