@@ -2,7 +2,11 @@ import crypto from 'crypto';
 import { NextRequest } from 'next/server';
 
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'SELSOFT';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Nammamatrimony$0112';
+const envPass = process.env.ADMIN_PASSWORD;
+// Handle cases where .env parsers expand $0112 (leaving 'Nammamatrimony') or leave backslash
+const ADMIN_PASSWORD = (!envPass || envPass === 'Nammamatrimony' || envPass === 'Nammamatrimony\\$0112')
+  ? 'Nammamatrimony$0112'
+  : (envPass.includes('\\$') ? envPass.replace(/\\\\\$/g, '$') : envPass);
 const ADMIN_SECRET = process.env.ADMIN_SECRET_KEY || 'namma_matrimony_admin_secret_key_2026';
 const TOKEN_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours valid session
 

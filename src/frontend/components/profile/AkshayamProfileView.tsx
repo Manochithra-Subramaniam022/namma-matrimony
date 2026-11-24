@@ -173,20 +173,20 @@ export default function AkshayamProfileView({
   const fatherOccupation = isFatherLate
     ? null
     : (profile?.fatherOccupation ||
-       profile?.father_occupation ||
-       fam.fatherOccupation ||
-       jData.fatherOccupation ||
-       (fam.fatherStatus && fam.fatherStatus !== 'LATE' && fam.fatherStatus !== 'ALIVE' ? fam.fatherStatus : '') ||
-       (profile?.fatherStatus && profile?.fatherStatus !== 'LATE' && profile?.fatherStatus !== 'ALIVE' ? profile?.fatherStatus : '') ||
-       (jData?.fatherStatus && jData?.fatherStatus !== 'LATE' && jData?.fatherStatus !== 'ALIVE' ? jData?.fatherStatus : '') ||
-       null);
+      profile?.father_occupation ||
+      fam.fatherOccupation ||
+      jData.fatherOccupation ||
+      (fam.fatherStatus && fam.fatherStatus !== 'LATE' && fam.fatherStatus !== 'ALIVE' ? fam.fatherStatus : '') ||
+      (profile?.fatherStatus && profile?.fatherStatus !== 'LATE' && profile?.fatherStatus !== 'ALIVE' ? profile?.fatherStatus : '') ||
+      (jData?.fatherStatus && jData?.fatherStatus !== 'LATE' && jData?.fatherStatus !== 'ALIVE' ? jData?.fatherStatus : '') ||
+      null);
   const fatherMobile = isFatherLate
     ? null
     : (profile?.fatherMobile ||
-       profile?.father_mobile ||
-       fam.fatherMobile ||
-       jData.fatherMobile ||
-       null);
+      profile?.father_mobile ||
+      fam.fatherMobile ||
+      jData.fatherMobile ||
+      null);
 
   // Mother Details (comprehensive resolution without losing data)
   const motherName =
@@ -213,20 +213,20 @@ export default function AkshayamProfileView({
   const motherOccupation = isMotherLate
     ? null
     : (profile?.motherOccupation ||
-       profile?.mother_occupation ||
-       fam.motherOccupation ||
-       jData.motherOccupation ||
-       (fam.motherStatus && fam.motherStatus !== 'LATE' && fam.motherStatus !== 'ALIVE' ? fam.motherStatus : '') ||
-       (profile?.motherStatus && profile?.motherStatus !== 'LATE' && profile?.motherStatus !== 'ALIVE' ? profile?.motherStatus : '') ||
-       (jData?.motherStatus && jData?.motherStatus !== 'LATE' && jData?.motherStatus !== 'ALIVE' ? jData?.motherStatus : '') ||
-       null);
+      profile?.mother_occupation ||
+      fam.motherOccupation ||
+      jData.motherOccupation ||
+      (fam.motherStatus && fam.motherStatus !== 'LATE' && fam.motherStatus !== 'ALIVE' ? fam.motherStatus : '') ||
+      (profile?.motherStatus && profile?.motherStatus !== 'LATE' && profile?.motherStatus !== 'ALIVE' ? profile?.motherStatus : '') ||
+      (jData?.motherStatus && jData?.motherStatus !== 'LATE' && jData?.motherStatus !== 'ALIVE' ? jData?.motherStatus : '') ||
+      null);
   const motherMobile = isMotherLate
     ? null
     : (profile?.motherMobile ||
-       profile?.mother_mobile ||
-       fam.motherMobile ||
-       jData.motherMobile ||
-       null);
+      profile?.mother_mobile ||
+      fam.motherMobile ||
+      jData.motherMobile ||
+      null);
 
   // Siblings List (comprehensive fallback container resolution)
   const resolveSiblings = () => {
@@ -381,12 +381,12 @@ export default function AkshayamProfileView({
   const detailedEducations = resolveDetailedEducations();
   const educationDisplay = detailedEducations.length > 0
     ? detailedEducations
-        .map((e: any) => {
-          const parts = [e.degree || e.degreeName || e.level];
-          if (e.institution) parts.push(`• ${e.institution}`);
-          return parts.join(' ');
-        })
-        .join(', ')
+      .map((e: any) => {
+        const parts = [e.degree || e.degreeName || e.level];
+        if (e.institution) parts.push(`• ${e.institution}`);
+        return parts.join(' ');
+      })
+      .join(', ')
     : profile?.education || null;
 
   const rawWorkNature = profile?.workNature || fam.workNature || jData?.workNature || '';
@@ -897,8 +897,8 @@ export default function AkshayamProfileView({
                         {companyName ? (workDesignation ? ` @ ${companyName}` : companyName) : ''}
                         {monthlyIncome
                           ? (workDesignation || companyName
-                              ? ` (${monthlyIncome}/மாதம்)`
-                              : `${language === 'TA' ? 'மாத வருமானம்' : 'Monthly Income'}: ${monthlyIncome}`)
+                            ? ` (${monthlyIncome}/மாதம்)`
+                            : `${language === 'TA' ? 'மாத வருமானம்' : 'Monthly Income'}: ${monthlyIncome}`)
                           : ''}
                       </span>
                     </div>
@@ -992,10 +992,10 @@ export default function AkshayamProfileView({
                     {profile?.foodHabit === 'VEGETARIAN' || jData?.foodHabit === 'VEGETARIAN'
                       ? (language === 'TA' ? 'சைவம் (Vegetarian)' : 'Vegetarian')
                       : profile?.foodHabit === 'NON_VEGETARIAN' || jData?.foodHabit === 'NON_VEGETARIAN'
-                      ? (language === 'TA' ? 'அசைவம் (Non-Veg)' : 'Non-Vegetarian')
-                      : profile?.foodHabit === 'EGGETARIAN' || jData?.foodHabit === 'EGGETARIAN'
-                      ? (language === 'TA' ? 'முட்டை மட்டும் (Eggetarian)' : 'Eggetarian')
-                      : (profile?.foodHabit || profile?.foodHabits || jData?.foodHabit)}
+                        ? (language === 'TA' ? 'அசைவம் (Non-Veg)' : 'Non-Vegetarian')
+                        : profile?.foodHabit === 'EGGETARIAN' || jData?.foodHabit === 'EGGETARIAN'
+                          ? (language === 'TA' ? 'முட்டை மட்டும் (Eggetarian)' : 'Eggetarian')
+                          : (profile?.foodHabit || profile?.foodHabits || jData?.foodHabit)}
                   </span>
                 </div>
               )}
@@ -1404,12 +1404,12 @@ export default function AkshayamProfileView({
                       {houseType === 'OWN_HOUSE'
                         ? (language === 'TA' ? 'சொந்த வீடு / பங்களா' : 'Own House')
                         : houseType === 'OWN_APARTMENT'
-                        ? (language === 'TA' ? 'சொந்த அடுக்குமாடி' : 'Own Apartment')
-                        : houseType === 'RENTED'
-                        ? (language === 'TA' ? 'வாடகை வீடு' : 'Rented')
-                        : houseType === 'ANCESTRAL'
-                        ? (language === 'TA' ? 'பூர்வீக வீடு' : 'Ancestral')
-                        : houseType}
+                          ? (language === 'TA' ? 'சொந்த அடுக்குமாடி' : 'Own Apartment')
+                          : houseType === 'RENTED'
+                            ? (language === 'TA' ? 'வாடகை வீடு' : 'Rented')
+                            : houseType === 'ANCESTRAL'
+                              ? (language === 'TA' ? 'பூர்வீக வீடு' : 'Ancestral')
+                              : houseType}
                       {houseSqft ? ` • ${houseSqft}` : ''}
                     </span>
                   </div>
@@ -1525,10 +1525,10 @@ export default function AkshayamProfileView({
                       {complexionPreference === 'FAIR'
                         ? (language === 'TA' ? 'சிகப்பு (Fair)' : 'Fair')
                         : complexionPreference === 'VERY_FAIR'
-                        ? (language === 'TA' ? 'மிகவும் சிகப்பு (Very Fair)' : 'Very Fair')
-                        : complexionPreference === 'WHEATISH'
-                        ? (language === 'TA' ? 'மாநிறம் (Wheatish)' : 'Wheatish')
-                        : complexionPreference}
+                          ? (language === 'TA' ? 'மிகவும் சிகப்பு (Very Fair)' : 'Very Fair')
+                          : complexionPreference === 'WHEATISH'
+                            ? (language === 'TA' ? 'மாநிறம் (Wheatish)' : 'Wheatish')
+                            : complexionPreference}
                     </span>
                   </div>
                 )}
@@ -1539,10 +1539,10 @@ export default function AkshayamProfileView({
                       {careerTypePreference === 'JOB'
                         ? (language === 'TA' ? 'மாத சம்பள வேலை மட்டும்' : 'Job Only')
                         : careerTypePreference === 'BUSINESS'
-                        ? (language === 'TA' ? 'சொந்த தொழில் மட்டும்' : 'Business Only')
-                        : careerTypePreference === 'BOTH'
-                        ? (language === 'TA' ? 'வேலை அல்லது தொழில்' : 'Job or Business')
-                        : ''}
+                          ? (language === 'TA' ? 'சொந்த தொழில் மட்டும்' : 'Business Only')
+                          : careerTypePreference === 'BOTH'
+                            ? (language === 'TA' ? 'வேலை அல்லது தொழில்' : 'Job or Business')
+                            : ''}
                     </span>
                     {preferredSectorsList.length > 0 && (
                       <p className="text-[11px] text-primary font-medium mt-1">
@@ -1574,10 +1574,10 @@ export default function AkshayamProfileView({
                       {livingAreaType === 'METRO'
                         ? (language === 'TA' ? 'பெருநகரம் (Metro)' : 'Metro')
                         : livingAreaType === 'SEMI_URBAN'
-                        ? (language === 'TA' ? 'நகரம் / பேரூர் (Semi-Urban)' : 'Town / Semi-Urban')
-                        : livingAreaType === 'VILLAGE'
-                        ? (language === 'TA' ? 'கிராமப்புறம் (Rural)' : 'Village / Rural')
-                        : livingAreaType}
+                          ? (language === 'TA' ? 'நகரம் / பேரூர் (Semi-Urban)' : 'Town / Semi-Urban')
+                          : livingAreaType === 'VILLAGE'
+                            ? (language === 'TA' ? 'கிராமப்புறம் (Rural)' : 'Village / Rural')
+                            : livingAreaType}
                     </span>
                   </div>
                 )}

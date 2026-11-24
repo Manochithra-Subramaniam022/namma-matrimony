@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { spawn } = require('child_process');
 
 const isWin = process.platform === 'win32';
