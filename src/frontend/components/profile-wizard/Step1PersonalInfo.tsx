@@ -59,8 +59,9 @@ const step1Schema = z.object({
   // Physical Attributes
   heightCm: z.number().min(100).max(250),
   weightKg: z.number().optional(),
-  physicalCondition: z.enum(['NORMAL', 'DIFFERENTLY_ABLED']).default('NORMAL'),
-  complexion: z.enum(['FAIR', 'VERY_FAIR', 'WHEATISH', 'DUSKY']).default('WHEATISH'),
+  physicalCondition: z.string().optional().default(''),
+  complexion: z.string().optional().default(''),
+  motherTongue: z.string().optional().default(''),
 
   // Marital Status
   maritalStatus: z.enum(['NEVER_MARRIED', 'DIVORCED', 'WIDOWED', 'AWAITING_DIVORCE']),
@@ -71,10 +72,10 @@ const step1Schema = z.object({
   childrenDetails: z.string().optional(),
 
   // Habits
-  familyStatus: z.enum(['MIDDLE_CLASS', 'UPPER_MIDDLE_CLASS', 'RICH', 'AFFLUENT']).default('MIDDLE_CLASS'),
-  foodHabit: z.enum(['VEGETARIAN', 'NON_VEGETARIAN', 'EGGETARIAN']).default('VEGETARIAN'),
-  smokingHabit: z.enum(['NO', 'OCCASIONALLY', 'YES']).default('NO'),
-  drinkingHabit: z.enum(['NO', 'OCCASIONALLY', 'YES']).default('NO'),
+  familyStatus: z.string().optional().default(''),
+  foodHabit: z.string().optional().default(''),
+  smokingHabit: z.string().optional().default(''),
+  drinkingHabit: z.string().optional().default(''),
 
   // Astrology
   rasi: z.string().optional(),
@@ -209,9 +210,10 @@ export function Step1PersonalInfo({
       customKoottam: initialData?.customKoottam || '',
 
       heightCm: initialData?.heightCm || 168,
-      weightKg: initialData?.weightKg || 65,
-      physicalCondition: initialData?.physicalCondition || 'NORMAL',
-      complexion: initialData?.complexion || 'WHEATISH',
+      weightKg: initialData?.weightKg || '',
+      physicalCondition: initialData?.physicalCondition || '',
+      complexion: initialData?.complexion || '',
+      motherTongue: initialData?.motherTongue || '',
 
       maritalStatus: initialData?.maritalStatus || 'NEVER_MARRIED',
       marriageYear: initialData?.marriageYear || '',
@@ -220,10 +222,10 @@ export function Step1PersonalInfo({
       childrenCount: initialData?.childrenCount || 0,
       childrenDetails: initialData?.childrenDetails || '',
 
-      familyStatus: initialData?.familyStatus || 'MIDDLE_CLASS',
-      foodHabit: initialData?.foodHabit || 'VEGETARIAN',
-      smokingHabit: initialData?.smokingHabit || 'NO',
-      drinkingHabit: initialData?.drinkingHabit || 'NO',
+      familyStatus: initialData?.familyStatus || '',
+      foodHabit: initialData?.foodHabit || '',
+      smokingHabit: initialData?.smokingHabit || '',
+      drinkingHabit: initialData?.drinkingHabit || '',
 
       rasi: initialData?.rasi || '',
       nakshatram: initialData?.nakshatram || '',
@@ -730,6 +732,7 @@ export function Step1PersonalInfo({
               {...register('complexion')}
               className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:bg-white focus:outline-none transition-all"
             >
+              <option value="">{language === 'TA' ? '-- நிறம் (விருப்பத்தேர்வு) --' : '-- Select Complexion (Optional) --'}</option>
               <option value="FAIR">{language === 'TA' ? 'சிகப்பு (Fair)' : 'Fair'}</option>
               <option value="VERY_FAIR">{language === 'TA' ? 'மிகவும் சிகப்பு (Very Fair)' : 'Very Fair'}</option>
               <option value="WHEATISH">{language === 'TA' ? 'மாநிறம் (Wheatish)' : 'Wheatish'}</option>
@@ -745,8 +748,58 @@ export function Step1PersonalInfo({
               {...register('physicalCondition')}
               className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:bg-white focus:outline-none transition-all"
             >
+              <option value="">{language === 'TA' ? '-- உடல் நிலை (விருப்பத்தேர்வு) --' : '-- Select Physical Condition (Optional) --'}</option>
               <option value="NORMAL">{language === 'TA' ? 'சாதாரண உடல்நிலை (Normal)' : 'Normal'}</option>
               <option value="DIFFERENTLY_ABLED">{language === 'TA' ? 'மாற்றுத்திறனாளி (Differently Abled)' : 'Differently Abled'}</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+              {language === 'TA' ? 'தாய்மொழி (Mother Tongue)' : 'Mother Tongue'}
+            </label>
+            <select
+              {...register('motherTongue')}
+              className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:bg-white focus:outline-none transition-all"
+            >
+              <option value="">{language === 'TA' ? '-- தாய்மொழி (விருப்பத்தேர்வு) --' : '-- Select Mother Tongue (Optional) --'}</option>
+              <option value="தமிழ்">தமிழ் (Tamil)</option>
+              <option value="தெலுங்கு">தெலுங்கு (Telugu)</option>
+              <option value="கன்னடம்">கன்னடம் (Kannada)</option>
+              <option value="மலையாளம்">மலையாளம் (Malayalam)</option>
+              <option value="இந்தி">இந்தி (Hindi)</option>
+              <option value="ஆங்கிலம்">ஆங்கிலம் (English)</option>
+              <option value="பிற">பிற (Other)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+              {language === 'TA' ? 'உணவுப் பழக்கம் (Food Habit)' : 'Food Habit'}
+            </label>
+            <select
+              {...register('foodHabit')}
+              className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:bg-white focus:outline-none transition-all"
+            >
+              <option value="">{language === 'TA' ? '-- உணவுப் பழக்கம் (விருப்பத்தேர்வு) --' : '-- Select Food Habit (Optional) --'}</option>
+              <option value="VEGETARIAN">{language === 'TA' ? 'சைவம் (Vegetarian)' : 'Vegetarian'}</option>
+              <option value="NON_VEGETARIAN">{language === 'TA' ? 'அசைவம் (Non-Vegetarian)' : 'Non-Vegetarian'}</option>
+              <option value="EGGETARIAN">{language === 'TA' ? 'முட்டை மட்டும் (Eggetarian)' : 'Eggetarian'}</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+              {language === 'TA' ? 'பழக்கவழக்கம் (Habits)' : 'Habits'}
+            </label>
+            <select
+              {...register('smokingHabit')}
+              className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:bg-white focus:outline-none transition-all"
+            >
+              <option value="">{language === 'TA' ? '-- பழக்கவழக்கம் (விருப்பத்தேர்வு) --' : '-- Select Habits (Optional) --'}</option>
+              <option value="NO">{language === 'TA' ? 'தீய பழக்கங்கள் இல்லை (No Bad Habits)' : 'No Bad Habits'}</option>
+              <option value="OCCASIONALLY">{language === 'TA' ? 'எப்போதாவது (Occasionally)' : 'Occasionally'}</option>
+              <option value="YES">{language === 'TA' ? 'உண்டு (Yes)' : 'Yes'}</option>
             </select>
           </div>
         </div>
