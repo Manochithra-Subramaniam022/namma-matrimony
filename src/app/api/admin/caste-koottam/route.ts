@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { DEFAULT_CASTE_KOOTTAM_MAP, CasteKoottamConfig } from '@/constants/casteKoottam';
+import { verifyAdminRequest } from '@/backend/auth/adminAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,6 +81,13 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    if (!verifyAdminRequest(req)) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized: Admin authentication required' },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
     const config = { ...loadConfig() };
 

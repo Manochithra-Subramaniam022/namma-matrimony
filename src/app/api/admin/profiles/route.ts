@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllProfilesForAdmin, updateProfileStatus } from '@/backend/actions/admin';
 import { deleteProfile } from '@/backend/actions/registration';
+import { verifyAdminRequest } from '@/backend/auth/adminAuth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
+    if (!verifyAdminRequest(req)) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized: Admin authentication required', profiles: [] },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status') || 'ALL';
     const search = searchParams.get('search') || '';
@@ -24,6 +32,13 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    if (!verifyAdminRequest(req)) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized: Admin authentication required' },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
     const { profileId, status, rejectedReason, approvedBy } = body;
 
@@ -60,6 +75,13 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    if (!verifyAdminRequest(req)) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized: Admin authentication required' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     let targetId = searchParams.get('id') || searchParams.get('displayId');
 

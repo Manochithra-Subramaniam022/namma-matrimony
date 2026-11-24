@@ -24,21 +24,33 @@ import {
   Trash2,
   ArrowLeft,
   Eye,
+  EyeOff,
   Check,
   X,
   Shield,
   Heart,
   ChevronDown,
   Building,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Lock,
+  LogOut,
 } from 'lucide-react';
 import BrandLogo from '@/frontend/components/BrandLogo';
 import AkshayamProfileView from '@/frontend/components/profile/AkshayamProfileView';
 import CasteKoottamManager from './CasteKoottamManager';
 import { useLanguage } from '@/frontend/context/LanguageContext';
+import { BRANDING } from '@/constants/branding';
 
 export default function AdminConsole() {
   const { language, toggleLanguage } = useLanguage();
+
+  // Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [adminUsername, setAdminUsername] = useState('admin');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [loginError, setLoginError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const [profiles, setProfiles] = useState<any[]>([]);
   const [stats, setStats] = useState({
@@ -81,6 +93,12 @@ export default function AdminConsole() {
     setTimeout(() => setToastMsg(null), 3500);
   };
 
+  // Helper to get auth header
+  const getAuthHeaders = (): Record<string, string> => {
+    const token = typeof window !== 'undefined' ? sessionStorage.getItem('namma_admin_token') : null;
+    return token ? { 'x-admin-token': token } : {};
+  };
+
   // 1. Fetch profiles from API
   const fetchProfiles = async (showLoadingSpinner = true) => {
     if (showLoadingSpinner) setIsLoading(true);
@@ -88,7 +106,19 @@ export default function AdminConsole() {
     setErrorMsg('');
 
     try {
-      const res = await fetch('/api/admin/profiles');
+      const res = await fetch('/api/admin/profiles', {
+        headers: getAuthHeaders(),
+      });
+
+      if (res.status === 401) {
+        setIsAuthenticated(false);
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('namma_admin_token');
+        }
+        setIsLoading(false);
+        return;
+      }
+
       const data = await res.json();
       if (data.success && Array.isArray(data.profiles)) {
         setProfiles(data.profiles);
@@ -114,9 +144,82 @@ export default function AdminConsole() {
     }
   };
 
+  // Check auth status on mount
   useEffect(() => {
-    fetchProfiles(true);
+    const checkAuthStatus = async () => {
+      try {
+        const res = await fetch('/api/admin/auth', {
+          headers: getAuthHeaders(),
+        });
+        const data = await res.json();
+        if (data.authenticated) {
+          setIsAuthenticated(true);
+          fetchProfiles(true);
+        } else {
+          setIsAuthenticated(false);
+          setIsLoading(false);
+        }
+      } catch {
+        setIsAuthenticated(false);
+        setIsLoading(false);
+      }
+    };
+
+    checkAuthStatus();
   }, []);
+
+  // Handle Login Submit
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoggingIn(true);
+    setLoginError('');
+
+    try {
+      const res = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: adminUsername,
+          password: adminPassword,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.token) {
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('namma_admin_token', data.token);
+        }
+        setIsAuthenticated(true);
+        setAdminPassword('');
+        fetchProfiles(true);
+      } else {
+        setLoginError(
+          data.error ||
+          (language === 'TA'
+            ? 'தவறான பயனர் பெயர் அல்லது கடவுச்சொல். தயவுசெய்து சரியான கடவுச்சொல்லை உள்ளிடவும்.'
+            : 'Invalid username or password. Please try again.')
+        );
+      }
+    } catch (err: any) {
+      setLoginError(err.message || 'Failed to authenticate');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  // Handle Logout
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/auth', { method: 'DELETE' });
+    } catch { }
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('namma_admin_token');
+    }
+    setIsAuthenticated(false);
+    setProfiles([]);
+    setAdminPassword('');
+    showToast(language === 'TA' ? 'நிர்வாக பலகையிலிருந்து வெளியேறப்பட்டது' : 'Logged out from Admin Console');
+  };
 
   // 2. Filtered list
   const filteredProfiles = useMemo(() => {
@@ -188,7 +291,10 @@ export default function AdminConsole() {
     try {
       const res = await fetch('/api/admin/profiles', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
         body: JSON.stringify({
           profileId: targetId,
           status: newStatus,
@@ -196,6 +302,12 @@ export default function AdminConsole() {
           approvedBy: 'ADMIN_CONSOLE',
         }),
       });
+
+      if (res.status === 401) {
+        setIsAuthenticated(false);
+        showToast('Session expired. Please log in again.', 'error');
+        return;
+      }
 
       const data = await res.json();
       if (data.success) {
@@ -271,7 +383,15 @@ export default function AdminConsole() {
     try {
       const res = await fetch(`/api/admin/profiles?id=${encodeURIComponent(targetId)}`, {
         method: 'DELETE',
+        headers: getAuthHeaders(),
       });
+
+      if (res.status === 401) {
+        setIsAuthenticated(false);
+        showToast('Session expired. Please log in again.', 'error');
+        return;
+      }
+
       const data = await res.json();
       if (data.success) {
         setProfiles((prev) => prev.filter((p) => (p.id || p.displayId) !== targetId));
@@ -309,6 +429,119 @@ export default function AdminConsole() {
     const diff = Date.now() - bDate.getTime();
     return Math.abs(new Date(diff).getUTCFullYear() - 1970);
   };
+
+  // 0. AUTHENTICATION SCREENS
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen bg-[#FFFDF9] flex flex-col justify-center items-center p-4">
+        <RefreshCw className="w-8 h-8 animate-spin text-primary mb-3" />
+        <p className="text-xs font-bold text-gray-500 font-serif">
+          {language === 'TA' ? 'நிர்வாக பலகை சரிபார்க்கப்படுகிறது...' : 'Authenticating Admin Console...'}
+        </p>
+      </div>
+    );
+  }
+
+  if (isAuthenticated === false) {
+    return (
+      <div className="min-h-screen bg-[#FFFDF9] flex flex-col justify-center items-center p-4 selection:bg-primary/20">
+        <div className="max-w-md w-full bg-white rounded-3xl border-2 border-[#D4AF37]/50 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="h-3 w-full bg-gradient-to-r from-primary via-[#D4AF37] to-primary"></div>
+          <div className="p-6 sm:p-8 space-y-6">
+            <div className="text-center space-y-2">
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 text-primary border border-primary/20 mb-1">
+                <ShieldCheck className="w-8 h-8 text-[#D4AF37]" />
+              </div>
+              <h2 className="text-xl sm:text-2xl font-serif font-black text-primary">
+                {language === 'TA' ? 'நிர்வாக பலகை உள்நுழைவு' : 'Admin Console Login'}
+              </h2>
+              <p className="text-xs text-gray-500 font-medium">
+                {language === 'TA'
+                  ? 'நம்ம மேட்ரிமோனி வரன்களை ஆய்வு செய்து ஒப்புதல் அளிக்க கடவுச்சொல்லை உள்ளிடவும்'
+                  : 'Enter admin credentials to review and approve candidate profiles'}
+              </p>
+            </div>
+
+            {loginError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{loginError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleLoginSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  {language === 'TA' ? 'பயனர் பெயர் (Username)' : 'Username'}
+                </label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+                  <input
+                    type="text"
+                    value={adminUsername}
+                    onChange={(e) => setAdminUsername(e.target.value)}
+                    className="w-full h-11 pl-10 pr-3.5 rounded-xl border border-gray-300 bg-white text-gray-900 font-semibold text-sm focus:border-primary focus:outline-none"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  {language === 'TA' ? 'கடவுச்சொல் (Password)' : 'Password'}
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+                  <input
+                    type={showAdminPassword ? 'text' : 'password'}
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full h-11 pl-10 pr-10 rounded-xl border border-gray-300 bg-white text-gray-900 font-semibold text-sm focus:border-primary focus:outline-none"
+                    required
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAdminPassword(!showAdminPassword)}
+                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 cursor-pointer"
+                  >
+                    {showAdminPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoggingIn}
+                className="w-full h-11 bg-primary hover:bg-primary-light text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75"
+              >
+                {isLoggingIn ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin text-[#D4AF37]" />
+                    <span>{language === 'TA' ? 'சரிபார்க்கப்படுகிறது...' : 'Authenticating...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-4 h-4 text-[#D4AF37]" />
+                    <span>{language === 'TA' ? 'உள்நுழைக (Sign In)' : 'Sign In'}</span>
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
+              <Link href="/" className="hover:text-primary transition-colors flex items-center gap-1">
+                <ArrowLeft className="w-3 h-3" />
+                <span>{language === 'TA' ? 'முகப்புக்குச் செல்க' : 'Back to Home'}</span>
+              </Link>
+              <span>{BRANDING.brandName} Secure Admin</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FFFDF9] text-gray-900 font-sans selection:bg-primary/20 pb-20">
@@ -380,6 +613,17 @@ export default function AdminConsole() {
               <Users className="w-3.5 h-3.5 text-primary" />
               <span>{language === 'TA' ? 'பயனர் கணக்குகள்' : 'User Profiles'}</span>
             </Link>
+
+            {/* Logout Button */}
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-50 hover:bg-rose-100 border border-rose-200 text-xs font-bold text-rose-700 transition-all cursor-pointer shadow-2xs"
+              title="Logout from Admin Console"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>{language === 'TA' ? 'வெளியேறு' : 'Logout'}</span>
+            </button>
           </div>
         </div>
       </header>
