@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -30,8 +30,12 @@ const step2Schema = z.object({
 
   // Career
   workNature: z.enum(['PRIVATE', 'GOVT', 'BUSINESS', 'NRI', 'NOT_WORKING']).default('PRIVATE'),
+  workSector: z.string().optional(),
+  businessType: z.string().optional(),
   companyName: z.string().optional(),
   designation: z.string().optional(),
+  workMode: z.string().optional(),
+  businessDetails: z.string().optional(),
   monthlyIncome: z.string().optional(),
   annualIncome: z.string().optional(),
   workCity: z.string().optional(),
@@ -69,49 +73,133 @@ export function Step2FamilyDetails({
 }) {
   const t = formTranslations[language];
 
+  const rawFatherLiving = initialData?.fatherLivingStatus || (initialData?.fatherStatus === 'LATE' ? 'LATE' : (initialData?.family?.fatherLivingStatus || initialData?.jathagamData?.fatherLivingStatus || 'ALIVE'));
+  const initialFatherStatus = rawFatherLiving === 'LATE' ? 'LATE' : 'ALIVE';
+  const initialFatherOccupation = initialData?.fatherOccupation || (initialData?.fatherStatus && initialData?.fatherStatus !== 'LATE' && initialData?.fatherStatus !== 'ALIVE' ? initialData.fatherStatus : '') || initialData?.family?.fatherStatus || initialData?.jathagamData?.fatherOccupation || '';
+
+  const rawMotherLiving = initialData?.motherLivingStatus || (initialData?.motherStatus === 'LATE' ? 'LATE' : (initialData?.family?.motherLivingStatus || initialData?.jathagamData?.motherLivingStatus || 'ALIVE'));
+  const initialMotherStatus = rawMotherLiving === 'LATE' ? 'LATE' : 'ALIVE';
+  const initialMotherOccupation = initialData?.motherOccupation || (initialData?.motherStatus && initialData?.motherStatus !== 'LATE' && initialData?.motherStatus !== 'ALIVE' ? initialData.motherStatus : '') || initialData?.family?.motherStatus || initialData?.jathagamData?.motherOccupation || '';
+
+  const resolveInitialSiblings = (data: any) => {
+    if (Array.isArray(data?.siblingsList) && data.siblingsList.length > 0) return data.siblingsList;
+    if (Array.isArray(data?.jathagamData?.siblingsList) && data.jathagamData.siblingsList.length > 0) return data.jathagamData.siblingsList;
+    if (Array.isArray(data?.siblings) && data.siblings.length > 0) return data.siblings;
+    if (Array.isArray(data?.family?.siblings) && data.family.siblings.length > 0) return data.family.siblings;
+    if (data?.family?.siteLand) {
+      try {
+        const parsed = JSON.parse(data.family.siteLand);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+    if (data?.siteLand) {
+      try {
+        const parsed = JSON.parse(data.siteLand);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+    return [];
+  };
+
   const {
     register,
     handleSubmit,
     control,
     setValue,
     watch,
+    reset,
     formState: { errors },
   } = useForm<Step2FormValues>({
     resolver: zodResolver(step2Schema) as any,
     defaultValues: {
-      fatherName: initialData?.fatherName || '',
-      fatherStatus: initialData?.fatherStatus || 'ALIVE',
-      fatherOccupation: initialData?.fatherOccupation || '',
-      fatherMobile: initialData?.fatherMobile || '',
+      fatherName: initialData?.fatherName || initialData?.family?.fatherName || initialData?.jathagamData?.fatherName || '',
+      fatherStatus: initialFatherStatus,
+      fatherOccupation: initialFatherStatus === 'LATE' ? '' : initialFatherOccupation,
+      fatherMobile: initialFatherStatus === 'LATE' ? '' : (initialData?.fatherMobile || initialData?.family?.fatherMobile || initialData?.jathagamData?.fatherMobile || ''),
 
-      motherName: initialData?.motherName || '',
-      motherStatus: initialData?.motherStatus || 'ALIVE',
-      motherOccupation: initialData?.motherOccupation || '',
-      motherMobile: initialData?.motherMobile || '',
+      motherName: initialData?.motherName || initialData?.family?.motherName || initialData?.jathagamData?.motherName || '',
+      motherStatus: initialMotherStatus,
+      motherOccupation: initialMotherStatus === 'LATE' ? '' : initialMotherOccupation,
+      motherMobile: initialMotherStatus === 'LATE' ? '' : (initialData?.motherMobile || initialData?.family?.motherMobile || initialData?.jathagamData?.motherMobile || ''),
 
-      siblingsList: initialData?.siblingsList?.length ? initialData.siblingsList : [],
+      siblingsList: resolveInitialSiblings(initialData),
 
-      workNature: initialData?.workNature || 'PRIVATE',
-      companyName: initialData?.companyName || '',
-      designation: initialData?.designation || '',
-      monthlyIncome: initialData?.monthlyIncome || '',
-      annualIncome: initialData?.annualIncome || '',
-      workCity: initialData?.workCity || '',
-      workMapLink: initialData?.workMapLink || '',
+      workNature: initialData?.workNature || initialData?.family?.workNature || initialData?.jathagamData?.workNature || 'PRIVATE',
+      workSector: initialData?.workSector || initialData?.jathagamData?.workSector || '',
+      businessType: initialData?.businessType || initialData?.jathagamData?.businessType || '',
+      companyName: initialData?.companyName || initialData?.family?.organisation || initialData?.jathagamData?.companyName || '',
+      designation: initialData?.designation || initialData?.family?.designation || initialData?.jathagamData?.designation || '',
+      workMode: initialData?.workMode || initialData?.jathagamData?.workMode || '',
+      businessDetails: initialData?.businessDetails || initialData?.jathagamData?.businessDetails || '',
+      monthlyIncome: initialData?.monthlyIncome || initialData?.jathagamData?.monthlyIncome || '',
+      annualIncome: initialData?.annualIncome || initialData?.family?.salary || initialData?.jathagamData?.annualIncome || '',
+      workCity: initialData?.workCity || initialData?.family?.workingAddress || initialData?.jathagamData?.workCity || '',
+      workMapLink: initialData?.workMapLink || initialData?.family?.googleLocation || initialData?.jathagamData?.workMapLink || '',
 
-      houseType: initialData?.houseType || 'OWN_HOUSE',
-      houseSqft: initialData?.houseSqft || '',
-      rentalIncomeMonthly: initialData?.rentalIncomeMonthly || '',
-      agriculturalLandAcres: initialData?.agriculturalLandAcres || '',
-      vacantLandSqft: initialData?.vacantLandSqft || '',
-      totalNetAssets: initialData?.totalNetAssets || '',
-      propertyComments: initialData?.propertyComments || '',
+      houseType: initialData?.houseType || initialData?.family?.houseType || initialData?.jathagamData?.houseType || 'OWN_HOUSE',
+      houseSqft: initialData?.houseSqft || initialData?.family?.houseSqFt || initialData?.jathagamData?.houseSqft || '',
+      rentalIncomeMonthly: initialData?.rentalIncomeMonthly || initialData?.family?.rentalIncome || initialData?.jathagamData?.rentalIncomeMonthly || '',
+      agriculturalLandAcres: initialData?.agriculturalLandAcres || initialData?.family?.thottam || initialData?.jathagamData?.agriculturalLandAcres || '',
+      vacantLandSqft: initialData?.vacantLandSqft || initialData?.family?.vacantLand || initialData?.jathagamData?.vacantLandSqft || '',
+      totalNetAssets: initialData?.totalNetAssets || initialData?.family?.totalAssetValue || initialData?.jathagamData?.totalNetAssets || '',
+      propertyComments: initialData?.propertyComments || initialData?.family?.assetComments || initialData?.jathagamData?.propertyComments || '',
 
-      goldPavun: initialData?.goldPavun || '',
-      seerCash: initialData?.seerCash || '',
-      seerVehicle: initialData?.seerVehicle || '',
+      goldPavun: initialData?.goldPavun || initialData?.jathagamData?.goldPavun || '',
+      seerCash: initialData?.seerCash || initialData?.jathagamData?.seerCash || '',
+      seerVehicle: initialData?.seerVehicle || initialData?.jathagamData?.seerVehicle || '',
     },
   });
+
+  // Re-sync when initialData is updated
+  useEffect(() => {
+    if (initialData) {
+      const fLiving = initialData?.fatherLivingStatus || (initialData?.fatherStatus === 'LATE' ? 'LATE' : (initialData?.family?.fatherLivingStatus || initialData?.jathagamData?.fatherLivingStatus || 'ALIVE'));
+      const fStatus = fLiving === 'LATE' ? 'LATE' : 'ALIVE';
+      const fOcc = initialData?.fatherOccupation || (initialData?.fatherStatus && initialData?.fatherStatus !== 'LATE' && initialData?.fatherStatus !== 'ALIVE' ? initialData.fatherStatus : '') || initialData?.family?.fatherStatus || initialData?.jathagamData?.fatherOccupation || '';
+
+      const mLiving = initialData?.motherLivingStatus || (initialData?.motherStatus === 'LATE' ? 'LATE' : (initialData?.family?.motherLivingStatus || initialData?.jathagamData?.motherLivingStatus || 'ALIVE'));
+      const mStatus = mLiving === 'LATE' ? 'LATE' : 'ALIVE';
+      const mOcc = initialData?.motherOccupation || (initialData?.motherStatus && initialData?.motherStatus !== 'LATE' && initialData?.motherStatus !== 'ALIVE' ? initialData.motherStatus : '') || initialData?.family?.motherStatus || initialData?.jathagamData?.motherOccupation || '';
+
+      reset({
+        fatherName: initialData?.fatherName || initialData?.family?.fatherName || initialData?.jathagamData?.fatherName || '',
+        fatherStatus: fStatus,
+        fatherOccupation: fStatus === 'LATE' ? '' : fOcc,
+        fatherMobile: fStatus === 'LATE' ? '' : (initialData?.fatherMobile || initialData?.family?.fatherMobile || initialData?.jathagamData?.fatherMobile || ''),
+
+        motherName: initialData?.motherName || initialData?.family?.motherName || initialData?.jathagamData?.motherName || '',
+        motherStatus: mStatus,
+        motherOccupation: mStatus === 'LATE' ? '' : mOcc,
+        motherMobile: mStatus === 'LATE' ? '' : (initialData?.motherMobile || initialData?.family?.motherMobile || initialData?.jathagamData?.motherMobile || ''),
+
+        siblingsList: resolveInitialSiblings(initialData),
+
+        workNature: initialData?.workNature || initialData?.family?.workNature || initialData?.jathagamData?.workNature || 'PRIVATE',
+        workSector: initialData?.workSector || initialData?.jathagamData?.workSector || '',
+        businessType: initialData?.businessType || initialData?.jathagamData?.businessType || '',
+        companyName: initialData?.companyName || initialData?.family?.organisation || initialData?.jathagamData?.companyName || '',
+        designation: initialData?.designation || initialData?.family?.designation || initialData?.jathagamData?.designation || '',
+        workMode: initialData?.workMode || initialData?.jathagamData?.workMode || '',
+        businessDetails: initialData?.businessDetails || initialData?.jathagamData?.businessDetails || '',
+        monthlyIncome: initialData?.monthlyIncome || initialData?.jathagamData?.monthlyIncome || '',
+        annualIncome: initialData?.annualIncome || initialData?.family?.salary || initialData?.jathagamData?.annualIncome || '',
+        workCity: initialData?.workCity || initialData?.family?.workingAddress || initialData?.jathagamData?.workCity || '',
+        workMapLink: initialData?.workMapLink || initialData?.family?.googleLocation || initialData?.jathagamData?.workMapLink || '',
+
+        houseType: initialData?.houseType || initialData?.family?.houseType || initialData?.jathagamData?.houseType || 'OWN_HOUSE',
+        houseSqft: initialData?.houseSqft || initialData?.family?.houseSqFt || initialData?.jathagamData?.houseSqft || '',
+        rentalIncomeMonthly: initialData?.rentalIncomeMonthly || initialData?.family?.rentalIncome || initialData?.jathagamData?.rentalIncomeMonthly || '',
+        agriculturalLandAcres: initialData?.agriculturalLandAcres || initialData?.family?.thottam || initialData?.jathagamData?.agriculturalLandAcres || '',
+        vacantLandSqft: initialData?.vacantLandSqft || initialData?.family?.vacantLand || initialData?.jathagamData?.vacantLandSqft || '',
+        totalNetAssets: initialData?.totalNetAssets || initialData?.family?.totalAssetValue || initialData?.jathagamData?.totalNetAssets || '',
+        propertyComments: initialData?.propertyComments || initialData?.family?.assetComments || initialData?.jathagamData?.propertyComments || '',
+
+        goldPavun: initialData?.goldPavun || initialData?.jathagamData?.goldPavun || '',
+        seerCash: initialData?.seerCash || initialData?.jathagamData?.seerCash || '',
+        seerVehicle: initialData?.seerVehicle || initialData?.jathagamData?.seerVehicle || '',
+      });
+    }
+  }, [initialData, reset]);
 
   const { fields: siblingFields, append: appendSibling, remove: removeSibling } = useFieldArray({
     control,
@@ -121,6 +209,9 @@ export function Step2FamilyDetails({
   const watchFatherStatus = watch('fatherStatus');
   const watchMotherStatus = watch('motherStatus');
   const watchWorkNature = watch('workNature');
+  const watchWorkSector = watch('workSector');
+  const watchBusinessType = watch('businessType');
+  const watchWorkMode = watch('workMode');
   const watchHouseType = watch('houseType');
 
   const handleFormSubmit = (data: Step2FormValues) => {
@@ -375,118 +466,394 @@ export function Step2FamilyDetails({
         )}
       </div>
 
-      {/* 3. GROOM / BRIDE CAREER DETAILS */}
+      {/* 3. GROOM / BRIDE CAREER & BUSINESS DETAILS */}
       <div className="bg-white p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-primary/15 shadow-sm space-y-4 sm:space-y-6">
-        <div className="border-b border-primary/10 pb-3 sm:pb-4">
+        <div className="border-b border-primary/10 pb-3 sm:pb-4 flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-base sm:text-xl font-black text-primary font-serif flex items-center gap-2">
             <Briefcase className="w-5 h-5 text-[#D4AF37] shrink-0" />
-            {language === 'TA' ? '3. தொழில் & வேலை விவரங்கள் (Career Details)' : '3. Career & Employment Details'}
+            {language === 'TA' ? '3. தொழில் & பணி விரிவான விவரங்கள் (Career & Business)' : '3. Detailed Career & Business Profile'}
           </h3>
+          <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary">
+            {watchWorkNature === 'BUSINESS'
+              ? (language === 'TA' ? 'சுயதொழில் / வணிகம்' : 'Business / Self-Employed')
+              : watchWorkNature === 'NOT_WORKING'
+              ? (language === 'TA' ? 'பணியில் இல்லை' : 'Not Working')
+              : (language === 'TA' ? 'உத்தியோகம் / பணி' : 'Employment / Job')}
+          </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-6">
-          <div className="sm:col-span-3">
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
-              {language === 'TA' ? 'பணியின் தன்மை (Work Nature)' : 'Employment Nature'}
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-2.5">
-              {[
-                { id: 'PRIVATE', nameEn: 'Private Company', nameTa: 'தனியார் நிறுவனம்' },
-                { id: 'GOVT', nameEn: 'Govt / PSU', nameTa: 'அரசுப் பணி' },
-                { id: 'BUSINESS', nameEn: 'Business / Self', nameTa: 'சொந்த தொழில்' },
-                { id: 'NRI', nameEn: 'Abroad / NRI', nameTa: 'வெளிநாடு (NRI)' },
-                { id: 'NOT_WORKING', nameEn: 'Not Working', nameTa: 'பணியில் இல்லை' },
-              ].map((wn, idx) => (
-                <button
-                  key={wn.id}
-                  type="button"
-                  onClick={() => setValue('workNature', wn.id as any)}
-                  className={`h-11 px-2 rounded-xl text-xs font-bold transition-all border ${
-                    idx === 4 ? 'col-span-2 sm:col-span-1' : ''
-                  } ${
-                    watchWorkNature === wn.id
-                      ? 'bg-primary text-white border-primary shadow-xs'
-                      : 'bg-[#FFFDF9] text-gray-700 border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  {language === 'TA' ? wn.nameTa : wn.nameEn}
-                </button>
-              ))}
+        {/* Work Nature Selector Chips */}
+        <div>
+          <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
+            {language === 'TA' ? 'பணியின் தன்மை / தொழில் நிலை (Employment / Business Nature)' : 'Employment / Business Nature'}
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-2.5">
+            {[
+              { id: 'PRIVATE', nameEn: 'Private Company', nameTa: 'தனியார் நிறுவனம்' },
+              { id: 'GOVT', nameEn: 'Govt / PSU', nameTa: 'அரசுப் பணி' },
+              { id: 'BUSINESS', nameEn: 'Business / Self', nameTa: 'சொந்த தொழில்' },
+              { id: 'NRI', nameEn: 'Abroad / NRI', nameTa: 'வெளிநாடு (NRI)' },
+              { id: 'NOT_WORKING', nameEn: 'Not Working', nameTa: 'பணியில் இல்லை' },
+            ].map((wn, idx) => (
+              <button
+                key={wn.id}
+                type="button"
+                onClick={() => setValue('workNature', wn.id as any)}
+                className={`h-11 px-2 rounded-xl text-xs font-bold transition-all border ${
+                  idx === 4 ? 'col-span-2 sm:col-span-1' : ''
+                } ${
+                  watchWorkNature === wn.id
+                    ? 'bg-primary text-white border-primary shadow-xs'
+                    : 'bg-[#FFFDF9] text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                {language === 'TA' ? wn.nameTa : wn.nameEn}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* CASE A: BUSINESS / SELF-EMPLOYED DETAILED FORM */}
+        {watchWorkNature === 'BUSINESS' ? (
+          <div className="space-y-4 pt-2 border-t border-primary/10">
+            <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3 text-xs text-amber-900 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#D4AF37] shrink-0" />
+              <span>
+                {language === 'TA'
+                  ? 'வணிகத்தின் வகை, தயாரிப்புகள், ஊழியர்கள் மற்றும் செயல்பாட்டு விவரங்களை தெளிவாக குறிப்பிடவும்.'
+                  : 'Please specify your business structure, industry, role, products/services, and scale.'}
+              </span>
+            </div>
+
+            {/* Business Structure / Type Selector */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                {language === 'TA' ? 'வணிக அமைப்பு / நிறுவனம் முறை (Business Structure)' : 'Business Structure / Type'}
+              </label>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                {[
+                  { id: 'PROPRIETORSHIP', nameTa: 'தனியுரிமை (Proprietorship)', nameEn: 'Proprietorship' },
+                  { id: 'PARTNERSHIP', nameTa: 'கூட்டாண்மை (Partnership)', nameEn: 'Partnership' },
+                  { id: 'PVT_LTD', nameTa: 'பிரைவேட் லிமிடெட் (Pvt Ltd)', nameEn: 'Pvt Ltd' },
+                  { id: 'FACTORY_MILL', nameTa: 'ஆலை / மில் (Factory / Mill)', nameEn: 'Factory / Mill' },
+                  { id: 'FAMILY_BUSINESS', nameTa: 'குடும்பத் தொழில் (Family Business)', nameEn: 'Family Business' },
+                  { id: 'RETAIL_SHOWROOM', nameTa: 'சில்லறை / ஷோரூம் (Retail / Showroom)', nameEn: 'Retail' },
+                  { id: 'WHOLESALE_TRADE', nameTa: 'மொத்த வர்த்தகம் (Wholesale / Trade)', nameEn: 'Wholesale' },
+                  { id: 'EXPORT_IMPORT', nameTa: 'ஏற்றுமதி - இறக்குமதி (Export / Import)', nameEn: 'Export / Import' },
+                ].map((st) => (
+                  <button
+                    key={st.id}
+                    type="button"
+                    onClick={() => setValue('businessType', st.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                      watchBusinessType === st.id
+                        ? 'bg-[#D4AF37] text-gray-900 border-[#b59226] shadow-xs'
+                        : 'bg-[#FFFDF9] text-gray-700 border-gray-300 hover:bg-gray-100'
+                    }`}
+                  >
+                    {language === 'TA' ? st.nameTa : st.nameEn}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Business Industry / Sector Selector */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                {language === 'TA' ? 'தொழில் துறை / பிரிவு (Business Industry / Sector)' : 'Business Industry / Sector'}
+              </label>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                {[
+                  { id: 'TEXTILES', nameTa: 'ஜவுளி & ஆயத்த ஆடை (Textiles & Garments)', nameEn: 'Textiles' },
+                  { id: 'MANUFACTURING', nameTa: 'உற்பத்தித் துறை (Manufacturing)', nameEn: 'Manufacturing' },
+                  { id: 'CONSTRUCTION', nameTa: 'கட்டுமானம் & ரியல் எஸ்டேட் (Construction / Builders)', nameEn: 'Construction' },
+                  { id: 'IT_SERVICES', nameTa: 'ஐடி & மென்பொருள் நிறுவனம் (IT & Tech Services)', nameEn: 'IT & Software' },
+                  { id: 'AGRO_MILLING', nameTa: 'விவசாய வர்த்தகம் & மில் (Agro / Oil / Rice Mill)', nameEn: 'Agro Milling' },
+                  { id: 'AUTOMOBILE', nameTa: 'வாகனத் துறை & உதிரிபாகங்கள் (Automobile & Spares)', nameEn: 'Automobile' },
+                  { id: 'FOOD_HOSPITALITY', nameTa: 'உணவு & உணவகம் (Food & Hospitality)', nameEn: 'Food / Hotel' },
+                  { id: 'HEALTHCARE_PHARMA', nameTa: 'மருத்துவம் & பார்மசி (Healthcare / Pharma)', nameEn: 'Healthcare' },
+                  { id: 'LOGISTICS', nameTa: 'சரக்கு போக்குவரத்து (Transport & Logistics)', nameEn: 'Transport' },
+                  { id: 'OTHER_BIZ', nameTa: 'இதர வணிகம் (Other Business)', nameEn: 'Other' },
+                ].map((sec) => (
+                  <button
+                    key={sec.id}
+                    type="button"
+                    onClick={() => setValue('workSector', sec.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                      watchWorkSector === sec.id
+                        ? 'bg-primary text-white border-primary shadow-xs'
+                        : 'bg-[#FFFDF9] text-gray-700 border-gray-300 hover:bg-gray-100'
+                    }`}
+                  >
+                    {language === 'TA' ? sec.nameTa : sec.nameEn}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-5">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  {language === 'TA' ? 'நிறுவனம் / வணிகப் பெயர் (Company / Business Name)' : 'Company / Business Name'}
+                </label>
+                <input
+                  type="text"
+                  {...register('companyName')}
+                  placeholder="e.g. SELSOFT Technologies / Sri Murugan Textiles"
+                  className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  {language === 'TA' ? 'தொழிலில் உங்கள் பொறுப்பு (Role in Business)' : 'Role / Position in Business'}
+                </label>
+                <input
+                  type="text"
+                  {...register('designation')}
+                  placeholder="e.g. நிறுவனர் & CEO / Managing Director / Proprietor / Partner"
+                  className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  {language === 'TA' ? 'தொழில் நடைபெறும் இடம் (Business Location City)' : 'Business Location City'}
+                </label>
+                <input
+                  type="text"
+                  {...register('workCity')}
+                  placeholder="e.g. Tirupur / Coimbatore / Erode"
+                  className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  {language === 'TA' ? 'மாத வருமானம் (Monthly Income in ₹)' : 'Monthly Income (₹)'}
+                </label>
+                <input
+                  type="text"
+                  {...register('monthlyIncome')}
+                  placeholder="e.g. 1,50,000"
+                  className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  {language === 'TA' ? 'ஆண்டு வருமானம் / விற்றுமுதல் (Annual Profit / Turnover)' : 'Annual Profit / Turnover'}
+                </label>
+                <input
+                  type="text"
+                  {...register('annualIncome')}
+                  placeholder="e.g. ₹20 LPA / Turnover ₹2 Cr+"
+                  className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  {language === 'TA' ? 'கூகுள் வரைபட இருப்பிடம் (Google Map Link)' : 'Business Google Map Link'}
+                </label>
+                <input
+                  type="url"
+                  {...register('workMapLink')}
+                  placeholder="https://maps.app.goo.gl/..."
+                  className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
+                />
+              </div>
+
+              <div className="sm:col-span-3">
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  {language === 'TA' ? 'தொழில் பற்றிய கூடுதல் விரிவான குறிப்புகள் (Business Overview & Scale)' : 'Business Products, Services & Scale'}
+                </label>
+                <textarea
+                  rows={2}
+                  {...register('businessDetails')}
+                  placeholder="தொழில் தயாரிப்புகள், ஊழியர்கள் எண்ணிக்கை, எத்தனை வருடங்களாக இயங்குகிறது போன்ற விவரங்கள் (e.g. Manufacturing and exporting knitwear with 40+ employees, operating for 10+ years)"
+                  className="w-full p-3 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
+                />
+              </div>
             </div>
           </div>
-
-          <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
-              {language === 'TA' ? 'நிறுவனம் / வணிகப் பெயர்' : 'Company / Business Name'}
-            </label>
-            <input
-              type="text"
-              {...register('companyName')}
-              placeholder="e.g. TCS / Self Firm"
-              className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
-            />
+        ) : watchWorkNature === 'NOT_WORKING' ? (
+          /* CASE B: NOT WORKING */
+          <div className="space-y-4 pt-2 border-t border-primary/10">
+            <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-center space-y-2">
+              <span className="inline-block text-xs font-bold px-3 py-1 rounded-full bg-gray-200 text-gray-800">
+                {language === 'TA' ? 'தற்போது பணியில் இல்லை' : 'Currently Not Working'}
+              </span>
+              <p className="text-xs text-gray-600 max-w-md mx-auto">
+                {language === 'TA'
+                  ? 'மேற்படிப்பு, அரசுத் தேர்வுக்கான தயாரிப்பில் அல்லது இல்லத்தரசியாக இருப்பின் கீழே உள்ள குறிப்பில் தெரிவிக்கலாம்.'
+                  : 'If you are preparing for exams, pursuing higher studies, or managing the home, you can mention it below.'}
+              </p>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                {language === 'TA' ? 'கூடுதல் குறிப்பு (Optional Notes)' : 'Optional Career Notes'}
+              </label>
+              <input
+                type="text"
+                {...register('businessDetails')}
+                placeholder="e.g. Preparing for TNPSC Group 1 / UPSC / Higher Studies"
+                className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
+              />
+            </div>
           </div>
+        ) : (
+          /* CASE C: PRIVATE / GOVT / NRI EMPLOYMENT DETAILED FORM */
+          <div className="space-y-4 pt-2 border-t border-primary/10">
+            
+            {/* Industry / Domain Chips */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                {language === 'TA' ? 'பணிபுரியும் துறை / பிரிவு (Industry / Domain)' : 'Industry / Domain'}
+              </label>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                {[
+                  { id: 'IT_SOFTWARE', nameTa: 'தகவல் தொழில்நுட்பம் (IT & Software)', nameEn: 'IT & Software' },
+                  { id: 'BANKING_FINANCE', nameTa: 'வங்கி & நிதி (Banking & Finance)', nameEn: 'Banking & Finance' },
+                  { id: 'CORE_ENGINEERING', nameTa: 'பொறியியல் & உற்பத்தி (Core Engineering)', nameEn: 'Engineering' },
+                  { id: 'HEALTHCARE', nameTa: 'மருத்துவம் & பார்மசி (Healthcare / Hospital)', nameEn: 'Healthcare' },
+                  { id: 'GOVT_CIVIL', nameTa: 'அரசுப் பணி & நிர்வாகம் (Govt / Civil Services)', nameEn: 'Govt Services' },
+                  { id: 'EDUCATION', nameTa: 'கல்வி & பேராசிரியர் (Education / Teaching)', nameEn: 'Education' },
+                  { id: 'SALES_MARKETING', nameTa: 'விற்பனை & சந்தைப்படுத்தல் (Sales & Marketing)', nameEn: 'Sales & Marketing' },
+                  { id: 'AVIATION_SHIPPING', nameTa: 'விமானம் & கப்பல் துறை (Aviation / Shipping)', nameEn: 'Aviation / Marine' },
+                  { id: 'OTHER_INDUSTRY', nameTa: 'இதர துறை (Other Industry)', nameEn: 'Other' },
+                ].map((sec) => (
+                  <button
+                    key={sec.id}
+                    type="button"
+                    onClick={() => setValue('workSector', sec.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                      watchWorkSector === sec.id
+                        ? 'bg-primary text-white border-primary shadow-xs'
+                        : 'bg-[#FFFDF9] text-gray-700 border-gray-300 hover:bg-gray-100'
+                    }`}
+                  >
+                    {language === 'TA' ? sec.nameTa : sec.nameEn}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
-              {language === 'TA' ? 'பதவி / பொறுப்பு (Role / Designation)' : 'Role / Designation'}
-            </label>
-            <input
-              type="text"
-              {...register('designation')}
-              placeholder="e.g. Software Engineer / Manager"
-              className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
-            />
-          </div>
+            {/* Work Mode Chips */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                {language === 'TA' ? 'பணி முறை (Work Mode)' : 'Work Mode'}
+              </label>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                {[
+                  { id: 'OFFICE', nameTa: 'அலுவலக நேரடிப் பணி (Work From Office)', nameEn: 'Office' },
+                  { id: 'HYBRID', nameTa: 'கலப்பு முறை (Hybrid)', nameEn: 'Hybrid' },
+                  { id: 'WFH', nameTa: 'வீட்டிலிருந்தே பணி (Remote / WFH)', nameEn: 'Remote / WFH' },
+                  { id: 'ONSITE', nameTa: 'வெளிநாட்டு நேரடிப் பணி (Onsite Abroad)', nameEn: 'Onsite Abroad' },
+                ].map((wm) => (
+                  <button
+                    key={wm.id}
+                    type="button"
+                    onClick={() => setValue('workMode', wm.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                      watchWorkMode === wm.id
+                        ? 'bg-[#D4AF37] text-gray-900 border-[#b59226] shadow-xs'
+                        : 'bg-[#FFFDF9] text-gray-700 border-gray-300 hover:bg-gray-100'
+                    }`}
+                  >
+                    {language === 'TA' ? wm.nameTa : wm.nameEn}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
-              {language === 'TA' ? 'மாத வருமானம் (Monthly Income in ₹)' : 'Monthly Income (₹)'}
-            </label>
-            <input
-              type="text"
-              {...register('monthlyIncome')}
-              placeholder="e.g. 75,000"
-              className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
-            />
-          </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-5">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  {language === 'TA' ? 'நிறுவனம் / அலுவலகப் பெயர் (Company / Organization Name)' : 'Company / Organization Name'}
+                </label>
+                <input
+                  type="text"
+                  {...register('companyName')}
+                  placeholder="e.g. TCS / Zoho / L&T / State Bank of India"
+                  className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
+                />
+              </div>
 
-          <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
-              {language === 'TA' ? 'ஆண்டு வருமானம் (Annual Income in LPA)' : 'Annual Income (LPA)'}
-            </label>
-            <input
-              type="text"
-              {...register('annualIncome')}
-              placeholder="e.g. 9.5 LPA"
-              className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
-            />
-          </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  {language === 'TA' ? 'பதவி / பதவிப் பெயர் (Designation / Job Title)' : 'Designation / Job Title'}
+                </label>
+                <input
+                  type="text"
+                  {...register('designation')}
+                  placeholder="e.g. Lead Software Architect / Branch Manager / Assistant Engineer"
+                  className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
+                />
+              </div>
 
-          <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
-              {language === 'TA' ? 'பணிபுரியும் இடம் (Work Location)' : 'Work Location City'}
-            </label>
-            <input
-              type="text"
-              {...register('workCity')}
-              placeholder="e.g. Chennai / Bangalore / Coimbatore"
-              className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
-            />
-          </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  {language === 'TA' ? 'பணிபுரியும் நகரம் / நாடு (Work City / Country)' : 'Work City / Country'}
+                </label>
+                <input
+                  type="text"
+                  {...register('workCity')}
+                  placeholder="e.g. Chennai / Bangalore / Coimbatore / Singapore"
+                  className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
+                />
+              </div>
 
-          <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
-              {language === 'TA' ? 'கூகுள் வரைபட இணைப்பு (Google Map Link)' : 'Google Map Link (Optional)'}
-            </label>
-            <input
-              type="url"
-              {...register('workMapLink')}
-              placeholder="https://maps.app.goo.gl/..."
-              className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
-            />
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  {language === 'TA' ? 'மாத சம்பளம் (Monthly Salary in ₹)' : 'Monthly Salary (₹)'}
+                </label>
+                <input
+                  type="text"
+                  {...register('monthlyIncome')}
+                  placeholder="e.g. 85,000"
+                  className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  {language === 'TA' ? 'ஆண்டு வருமானம் (Annual CTC in LPA)' : 'Annual CTC (LPA)'}
+                </label>
+                <input
+                  type="text"
+                  {...register('annualIncome')}
+                  placeholder="e.g. 12 LPA"
+                  className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  {language === 'TA' ? 'அலுவலக கூகுள் வரைபட இணைப்பு (Office Map Link)' : 'Office Map Link (Optional)'}
+                </label>
+                <input
+                  type="url"
+                  {...register('workMapLink')}
+                  placeholder="https://maps.app.goo.gl/..."
+                  className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
+                />
+              </div>
+
+              <div className="sm:col-span-3">
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  {language === 'TA' ? 'பணி மற்றும் அனுபவம் பற்றிய குறிப்பு (Job Description / Role Details)' : 'Job Description / Experience Details'}
+                </label>
+                <textarea
+                  rows={2}
+                  {...register('businessDetails')}
+                  placeholder="உங்கள் பணிப் பொறுப்புகள் அல்லது அனுபவம் பற்றிய குறிப்புகள் (e.g. 6+ years experience in Software Development, leading a cloud infrastructure team)"
+                  className="w-full p-3 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
+                />
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* 4. PROPERTY & ASSETS DETAILS */}

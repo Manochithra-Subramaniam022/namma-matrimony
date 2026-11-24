@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,10 +10,12 @@ import { HouseData } from '../JathagamChart';
 import { rasiOptions, nakshatraByRasi, allNakshatras } from '@/frontend/utils/astrology';
 import { formTranslations } from '@/frontend/utils/formTranslations';
 import { RELIGION_OPTIONS, CASTE_OPTIONS, SUB_CASTE_OPTIONS, translateTerm, HEIGHT_OPTIONS } from '@/constants/demographics';
-
-const KVG_KOOTTAMS = [
-  "Aandai (ஆந்தை)","Aadar (ஆடர்)","Aadhi (ஆதி / ஆதிக்குலம்)","Aadhirai (ஆதிரை)","Aadhitreya Kumban (ஆதித்தேய கும்பன்)","Aanthuvan (அந்துவன்)","Aavan (ஆவன்)","Agini / Akini (அக்கினி)","Alagan / Azhagu (அழகன் / அழகு)","Anangan (அனகன் / அனங்கன்)","Ariyan / Ashariyan (ஆரியன் / அஷரியன்)","Bharatan (பாரதன்)","Bramman (பிரம்மா)","Dananjayan / Thananjayan (தனஞ்செயன்)","Danavantan (தனவந்தன்)","Devendran (தேவேந்திரன்)","Eenjan (ஈஞ்சன்)","Ennai (எண்ணை)","Kaadan (காடன்)","Kaadai (காடை)","Kaari (காரி)","Kalingarayan (காலிங்கராயன்)","Kanavalan (கணவாளன்)","Kanakkan (கணக்கன்)","Kannan (கண்ணன்)","Kannanthai (கண்ணாந்தை)","Keeran (கீரன்)","Koorai (கூறை)","Koovendhar (கோவேந்தர்)","Kuzhalayan (குழையன்)","Maadar (மாடர்)","Maadai (மாடை)","Maniyan (மணியன்)","Mayilar (மயிலர்)","Medhi (மேதி)","Mulan (மூலன்)","Mutthan (முத்தன்)","Muzhukathan (முழுக்காதன்)","Neerunniyar (நீருண்ணியர்)","Ozukkar (ஒழுக்கர்)","Pallavarayan (பல்லவராயன்)","Panagkaadar (பனங்காடர்)","Pandiyan (பாண்டியன்)","Pannai (பண்ணை)","Pathuman (பதுமன்)","Pavazhalar (பவழர்)","Payiran (பயிரன்)","Periyan (பெரியன்)","Perunkudi (பெருங்குடி)","Pillar (பில்லர்)","Podiyan (பொடியன்)","Ponnar (பொன்னர்)","Poochadhai (பூச்சந்தை)","Poodhiyan (பூதியன்)","Poosan (பூசன்)","Poondhai (பூந்தை)","Porulaanthai (பொருளாந்தை)","Saakadai (சாகாடை)","Sathanthai (சாத்தந்தை)","Sanagan (சனகன்)","Sedan (சேடன்)","Sellan (செல்லன்)","Sembonn (செம்பொன்)","Sempoothan (செம்பூதன்)","Semvan (செம்வன்)","Sengannan (செங்கண்ணன்)","Sengunni (செங்குன்னி)","Seralan (சேரலன்)","Seran (சேரன்)","Sevadi (சேவடி)","Sevvayan (செவ்வாயர்)","Sevvandhi (செவ்வந்தி)","Silamban (சிலம்பன்)","Soman (சோமன்)","Soolan (சூலன்)","Sooriyan (சூரியன்)","Thanakkavan (தனக்கவன்)","Thavalayan (தவளையன்)","Themaan (தேமான்)","Thodai (தோடை)","Thooran (தூரன்)","Thorakkan (தொரக்கன்)","Uvanan (உவணன்)","Uzhavan (உழவன்)","Vaanan (வாணன்)","Vannakkan (வண்ணக்கன்)","Veliyan (வெளியன்)","Vellamban (வெள்ளம்பர்)","Vendhai (வெந்தை)","Viliyan (விளையன்)","Villi (வில்லி)","Other / Not Listed"
-];
+import {
+  DEFAULT_CASTE_KOOTTAM_MAP,
+  getKoottamsForCaste,
+  getKoottamFieldLabel,
+  CasteKoottamConfig,
+} from '@/constants/casteKoottam';
 
 const step1Schema = z.object({
   // Contact & Auth
@@ -128,6 +130,45 @@ export function Step1PersonalInfo({
   const [rasiHouses, setRasiHouses] = useState<HouseData[]>([]);
   const [amsamHouses, setAmsamHouses] = useState<HouseData[]>([]);
 
+  // Dynamic Caste-Koottam Configuration (synced with admin settings)
+  const [casteKoottamConfig, setCasteKoottamConfig] = useState<CasteKoottamConfig>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('namma_caste_koottam_config');
+        if (cached) {
+          return { ...DEFAULT_CASTE_KOOTTAM_MAP, ...JSON.parse(cached) };
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    return DEFAULT_CASTE_KOOTTAM_MAP;
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchAdminCasteKoottams() {
+      try {
+        const res = await fetch('/api/admin/caste-koottam');
+        const data = await res.json();
+        if (data.success && data.config && isMounted) {
+          setCasteKoottamConfig(data.config);
+          try {
+            localStorage.setItem('namma_caste_koottam_config', JSON.stringify(data.config));
+          } catch (e) {
+            // ignore
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load remote caste-koottam list, using defaults', err);
+      }
+    }
+    fetchAdminCasteKoottams();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const t = formTranslations[language];
 
   const {
@@ -213,6 +254,7 @@ export function Step1PersonalInfo({
   const watchProfileFor = watch('profileFor');
   const watchMaritalStatus = watch('maritalStatus');
   const watchReligion = watch('religion');
+  const watchCaste = watch('caste');
   const watchKoottam = watch('koottam');
   const watchDoshams = watch('doshams');
   const watchPorutham = watch('poruthaNakshatram');
@@ -220,6 +262,22 @@ export function Step1PersonalInfo({
   const watchMobile = watch('whatsappNumber') || '';
   const cleanMobileDigits = watchMobile.replace(/\D/g, '').slice(0, 10);
   const isMobileValid = cleanMobileDigits.length === 10 && /^[6-9]/.test(cleanMobileDigits);
+
+  // Dynamically derive caste-based koottams and labels
+  const availableKoottams = useMemo(() => {
+    return getKoottamsForCaste(watchCaste, casteKoottamConfig);
+  }, [watchCaste, casteKoottamConfig]);
+
+  const koottamFieldMeta = useMemo(() => {
+    return getKoottamFieldLabel(watchCaste, language);
+  }, [watchCaste, language]);
+
+  // When caste changes, if the previously selected koottam is not valid for this caste, reset it
+  useEffect(() => {
+    if (watchKoottam && watchKoottam !== 'Other / Not Listed' && !availableKoottams.includes(watchKoottam)) {
+      setValue('koottam', '');
+    }
+  }, [watchCaste, availableKoottams, watchKoottam, setValue]);
 
   useEffect(() => {
     onGenderChange?.(watchGender);
@@ -742,15 +800,22 @@ export function Step1PersonalInfo({
           </div>
 
           <div className="sm:col-span-2">
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
-              {language === 'TA' ? 'கூட்டம் / குலம் / கிளை (Kongu Koottam / Clan)' : 'Koottam / Kulam / Clan'}
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-bold text-gray-700 uppercase">
+                {koottamFieldMeta.title}
+              </label>
+              {watchCaste && availableKoottams.length > 1 && (
+                <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                  {availableKoottams.length - 1} {language === 'TA' ? 'பிரிவுகள் உள்ளன' : 'options'}
+                </span>
+              )}
+            </div>
             <select
               {...register('koottam')}
               className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:bg-white focus:outline-none transition-all"
             >
-              <option value="">-- {language === 'TA' ? 'கூட்டத்தைத் தேர்வு செய்யவும்' : 'Select Koottam / Kulam'} --</option>
-              {KVG_KOOTTAMS.map((k) => (
+              <option value="">{koottamFieldMeta.placeholder}</option>
+              {availableKoottams.map((k) => (
                 <option key={k} value={k}>{k}</option>
               ))}
             </select>
@@ -758,7 +823,11 @@ export function Step1PersonalInfo({
               <input
                 type="text"
                 {...register('customKoottam')}
-                placeholder={language === 'TA' ? 'உங்கள் கூட்டத்தை உள்ளிடவும்' : 'Enter your specific Koottam'}
+                placeholder={
+                  language === 'TA'
+                    ? `உங்கள் ${koottamFieldMeta.title.split('(')[0].trim()}-ஐ உள்ளிடவும்`
+                    : 'Enter your specific Gotram / Koottam / Clan'
+                }
                 className="w-full h-11 mt-2 px-3.5 rounded-xl border border-gray-300 bg-white text-gray-900 font-medium text-sm focus:border-primary focus:outline-none transition-all"
               />
             )}

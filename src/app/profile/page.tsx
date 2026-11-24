@@ -229,6 +229,23 @@ export default function ProfilePage() {
     return `${cm} cm (${feet}'${inches}")`;
   };
 
+  // Open candidate view with fresh full profile from API
+  const handleOpenCandidateView = async (candidate: any) => {
+    setActiveViewCandidate(candidate);
+    const targetId = candidate.displayId || candidate.id || candidate.registrationId;
+    if (targetId) {
+      try {
+        const res = await fetch(`/api/register?id=${encodeURIComponent(targetId)}`);
+        const data = await res.json();
+        if (data.success && data.profile) {
+          setActiveViewCandidate(data.profile);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch full candidate profile:', err);
+      }
+    }
+  };
+
   // WhatsApp share for candidate card
   const handleCardWhatsAppShare = (c: any) => {
     const dispId = c.displayId || c.registrationId || c.refId || 'NM-0001';
@@ -686,7 +703,14 @@ export default function ProfilePage() {
                         </div>
                         <div className="flex items-center gap-1.5">
                           <Briefcase className="w-3.5 h-3.5 text-primary shrink-0" />
-                          <span className="truncate">{candidate.designation || candidate.workNature || 'பணியில்'}</span>
+                          <span className="truncate">
+                            {(() => {
+                              const isBiz = String(candidate.workNature).toUpperCase().includes('BUSINESS');
+                              const role = candidate.designation || (isBiz ? (language === 'TA' ? 'சொந்த தொழில்' : 'Business') : '');
+                              const comp = candidate.companyName || candidate.organisation || '';
+                              return role ? (comp ? `${role} @ ${comp}` : role) : (comp || (candidate.workNature && candidate.workNature !== 'PRIVATE' ? candidate.workNature : (language === 'TA' ? 'பணியில்' : 'Employed')));
+                            })()}
+                          </span>
                         </div>
                       </div>
 
@@ -708,7 +732,7 @@ export default function ProfilePage() {
                   <div className="bg-[#FFFDF9] border-t border-primary/10 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2">
                     <button
                       type="button"
-                      onClick={() => setActiveViewCandidate(candidate)}
+                      onClick={() => handleOpenCandidateView(candidate)}
                       className="bg-primary hover:bg-primary-light text-white px-3.5 sm:px-4 py-2 rounded-full font-bold text-xs shadow-xs hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
                     >
                       <span>{language === 'TA' ? 'பயோடேட்டா காண்க' : 'View Akshayam Biodata'}</span>
@@ -729,8 +753,8 @@ export default function ProfilePage() {
                       {/* Print Biodata */}
                       <button
                         type="button"
-                        onClick={() => {
-                          setActiveViewCandidate(candidate);
+                        onClick={async () => {
+                          await handleOpenCandidateView(candidate);
                           setTimeout(() => window.print(), 300);
                         }}
                         className="bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 p-2 rounded-full transition-all cursor-pointer"

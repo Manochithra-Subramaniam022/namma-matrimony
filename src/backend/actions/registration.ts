@@ -61,21 +61,109 @@ export async function getProfilesByMobile(mobile: string) {
     // Attach family and expectations for each profile
     const fullProfiles = await Promise.all(
       (profiles || []).map(async (p) => {
-        const { data: family } = await supabase
-          .from('Family')
-          .select('*')
-          .eq('userId', p.userId)
-          .maybeSingle();
+        let family: any = null;
+        if (p.userId) {
+          const { data: f } = await supabase.from('Family').select('*').eq('userId', p.userId).maybeSingle();
+          family = f;
+        }
+        if (!family && p.profileCreatedBy) {
+          const { data: u } = await supabase.from('User').select('id').eq('mobile_no', p.profileCreatedBy).maybeSingle();
+          if (u?.id) {
+            const { data: f } = await supabase.from('Family').select('*').eq('userId', u.id).maybeSingle();
+            family = f;
+          }
+        }
 
-        const { data: expectations } = await supabase
-          .from('Expectations')
-          .select('*')
-          .eq('userId', p.userId)
-          .maybeSingle();
+        const { data: expectations } = p.userId
+          ? await supabase.from('Expectations').select('*').eq('userId', p.userId).maybeSingle()
+          : { data: null };
+
+        const { data: siblings } = family?.id
+          ? await supabase.from('Sibling').select('*').eq('familyId', family.id)
+          : { data: [] };
+
+        const { data: educations } = p.id
+          ? await supabase.from('Education').select('*').eq('profileId', p.id)
+          : { data: [] };
+
+        const dbSiblings = Array.isArray(siblings) && siblings.length > 0
+          ? siblings.map((s: any) => ({ name: s.name, relation: s.relation, maritalStatus: s.status }))
+          : [];
+        const jsonSiblings = Array.isArray(p.jathagamData?.siblingsList) && p.jathagamData.siblingsList.length > 0
+          ? p.jathagamData.siblingsList
+          : (family?.siteLand ? (() => { try { const parsed = JSON.parse(family.siteLand); return Array.isArray(parsed) ? parsed : []; } catch { return []; } })() : []);
+        const siblingsList = dbSiblings.length > 0 ? dbSiblings : jsonSiblings;
+
+        const dbEdu = Array.isArray(educations) && educations.length > 0
+          ? educations.map((e: any) => ({ level: e.level, degree: e.degreeName, institution: e.institution }))
+          : [];
+        const jsonEdu = Array.isArray(p.jathagamData?.educationList) && p.jathagamData.educationList.length > 0
+          ? p.jathagamData.educationList
+          : [];
+        const educationList = dbEdu.length > 0 ? dbEdu : (jsonEdu.length > 0 ? jsonEdu : (p.education ? [{ level: 'Degree', degree: p.education, institution: '' }] : []));
+
+        const isFatherLate = String(family?.fatherLivingStatus || p.jathagamData?.fatherLivingStatus || p.fatherLivingStatus || family?.fatherStatus || p.jathagamData?.fatherStatus || p.fatherStatus).toUpperCase() === 'LATE';
+        const isMotherLate = String(family?.motherLivingStatus || p.jathagamData?.motherLivingStatus || p.motherLivingStatus || family?.motherStatus || p.jathagamData?.motherStatus || p.motherStatus).toUpperCase() === 'LATE';
+
+        const fatherName = family?.fatherName || p.jathagamData?.fatherName || p.fatherName || null;
+        const fatherOccupation = isFatherLate ? null : (family?.fatherStatus || p.jathagamData?.fatherOccupation || p.fatherOccupation || null);
+        const fatherMobile = family?.fatherMobile || p.jathagamData?.fatherMobile || p.fatherMobile || null;
+
+        const motherName = family?.motherName || p.jathagamData?.motherName || p.motherName || null;
+        const motherOccupation = isMotherLate ? null : (family?.motherStatus || p.jathagamData?.motherOccupation || p.motherOccupation || null);
+        const motherMobile = family?.motherMobile || p.jathagamData?.motherMobile || p.motherMobile || null;
 
         return {
           ...p,
-          family: family || {},
+          fatherName,
+          fatherStatus: isFatherLate ? 'LATE' : (family?.fatherStatus || p.jathagamData?.fatherStatus || p.fatherStatus || 'ALIVE'),
+          fatherLivingStatus: isFatherLate ? 'LATE' : 'ALIVE',
+          fatherOccupation,
+          fatherMobile,
+
+          motherName,
+          motherStatus: isMotherLate ? 'LATE' : (family?.motherStatus || p.jathagamData?.motherStatus || p.motherStatus || 'ALIVE'),
+          motherLivingStatus: isMotherLate ? 'LATE' : 'ALIVE',
+          motherOccupation,
+          motherMobile,
+
+          workNature: family?.workNature || p.jathagamData?.workNature || p.workNature || null,
+          workSector: p.jathagamData?.workSector || null,
+          businessType: p.jathagamData?.businessType || null,
+          workMode: p.jathagamData?.workMode || null,
+          businessDetails: p.jathagamData?.businessDetails || null,
+          designation: family?.designation || p.jathagamData?.designation || p.designation || null,
+          companyName: family?.organisation || p.jathagamData?.companyName || p.companyName || null,
+          monthlyIncome: p.jathagamData?.monthlyIncome || null,
+          annualIncome: family?.salary || p.jathagamData?.annualIncome || p.annualIncome || null,
+          workCity: family?.workingAddress || p.jathagamData?.workCity || p.workCity || null,
+          workMapLink: family?.googleLocation || p.jathagamData?.workMapLink || p.workMapLink || null,
+
+          houseType: family?.houseType || p.jathagamData?.houseType || p.houseType || null,
+          houseSqft: family?.houseSqFt || p.jathagamData?.houseSqft || p.houseSqft || null,
+          rentalIncome: family?.rentalIncome || p.jathagamData?.rentalIncomeMonthly || p.rentalIncome || null,
+          thottam: family?.thottam || p.jathagamData?.agriculturalLandAcres || p.thottam || null,
+          vacantLand: family?.vacantLand || p.jathagamData?.vacantLandSqft || p.vacantLand || null,
+          totalAssetValue: family?.totalAssetValue || p.jathagamData?.totalNetAssets || p.totalAssetValue || null,
+          propertyComments: family?.assetComments || p.jathagamData?.propertyComments || p.propertyComments || null,
+          dowryDetails: family?.dowryDetails || p.jathagamData?.dowryDetails || p.dowryDetails || null,
+
+          educationList,
+          siblingsList,
+          family: {
+            ...(family || {}),
+            fatherName,
+            fatherStatus: isFatherLate ? 'LATE' : (family?.fatherStatus || p.jathagamData?.fatherStatus || p.fatherStatus || 'ALIVE'),
+            fatherLivingStatus: isFatherLate ? 'LATE' : 'ALIVE',
+            fatherOccupation,
+            fatherMobile,
+            motherName,
+            motherStatus: isMotherLate ? 'LATE' : (family?.motherStatus || p.jathagamData?.motherStatus || p.motherStatus || 'ALIVE'),
+            motherLivingStatus: isMotherLate ? 'LATE' : 'ALIVE',
+            motherOccupation,
+            motherMobile,
+            siblings: siblingsList,
+          },
           expectations: expectations || {},
           userContact: {
             mobile: user?.mobile_no || cleanMobile,
@@ -95,31 +183,115 @@ export async function getProfilesByMobile(mobile: string) {
 export async function getProfileById(displayIdOrId: string) {
   try {
     let query = supabase.from('Profile').select('*');
-    if (displayIdOrId.toLowerCase().startsWith('nm-')) {
-      query = query.ilike('displayId', displayIdOrId);
-    } else {
-      query = query.eq('id', displayIdOrId);
-    }
+    query = query.or(`displayId.ilike.${displayIdOrId},id.eq.${displayIdOrId}`);
 
     const { data: profile, error } = await query.maybeSingle();
     if (error || !profile) return null;
 
     // Fetch family and expectations
-    const { data: family } = await supabase
-      .from('Family')
-      .select('*')
-      .eq('userId', profile.userId)
-      .maybeSingle();
+    let family: any = null;
+    if (profile.userId) {
+      const { data: f } = await supabase.from('Family').select('*').eq('userId', profile.userId).maybeSingle();
+      family = f;
+    }
+    if (!family && profile.profileCreatedBy) {
+      const { data: u } = await supabase.from('User').select('id').eq('mobile_no', profile.profileCreatedBy).maybeSingle();
+      if (u?.id) {
+        const { data: f } = await supabase.from('Family').select('*').eq('userId', u.id).maybeSingle();
+        family = f;
+      }
+    }
 
-    const { data: expectations } = await supabase
-      .from('Expectations')
-      .select('*')
-      .eq('userId', profile.userId)
-      .maybeSingle();
+    const { data: expectations } = profile.userId
+      ? await supabase.from('Expectations').select('*').eq('userId', profile.userId).maybeSingle()
+      : { data: null };
+
+    const { data: siblings } = family?.id
+      ? await supabase.from('Sibling').select('*').eq('familyId', family.id)
+      : { data: [] };
+
+    const { data: educations } = profile.id
+      ? await supabase.from('Education').select('*').eq('profileId', profile.id)
+      : { data: [] };
+
+    const dbSiblings = Array.isArray(siblings) && siblings.length > 0
+      ? siblings.map((s: any) => ({ name: s.name, relation: s.relation, maritalStatus: s.status }))
+      : [];
+    const jsonSiblings = Array.isArray(profile.jathagamData?.siblingsList) && profile.jathagamData.siblingsList.length > 0
+      ? profile.jathagamData.siblingsList
+      : (family?.siteLand ? (() => { try { const parsed = JSON.parse(family.siteLand); return Array.isArray(parsed) ? parsed : []; } catch { return []; } })() : []);
+    const siblingsList = dbSiblings.length > 0 ? dbSiblings : jsonSiblings;
+
+    const dbEdu = Array.isArray(educations) && educations.length > 0
+      ? educations.map((e: any) => ({ level: e.level, degree: e.degreeName, institution: e.institution }))
+      : [];
+    const jsonEdu = Array.isArray(profile.jathagamData?.educationList) && profile.jathagamData.educationList.length > 0
+      ? profile.jathagamData.educationList
+      : [];
+    const educationList = dbEdu.length > 0 ? dbEdu : (jsonEdu.length > 0 ? jsonEdu : (profile.education ? [{ level: 'Degree', degree: profile.education, institution: '' }] : []));
+
+    const isFatherLate = String(family?.fatherLivingStatus || profile.jathagamData?.fatherLivingStatus || profile.fatherLivingStatus || family?.fatherStatus || profile.jathagamData?.fatherStatus || profile.fatherStatus).toUpperCase() === 'LATE';
+    const isMotherLate = String(family?.motherLivingStatus || profile.jathagamData?.motherLivingStatus || profile.motherLivingStatus || family?.motherStatus || profile.jathagamData?.motherStatus || profile.motherStatus).toUpperCase() === 'LATE';
+
+    const fatherName = family?.fatherName || profile.jathagamData?.fatherName || profile.fatherName || null;
+    const fatherOccupation = isFatherLate ? null : (family?.fatherStatus || profile.jathagamData?.fatherOccupation || profile.fatherOccupation || null);
+    const fatherMobile = family?.fatherMobile || profile.jathagamData?.fatherMobile || profile.fatherMobile || null;
+
+    const motherName = family?.motherName || profile.jathagamData?.motherName || profile.motherName || null;
+    const motherOccupation = isMotherLate ? null : (family?.motherStatus || profile.jathagamData?.motherOccupation || profile.motherOccupation || null);
+    const motherMobile = family?.motherMobile || profile.jathagamData?.motherMobile || profile.motherMobile || null;
 
     return {
       ...profile,
-      family: family || {},
+      fatherName,
+      fatherStatus: isFatherLate ? 'LATE' : (family?.fatherStatus || profile.jathagamData?.fatherStatus || profile.fatherStatus || 'ALIVE'),
+      fatherLivingStatus: isFatherLate ? 'LATE' : 'ALIVE',
+      fatherOccupation,
+      fatherMobile,
+
+      motherName,
+      motherStatus: isMotherLate ? 'LATE' : (family?.motherStatus || profile.jathagamData?.motherStatus || profile.motherStatus || 'ALIVE'),
+      motherLivingStatus: isMotherLate ? 'LATE' : 'ALIVE',
+      motherOccupation,
+      motherMobile,
+
+      workNature: family?.workNature || profile.jathagamData?.workNature || profile.workNature || null,
+      workSector: profile.jathagamData?.workSector || null,
+      businessType: profile.jathagamData?.businessType || null,
+      workMode: profile.workMode || profile.jathagamData?.workMode || null,
+      businessDetails: profile.jathagamData?.businessDetails || null,
+      designation: family?.designation || profile.jathagamData?.designation || profile.designation || null,
+      companyName: family?.organisation || profile.jathagamData?.companyName || profile.companyName || null,
+      monthlyIncome: profile.jathagamData?.monthlyIncome || null,
+      annualIncome: family?.salary || profile.jathagamData?.annualIncome || profile.annualIncome || null,
+      workCity: family?.workingAddress || profile.jathagamData?.workCity || profile.workCity || null,
+      workMapLink: family?.googleLocation || profile.jathagamData?.workMapLink || profile.workMapLink || null,
+
+      houseType: family?.houseType || profile.jathagamData?.houseType || profile.houseType || null,
+      houseSqft: family?.houseSqFt || profile.jathagamData?.houseSqft || profile.houseSqft || null,
+      rentalIncome: family?.rentalIncome || profile.jathagamData?.rentalIncomeMonthly || profile.rentalIncome || null,
+      thottam: family?.thottam || profile.jathagamData?.agriculturalLandAcres || profile.thottam || null,
+      vacantLand: family?.vacantLand || profile.jathagamData?.vacantLandSqft || profile.vacantLand || null,
+      totalAssetValue: family?.totalAssetValue || profile.jathagamData?.totalNetAssets || profile.totalAssetValue || null,
+      propertyComments: family?.assetComments || profile.jathagamData?.propertyComments || profile.propertyComments || null,
+      dowryDetails: family?.dowryDetails || profile.jathagamData?.dowryDetails || profile.dowryDetails || null,
+
+      educationList,
+      siblingsList,
+      family: {
+        ...(family || {}),
+        fatherName,
+        fatherStatus: isFatherLate ? 'LATE' : (family?.fatherStatus || profile.jathagamData?.fatherStatus || profile.fatherStatus || 'ALIVE'),
+        fatherLivingStatus: isFatherLate ? 'LATE' : 'ALIVE',
+        fatherOccupation,
+        fatherMobile,
+        motherName,
+        motherStatus: isMotherLate ? 'LATE' : (family?.motherStatus || profile.jathagamData?.motherStatus || profile.motherStatus || 'ALIVE'),
+        motherLivingStatus: isMotherLate ? 'LATE' : 'ALIVE',
+        motherOccupation,
+        motherMobile,
+        siblings: siblingsList,
+      },
       expectations: expectations || {},
     };
   } catch (err) {
@@ -318,6 +490,45 @@ export async function registerProfileWithPrisma(formData: any) {
       hidePhoto: Boolean(formData.hidePhoto ?? false),
       photoUrl: formData.photoUrl || formData.profilePhotoUrl || null,
       jathakamUrl: formData.horoscopeUrl || formData.horoscopeFileUrl || null,
+      jathagamData: {
+        ...(formData.jathagamData || {}),
+        fatherName: formData.fatherName || null,
+        fatherStatus: formData.fatherStatus || 'ALIVE',
+        fatherLivingStatus: String(formData.fatherStatus).toUpperCase() === 'LATE' ? 'LATE' : 'ALIVE',
+        fatherOccupation: String(formData.fatherStatus).toUpperCase() === 'LATE' ? null : (formData.fatherOccupation || null),
+        fatherMobile: String(formData.fatherStatus).toUpperCase() === 'LATE' ? null : (formData.fatherMobile || null),
+        motherName: formData.motherName || null,
+        motherStatus: formData.motherStatus || 'ALIVE',
+        motherLivingStatus: String(formData.motherStatus).toUpperCase() === 'LATE' ? 'LATE' : 'ALIVE',
+        motherOccupation: String(formData.motherStatus).toUpperCase() === 'LATE' ? null : (formData.motherOccupation || null),
+        motherMobile: String(formData.motherStatus).toUpperCase() === 'LATE' ? null : (formData.motherMobile || null),
+        siblingsList: Array.isArray(formData.siblingsList) ? formData.siblingsList : [],
+        educationList: Array.isArray(formData.educationList) ? formData.educationList : [],
+        workNature,
+        workSector: formData.workSector || null,
+        businessType: formData.businessType || null,
+        workMode: formData.workMode || null,
+        businessDetails: formData.businessDetails || null,
+        monthlyIncome: formData.monthlyIncome || null,
+        annualIncome: formData.annualIncome || formData.monthlyIncome || null,
+        companyName: formData.companyName || null,
+        designation: formData.designation || null,
+        workCity: formData.workCity || formData.workLocation || null,
+        workMapLink: formData.workMapLink || formData.workMapUrl || null,
+        nativePlace: formData.nativePlace || formData.city || null,
+        familyType: formData.familyType || null,
+        familyValue: formData.familyValue || null,
+        houseType: formData.houseType || null,
+        houseSqft: formData.houseSqft || null,
+        rentalIncomeMonthly: formData.rentalIncomeMonthly || formData.rentalIncome || null,
+        agriculturalLandAcres: formData.agriculturalLandAcres || formData.landAcres || null,
+        vacantLandSqft: formData.vacantLandSqft || formData.commercialSqft || null,
+        totalNetAssets: formData.totalNetAssets || formData.netAssets || null,
+        propertyComments: formData.propertyComments || formData.assetComments || null,
+        goldPavun: formData.goldPavun || formData.seerGoldPavun || null,
+        seerCash: formData.seerCash || null,
+        seerVehicle: formData.seerVehicle || null,
+      },
       idProofUrl: formData.idProofUrl || null,
       casteCertificateUrl: formData.casteCertificateUrl || null,
       haveChildren: Boolean(formData.haveChildren === true || formData.haveChildren === 'Yes'),
@@ -369,6 +580,7 @@ export async function registerProfileWithPrisma(formData: any) {
       rentalIncome: formData.rentalIncomeMonthly || formData.rentalIncome || null,
       houseType: formData.houseType || null,
       houseSqFt: formData.houseSqft || null,
+      siteLand: JSON.stringify(formData.siblingsList || []),
       thottam: formData.agriculturalLandAcres || formData.landAcres || null,
       vacantLand: formData.vacantLandSqft || formData.commercialSqft || null,
       totalAssetValue: formData.totalNetAssets || formData.netAssets || null,
@@ -382,10 +594,52 @@ export async function registerProfileWithPrisma(formData: any) {
       .eq('userId', targetCandidateUserId)
       .maybeSingle();
 
+    let targetFamilyId = existingFamily?.id;
     if (existingFamily) {
       await supabase.from('Family').update(familyPayload).eq('id', existingFamily.id);
     } else {
-      await supabase.from('Family').insert([{ id: crypto.randomUUID(), ...familyPayload }]);
+      targetFamilyId = crypto.randomUUID();
+      await supabase.from('Family').insert([{ id: targetFamilyId, ...familyPayload }]);
+    }
+
+    // Save Siblings (with graceful fallback against RLS)
+    if (targetFamilyId && Array.isArray(formData.siblingsList)) {
+      try {
+        await supabase.from('Sibling').delete().eq('familyId', targetFamilyId);
+        const validSiblings = formData.siblingsList.filter((s: any) => s && s.name && s.name.trim());
+        if (validSiblings.length > 0) {
+          const siblingInserts = validSiblings.map((s: any) => ({
+            id: crypto.randomUUID(),
+            familyId: targetFamilyId,
+            name: s.name.trim(),
+            relation: s.relation || 'Sibling',
+            status: s.maritalStatus || s.status || 'UNMARRIED',
+          }));
+          await supabase.from('Sibling').insert(siblingInserts);
+        }
+      } catch (sibErr) {
+        console.warn('Supabase Sibling insert fallback:', sibErr);
+      }
+    }
+
+    // Save Education (with graceful fallback against RLS)
+    if (actualProfileId && Array.isArray(formData.educationList)) {
+      try {
+        await supabase.from('Education').delete().eq('profileId', actualProfileId);
+        const validEdu = formData.educationList.filter((e: any) => e && (e.degree?.trim() || e.degreeName?.trim()));
+        if (validEdu.length > 0) {
+          const eduInserts = validEdu.map((e: any) => ({
+            id: crypto.randomUUID(),
+            profileId: actualProfileId,
+            level: e.level || 'Degree',
+            degreeName: (e.degree || e.degreeName).trim(),
+            institution: e.institution?.trim() || '',
+          }));
+          await supabase.from('Education').insert(eduInserts);
+        }
+      } catch (eduErr) {
+        console.warn('Supabase Education insert fallback:', eduErr);
+      }
     }
 
     // 4. Expectations Data

@@ -264,6 +264,23 @@ export default function ProfileDrawer({ isOpen, onClose }: ProfileDrawerProps) {
     return Math.abs(new Date(diff).getUTCFullYear() - 1970);
   };
 
+  // Open candidate view with fresh full profile from API
+  const handleOpenCandidateView = async (candidate: any) => {
+    setActiveViewCandidate(candidate);
+    const targetId = candidate.displayId || candidate.id || candidate.registrationId;
+    if (targetId) {
+      try {
+        const res = await fetch(`/api/register?id=${encodeURIComponent(targetId)}`);
+        const data = await res.json();
+        if (data.success && data.profile) {
+          setActiveViewCandidate(data.profile);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch full candidate profile:', err);
+      }
+    }
+  };
+
   const formatHeight = (cm?: number) => {
     if (!cm) return null;
     const totalInches = Math.round(cm / 2.54);
@@ -626,12 +643,19 @@ export default function ProfileDrawer({ isOpen, onClose }: ProfileDrawerProps) {
                                 <span className="truncate max-w-[130px]">{c.education || c.highestEducation}</span>
                               </span>
                             )}
-                            {(c.designation || c.workNature) && (
-                              <span className="inline-flex items-center gap-0.5">
-                                <Briefcase className="w-3 h-3 text-gray-400" />
-                                <span className="truncate max-w-[130px]">{c.designation || c.workNature}</span>
-                              </span>
-                            )}
+                            {(() => {
+                              const isBiz = String(c.workNature).toUpperCase().includes('BUSINESS');
+                              const role = c.designation || (isBiz ? (language === 'TA' ? 'சொந்த தொழில்' : 'Business') : '');
+                              const comp = c.companyName || c.organisation || '';
+                              const workTitle = role ? (comp ? `${role} @ ${comp}` : role) : (comp || (c.workNature && c.workNature !== 'PRIVATE' ? c.workNature : ''));
+                              if (!workTitle) return null;
+                              return (
+                                <span className="inline-flex items-center gap-0.5">
+                                  <Briefcase className="w-3 h-3 text-gray-400" />
+                                  <span className="truncate max-w-[160px]">{workTitle}</span>
+                                </span>
+                              );
+                            })()}
                           </div>
 
                           {/* Rasi / Nakshatram if available */}
@@ -670,7 +694,7 @@ export default function ProfileDrawer({ isOpen, onClose }: ProfileDrawerProps) {
                           {/* View Full Biodata Button */}
                           <button
                             type="button"
-                            onClick={() => setActiveViewCandidate(c)}
+                            onClick={() => handleOpenCandidateView(c)}
                             className="inline-flex items-center gap-1 text-[11px] font-bold bg-primary text-white hover:bg-primary-light px-2.5 py-1 rounded-full shadow-2xs transition-all cursor-pointer"
                             title={language === 'TA' ? 'முழு பயோடேட்டாவைக் காண்க' : 'View Full Biodata'}
                           >

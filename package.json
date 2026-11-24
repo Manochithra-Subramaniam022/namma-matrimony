@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack",
+    "dev": "node scripts/dev-both.js",
+    "dev:site": "node scripts/dev-site.js",
+    "dev:admin": "node scripts/dev-admin.js",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "next lint"

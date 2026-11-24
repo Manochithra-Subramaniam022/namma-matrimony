@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import BrandLogo from '@/frontend/components/BrandLogo';
 import AkshayamProfileView from '@/frontend/components/profile/AkshayamProfileView';
+import CasteKoottamManager from './CasteKoottamManager';
 import { useLanguage } from '@/frontend/context/LanguageContext';
 
 export default function AdminConsole() {
@@ -50,6 +51,7 @@ export default function AdminConsole() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [toastMsg, setToastMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [adminActiveTab, setAdminActiveTab] = useState<'PROFILES' | 'CASTE_KOOTTAM'>('PROFILES');
 
   // Filters & Search
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
@@ -63,6 +65,16 @@ export default function AdminConsole() {
   const [candidateToDelete, setCandidateToDelete] = useState<any | null>(null);
   const [actionInProgressId, setActionInProgressId] = useState<string | null>(null);
   const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
+
+  // Expandable profile details (collapsed by default, click to view info)
+  const [expandedProfileIds, setExpandedProfileIds] = useState<Record<string, boolean>>({});
+
+  const toggleProfileExpand = (id: string) => {
+    setExpandedProfileIds((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
 
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
     setToastMsg({ text, type });
@@ -142,6 +154,27 @@ export default function AdminConsole() {
       return true;
     });
   }, [profiles, statusFilter, genderFilter, searchQuery]);
+
+  const isAllExpanded = useMemo(() => {
+    if (filteredProfiles.length === 0) return false;
+    return filteredProfiles.every((p) => {
+      const key = p.id || p.displayId;
+      return !!expandedProfileIds[key];
+    });
+  }, [filteredProfiles, expandedProfileIds]);
+
+  const toggleExpandAll = () => {
+    if (isAllExpanded) {
+      setExpandedProfileIds({});
+    } else {
+      const all: Record<string, boolean> = {};
+      filteredProfiles.forEach((p) => {
+        const key = p.id || p.displayId;
+        if (key) all[key] = true;
+      });
+      setExpandedProfileIds(all);
+    }
+  };
 
   // 3. Status Action Handler (Approve / Reject / Reset)
   const handleUpdateStatus = async (
@@ -327,6 +360,18 @@ export default function AdminConsole() {
               <span>{language === 'TA' ? 'English' : 'தமிழ்'}</span>
             </button>
 
+            {/* Public Website Link (Port 3000) */}
+            <a
+              href="http://localhost:3000"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-xs font-bold text-emerald-800 transition-all cursor-pointer shadow-2xs"
+              title="Open Public Matrimony Website on http://localhost:3000"
+            >
+              <ExternalLink className="w-3.5 h-3.5 text-emerald-700" />
+              <span>{language === 'TA' ? 'இணையதளம் (3000)' : 'Website (Port 3000)'}</span>
+            </a>
+
             {/* Registered User Dashboard Link */}
             <Link
               href="/profile"
@@ -341,8 +386,54 @@ export default function AdminConsole() {
 
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 space-y-6">
         
-        {/* 2. ADMIN HERO TITLE & STATS COUNTERS */}
-        <div className="bg-gradient-to-br from-primary via-[#580016] to-primary text-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xl border-2 border-[#D4AF37]/50 relative overflow-hidden">
+        {/* 1.5 ADMIN NAVIGATION TABS */}
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-2 sm:p-2.5 rounded-2xl border border-primary/20 shadow-sm">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setAdminActiveTab('PROFILES')}
+              className={`inline-flex items-center gap-2 px-3.5 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
+                adminActiveTab === 'PROFILES'
+                  ? 'bg-primary text-white shadow-md ring-2 ring-primary/20'
+                  : 'bg-stone-50 text-gray-700 hover:bg-stone-100 hover:text-primary border border-gray-200'
+              }`}
+            >
+              <ShieldCheck className="w-4 h-4 text-[#D4AF37]" />
+              <span>{language === 'TA' ? 'வரன் சரிபார்ப்பு & ஒப்புதல்' : 'Profile Approvals'}</span>
+              {stats.pending > 0 && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-400 text-amber-950 font-black">
+                  {stats.pending}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setAdminActiveTab('CASTE_KOOTTAM')}
+              className={`inline-flex items-center gap-2 px-3.5 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
+                adminActiveTab === 'CASTE_KOOTTAM'
+                  ? 'bg-primary text-white shadow-md ring-2 ring-primary/20'
+                  : 'bg-stone-50 text-gray-700 hover:bg-stone-100 hover:text-primary border border-gray-200'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 text-[#D4AF37]" />
+              <span>{language === 'TA' ? 'சாதி & கூட்டம் மேலாண்மை' : 'Caste & Koottam Manager'}</span>
+            </button>
+          </div>
+
+          <div className="hidden sm:flex items-center text-xs text-gray-500 font-semibold px-2">
+            {adminActiveTab === 'PROFILES'
+              ? (language === 'TA' ? 'பதிவு செய்யப்பட்ட வரன்களை சரிபார்த்து ஒப்புதல் செய்க' : 'Review & approve registered candidate profiles')
+              : (language === 'TA' ? 'ஒவ்வொரு சாதிக்கான கூட்டம் / கோத்ரங்களை நிர்வகிக்கவும்' : 'Manage Koottams & Gotrams per Caste')}
+          </div>
+        </div>
+
+        {adminActiveTab === 'CASTE_KOOTTAM' ? (
+          <CasteKoottamManager language={language} showToast={showToast} />
+        ) : (
+          <>
+            {/* 2. ADMIN HERO TITLE & STATS COUNTERS */}
+            <div className="bg-gradient-to-br from-primary via-[#580016] to-primary text-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xl border-2 border-[#D4AF37]/50 relative overflow-hidden">
           <div className="absolute top-0 right-0 -mr-12 -mt-12 w-48 h-48 bg-[#D4AF37]/20 rounded-full blur-2xl pointer-events-none"></div>
 
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6">
@@ -571,16 +662,35 @@ export default function AdminConsole() {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex items-center justify-between px-1 text-xs font-bold text-gray-500">
-              <span>
-                {language === 'TA' ? 'காட்டப்படும் வரன்கள்' : 'Showing Profiles'}: {filteredProfiles.length}
-              </span>
-              <span>
-                {language === 'TA' ? 'நிலுவை' : 'Pending'}: {stats.pending}
-              </span>
+            <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-xs font-bold text-gray-500">
+              <div className="flex items-center gap-2">
+                <span>
+                  {language === 'TA' ? 'காட்டப்படும் வரன்கள்' : 'Showing Profiles'}: <strong className="text-gray-800">{filteredProfiles.length}</strong>
+                </span>
+                <span>•</span>
+                <span>
+                  {language === 'TA' ? 'நிலுவை' : 'Pending'}: <strong className="text-amber-700">{stats.pending}</strong>
+                </span>
+              </div>
+
+              {/* Expand / Collapse All Toggle Button */}
+              {filteredProfiles.length > 0 && (
+                <button
+                  type="button"
+                  onClick={toggleExpandAll}
+                  className="inline-flex items-center gap-1.5 text-xs text-primary font-bold hover:underline cursor-pointer bg-primary/5 hover:bg-primary/10 px-3 py-1 rounded-full border border-primary/20 transition-all"
+                >
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isAllExpanded ? 'rotate-180' : ''}`} />
+                  <span>
+                    {isAllExpanded
+                      ? (language === 'TA' ? 'அனைத்தையும் சுருக்கு' : 'Collapse All')
+                      : (language === 'TA' ? 'அனைத்து விவரங்களையும் காண்க' : 'Expand All Details')}
+                  </span>
+                </button>
+              )}
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 gap-3 sm:gap-4">
               {filteredProfiles.map((candidate, idx) => {
                 const cDisplayId = candidate.displayId || candidate.registrationId || `nm-000${idx + 1}`;
                 const cName = candidate.name || candidate.fullName || 'பெயர் குறிப்பிடப்படவில்லை';
@@ -592,11 +702,13 @@ export default function AdminConsole() {
                 const isRejected = status === 'REJECTED';
                 const isPending = status === 'PENDING';
                 const isUpdating = actionInProgressId === (candidate.id || candidate.displayId);
+                const cKey = candidate.id || candidate.displayId || idx.toString();
+                const isExpanded = !!expandedProfileIds[cKey];
 
                 return (
                   <div
-                    key={candidate.id || candidate.displayId || idx}
-                    className={`bg-white rounded-2xl sm:rounded-3xl border-2 shadow-sm transition-all overflow-hidden ${
+                    key={cKey}
+                    className={`bg-white rounded-2xl sm:rounded-3xl border-2 shadow-xs transition-all overflow-hidden ${
                       isPending
                         ? 'border-amber-300 ring-1 ring-amber-100'
                         : isApproved
@@ -604,15 +716,79 @@ export default function AdminConsole() {
                           : 'border-rose-200 bg-rose-50/10'
                     }`}
                   >
-                    {/* Top Status Header */}
-                    <div className="bg-[#FFFDF9] border-b border-gray-100 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs sm:text-sm font-extrabold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/20">
-                          {cDisplayId}
-                        </span>
+                    {/* 1. CLICKABLE COMPACT SUMMARY ROW (Always visible - Click to toggle details) */}
+                    <div
+                      onClick={() => toggleProfileExpand(cKey)}
+                      className={`p-3.5 sm:p-4.5 flex flex-col md:flex-row md:items-center justify-between gap-3 cursor-pointer transition-all select-none ${
+                        isExpanded
+                          ? 'bg-[#FFFDF9] border-b border-gray-100 shadow-2xs'
+                          : 'bg-white hover:bg-amber-50/30'
+                      }`}
+                      title={language === 'TA' ? 'விவரங்களைக் காண / மறைக்க கிளிக் செய்யவும்' : 'Click to view / hide profile details'}
+                    >
+                      {/* Left: Avatar, ID, Name, Quick Highlights */}
+                      <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                        {/* Avatar Thumbnail */}
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl overflow-hidden bg-gray-100 border border-primary/20 shrink-0 relative shadow-2xs">
+                          {cPhoto ? (
+                            <img src={cPhoto} alt={cName} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-400">
+                              <User className="w-6 h-6" />
+                            </div>
+                          )}
+                        </div>
 
+                        <div className="min-w-0 space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-mono text-xs font-black text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                              {cDisplayId}
+                            </span>
+                            <h3 className="text-base sm:text-lg font-black text-gray-900 font-serif truncate">
+                              {cName}
+                            </h3>
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                isBride ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-blue-50 text-blue-700 border border-blue-200'
+                              }`}
+                            >
+                              {isBride ? (language === 'TA' ? 'மணமகள்' : 'Bride') : (language === 'TA' ? 'மணமகன்' : 'Groom')}
+                            </span>
+                          </div>
+
+                          {/* Quick Highlights Summary Line */}
+                          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-gray-600 font-medium">
+                            {cAge && (
+                              <span className="text-gray-800 font-bold">
+                                {cAge} {language === 'TA' ? 'வயது' : 'Yrs'}
+                              </span>
+                            )}
+                            <span>•</span>
+                            <span className="text-gray-800 font-semibold truncate max-w-xs">
+                              {candidate.caste || (language === 'TA' ? 'அனைத்து தமிழ் சமூகம்' : 'All Tamil')}
+                              {candidate.koottam || candidate.kootam ? ` (${candidate.koottam || candidate.kootam})` : ''}
+                            </span>
+                            {(candidate.city || candidate.state) && (
+                              <>
+                                <span>•</span>
+                                <span className="text-gray-500 truncate flex items-center gap-1">
+                                  <MapPin className="w-3 h-3 text-primary/70 shrink-0" />
+                                  <span>{[candidate.city, candidate.state].filter(Boolean).join(', ')}</span>
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right: Status Pill, Quick Actions, and Expand Toggle */}
+                      <div
+                        className="flex items-center justify-between md:justify-end gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-gray-100"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {/* Status Badge */}
                         <span
-                          className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                          className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full ${
                             isPending
                               ? 'bg-amber-100 text-amber-800 border border-amber-300'
                               : isApproved
@@ -625,34 +801,80 @@ export default function AdminConsole() {
                           {isRejected && <XCircle className="w-3 h-3 text-rose-600" />}
                           <span>
                             {isPending
-                              ? (language === 'TA' ? 'பரிசீலனைக்கு காத்திருக்கிறது (Pending)' : 'Pending Review')
+                              ? (language === 'TA' ? 'நிலுவை (Pending)' : 'Pending')
                               : isApproved
-                                ? (language === 'TA' ? 'ஒப்புதல் அளிக்கப்பட்டது (Approved & Live)' : 'Approved & Live')
-                                : (language === 'TA' ? 'நிராகரிக்கப்பட்டது (Denied)' : 'Denied / Rejected')}
+                                ? (language === 'TA' ? 'ஒப்புதல் (Approved)' : 'Approved')
+                                : (language === 'TA' ? 'நிராகரிப்பு (Denied)' : 'Denied')}
                           </span>
                         </span>
 
-                        {candidate.approvedAt && isApproved && (
-                          <span className="hidden sm:inline text-[11px] text-gray-500">
-                            • {new Date(candidate.approvedAt).toLocaleDateString()}
-                          </span>
+                        {/* Quick Action: Approve */}
+                        {!isApproved && (
+                          <button
+                            type="button"
+                            disabled={isUpdating}
+                            onClick={() => handleUpdateStatus(candidate, 'APPROVED')}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-full font-bold text-xs shadow-2xs transition-all cursor-pointer flex items-center gap-1 hover:scale-105"
+                            title="Approve Profile"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">{language === 'TA' ? 'ஒப்புதல்' : 'Approve'}</span>
+                          </button>
                         )}
-                      </div>
 
-                      <div className="flex items-center gap-2">
-                        {/* Candidate Gender Badge */}
-                        <span
-                          className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                            isBride ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-blue-50 text-blue-700 border border-blue-200'
+                        {/* Quick Action: Deny */}
+                        {!isRejected && (
+                          <button
+                            type="button"
+                            disabled={isUpdating}
+                            onClick={() => {
+                              setCandidateToDeny(candidate);
+                              setDenyReason('Incomplete or unverified details');
+                            }}
+                            className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-3 py-1.5 rounded-full font-bold text-xs transition-all cursor-pointer flex items-center gap-1"
+                            title="Deny Profile"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">{language === 'TA' ? 'நிராகரி' : 'Deny'}</span>
+                          </button>
+                        )}
+
+                        {/* Expand / Collapse Button */}
+                        <button
+                          type="button"
+                          onClick={() => toggleProfileExpand(cKey)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-xs transition-all cursor-pointer ${
+                            isExpanded
+                              ? 'bg-primary text-white shadow-xs'
+                              : 'bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20'
                           }`}
                         >
-                          {isBride ? (language === 'TA' ? 'மணமகள்' : 'Bride') : (language === 'TA' ? 'மணமகன்' : 'Groom')}
-                        </span>
+                          <span>
+                            {isExpanded
+                              ? (language === 'TA' ? 'மறைக்க' : 'Hide')
+                              : (language === 'TA' ? 'விவரங்கள்' : 'View Info')}
+                          </span>
+                          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {/* Delete Button */}
+                        <button
+                          type="button"
+                          disabled={isUpdating}
+                          onClick={() => setCandidateToDelete(candidate)}
+                          className="bg-gray-100 hover:bg-rose-100 text-gray-500 hover:text-rose-600 p-1.5 rounded-full transition-all cursor-pointer"
+                          title="Permanently Delete Profile"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
 
-                    {/* Candidate Details Grid */}
-                    <div className="p-4 sm:p-6 flex flex-col md:flex-row gap-4 sm:gap-6">
+                    {/* 2. EXPANDABLE DETAILS BODY: ONLY SHOWN WHEN CLICKED! */}
+                    {isExpanded && (
+                      <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                        {/* Candidate Details Grid */}
+                        <div className="p-4 sm:p-6 flex flex-col md:flex-row gap-4 sm:gap-6">
                       
                       {/* Photo Thumbnail */}
                       <div className="shrink-0 flex sm:flex-col items-center gap-3">
@@ -720,21 +942,79 @@ export default function AdminConsole() {
                           </h4>
                           <p className="text-gray-800 flex items-center gap-1">
                             <GraduationCap className="w-3.5 h-3.5 text-primary shrink-0" />
-                            <span className="font-semibold">{candidate.education || candidate.qualification || 'பட்டம் குறிப்பிடப்படவில்லை'}</span>
+                            <span className="font-semibold">{candidate.education || candidate.qualification || (language === 'TA' ? 'பட்டம் குறிப்பிடப்படவில்லை' : 'Not specified')}</span>
                           </p>
-                          <p className="text-gray-800 flex items-center gap-1">
-                            <Briefcase className="w-3.5 h-3.5 text-primary shrink-0" />
-                            <span className="font-semibold">{candidate.designation || candidate.workNature || candidate.occupation || 'பணி'}</span>
-                          </p>
-                          <p className="text-gray-700">
-                            <span className="font-bold">{language === 'TA' ? 'வருமானம்:' : 'Income:'}</span> {candidate.salary || candidate.income || 'Not mentioned'}
-                          </p>
-                          <p className="text-gray-600">
-                            <span className="font-bold">{language === 'TA' ? 'தந்தை:' : 'Father:'}</span> {candidate.family?.fatherName || candidate.fatherName || '-'}
-                          </p>
-                          <p className="text-gray-600">
-                            <span className="font-bold">{language === 'TA' ? 'தாய்:' : 'Mother:'}</span> {candidate.family?.motherName || candidate.motherName || '-'}
-                          </p>
+
+                          {/* Rich Career Display */}
+                          {(() => {
+                            const isBiz = String(candidate.workNature).toUpperCase().includes('BUSINESS');
+                            const isGovt = String(candidate.workNature).toUpperCase().includes('GOVT');
+                            const isNri = String(candidate.workNature).toUpperCase().includes('NRI');
+                            const role = candidate.designation || (isBiz ? (language === 'TA' ? 'சொந்த தொழில்' : 'Business') : '');
+                            const comp = candidate.companyName || candidate.organisation || '';
+                            const natureTag = isBiz
+                              ? (language === 'TA' ? 'வணிகம்' : 'Business')
+                              : isGovt
+                              ? (language === 'TA' ? 'அரசு' : 'Govt')
+                              : isNri
+                              ? 'NRI'
+                              : (language === 'TA' ? 'தனியார்' : 'Private');
+                            const income = candidate.annualIncome || candidate.salary || candidate.income;
+
+                            return (
+                              <div className="space-y-0.5">
+                                <p className="text-gray-900 flex items-start gap-1.5 text-xs">
+                                  <Briefcase className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                                  <span className="leading-tight">
+                                    <span className="font-bold">
+                                      {role || (language === 'TA' ? 'பணி குறிப்பிடப்படவில்லை' : 'Not specified')}
+                                    </span>
+                                    {comp && <span className="text-gray-700"> @ {comp}</span>}
+                                    <span className="ml-1 text-[9px] font-black px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase">
+                                      {natureTag}
+                                    </span>
+                                  </span>
+                                </p>
+                                <p className="text-gray-700 text-xs">
+                                  <span className="font-bold">{language === 'TA' ? 'வருமானம்:' : 'Income:'}</span>{' '}
+                                  <span className="font-semibold text-emerald-800">
+                                    {income && income !== 'Not mentioned' ? income : (language === 'TA' ? 'நேரடி பேச்சில்' : 'Disclosed during talk')}
+                                  </span>
+                                  {candidate.workCity && (
+                                    <span className="text-gray-500 font-normal"> • {candidate.workCity}</span>
+                                  )}
+                                </p>
+                              </div>
+                            );
+                          })()}
+
+                          {/* Parents & Siblings Information */}
+                          <div className="pt-1 border-t border-gray-100 text-xs space-y-0.5">
+                            <p className="text-gray-700">
+                              <span className="font-bold">{language === 'TA' ? 'தந்தை:' : 'Father:'}</span>{' '}
+                              <span className="font-semibold text-gray-900">
+                                {candidate.fatherName || candidate.family?.fatherName || candidate.jathagamData?.fatherName || '-'}
+                              </span>
+                              {candidate.fatherOccupation && (
+                                <span className="text-gray-500 text-[11px]"> ({candidate.fatherOccupation})</span>
+                              )}
+                            </p>
+                            <p className="text-gray-700">
+                              <span className="font-bold">{language === 'TA' ? 'தாய்:' : 'Mother:'}</span>{' '}
+                              <span className="font-semibold text-gray-900">
+                                {candidate.motherName || candidate.family?.motherName || candidate.jathagamData?.motherName || '-'}
+                              </span>
+                              {candidate.motherOccupation && (
+                                <span className="text-gray-500 text-[11px]"> ({candidate.motherOccupation})</span>
+                              )}
+                            </p>
+                            {Array.isArray(candidate.siblingsList) && candidate.siblingsList.length > 0 && (
+                              <p className="text-gray-600 text-[11px]">
+                                <span className="font-bold">{language === 'TA' ? 'உடன்பிறப்பு:' : 'Siblings:'}</span>{' '}
+                                <span className="font-semibold text-primary">{candidate.siblingsList.length} {language === 'TA' ? 'பேர்' : 'members'}</span>
+                              </p>
+                            )}
+                          </div>
                         </div>
 
                         {/* Column 3: Astrology & Contacts */}
@@ -883,10 +1163,14 @@ export default function AdminConsole() {
                       </div>
                     </div>
                   </div>
-                );
+                )}
+              </div>
+            );
               })}
             </div>
           </div>
+        )}
+          </>
         )}
       </div>
 

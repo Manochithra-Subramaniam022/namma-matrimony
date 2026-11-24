@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/frontend/context/LanguageContext';
 import { BRANDING } from '@/constants/branding';
 import BrandLogo from '../BrandLogo';
 import ProfileDrawer from '@/frontend/components/profile/ProfileDrawer';
+import AkshayamProfileView from '@/frontend/components/profile/AkshayamProfileView';
 import {
   Sparkles,
   ShieldCheck,
@@ -26,6 +27,9 @@ import {
   RotateCcw,
   SlidersHorizontal,
   CheckCircle2,
+  ExternalLink,
+  Loader2,
+  X,
 } from 'lucide-react';
 import { rasiOptions, nakshatraByRasi, allNakshatras } from '@/frontend/utils/astrology';
 
@@ -44,6 +48,57 @@ export default function LandingPage() {
   const [doshamPreference, setDoshamPreference] = useState('Any');
   const [rasiPreference, setRasiPreference] = useState('Any');
   const [nakshatraPreference, setNakshatraPreference] = useState('Any');
+
+  // Matching Profiles State
+  const [matchingProfiles, setMatchingProfiles] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [selectedProfileForModal, setSelectedProfileForModal] = useState<any | null>(null);
+
+  const handleSearchProfiles = async (shouldScroll = true) => {
+    if (isAgeInvalid) return;
+    setIsSearching(true);
+    setHasSearched(true);
+
+    try {
+      const params = new URLSearchParams({
+        lookingFor,
+        minAge: ageFrom,
+        maxAge: ageTo,
+        caste: castePreference,
+        area: areaPreference,
+        dosham: doshamPreference,
+        rasi: rasiPreference,
+        nakshatra: nakshatraPreference,
+      });
+
+      const res = await fetch(`/api/profiles?${params.toString()}`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.profiles)) {
+        setMatchingProfiles(data.profiles);
+      } else {
+        setMatchingProfiles([]);
+      }
+    } catch (err: any) {
+      console.error('handleSearchProfiles error:', err);
+      setMatchingProfiles([]);
+    } finally {
+      setIsSearching(false);
+      if (shouldScroll) {
+        setTimeout(() => {
+          const el = document.getElementById('matching-results');
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
+      }
+    }
+  };
+
+  // Initial load of profiles
+  useEffect(() => {
+    handleSearchProfiles(false);
+  }, []);
 
   const availableNakshatras = useMemo(() => {
     if (!rasiPreference || rasiPreference === 'Any') {
@@ -74,6 +129,9 @@ export default function LandingPage() {
     setDoshamPreference('Any');
     setRasiPreference('Any');
     setNakshatraPreference('Any');
+    setTimeout(() => {
+      handleSearchProfiles(false);
+    }, 50);
   };
 
   const numAgeFrom = parseInt(ageFrom, 10);
@@ -549,17 +607,221 @@ export default function LandingPage() {
                   <span>{language === 'TA' ? 'பொருத்தமான வரன்களைக் காண்க' : 'Search Matching Profiles'}</span>
                 </button>
               ) : (
-                <Link
-                  href={`/register?lookingFor=${lookingFor}&minAge=${ageFrom}&maxAge=${ageTo}&caste=${encodeURIComponent(castePreference)}&area=${encodeURIComponent(areaPreference)}&financial=${encodeURIComponent(financialCapacity)}&dosham=${encodeURIComponent(doshamPreference)}&rasi=${encodeURIComponent(rasiPreference)}&nakshatra=${encodeURIComponent(nakshatraPreference)}`}
-                  className="w-full h-13 sm:h-14 bg-gradient-to-r from-primary via-[#950026] to-primary hover:from-primary-light hover:to-primary text-white rounded-2xl font-black text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-xl hover:shadow-2xl transition-all hover:scale-[1.01] cursor-pointer border-2 border-[#D4AF37]/50"
+                <button
+                  type="button"
+                  onClick={() => handleSearchProfiles(true)}
+                  disabled={isSearching}
+                  className="w-full h-13 sm:h-14 bg-gradient-to-r from-primary via-[#950026] to-primary hover:from-primary-light hover:to-primary text-white rounded-2xl font-black text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-xl hover:shadow-2xl transition-all hover:scale-[1.01] cursor-pointer border-2 border-[#D4AF37]/50 disabled:opacity-75"
                 >
-                  <Search className="w-5 h-5 text-[#D4AF37]" />
-                  <span>{language === 'TA' ? 'பொருத்தமான வரன்களைக் காண்க' : 'Find Matching Profiles'}</span>
-                  <ArrowRight className="w-5 h-5 text-white" />
-                </Link>
+                  {isSearching ? (
+                    <>
+                      <Loader2 className="w-5 h-5 text-[#D4AF37] animate-spin" />
+                      <span>{language === 'TA' ? 'வரன்கள் தேடப்படுகிறது...' : 'Searching Matching Profiles...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Search className="w-5 h-5 text-[#D4AF37]" />
+                      <span>{language === 'TA' ? 'பொருத்தமான வரன்களைக் காண்க' : 'Find Matching Profiles'}</span>
+                      <ArrowRight className="w-5 h-5 text-white" />
+                    </>
+                  )}
+                </button>
               )}
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* 3.5 MATCHING PROFILES SECTION (FILTER RESULTS) */}
+      <section id="matching-results" className="py-10 sm:py-16 bg-[#FFFDF9] border-b border-primary/10">
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8">
+          
+          {/* Section Header */}
+          <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold mb-2 border border-primary/20">
+              <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
+              <span>{language === 'TA' ? 'நேரடி வரன் பொருத்தம்' : 'Direct Matching Candidates'}</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary font-serif">
+              {language === 'TA' ? '🌸 பொருத்தமான வரன்கள்' : '🌸 Matching Profiles'}
+            </h2>
+            <p className="text-xs sm:text-sm text-gray-600 mt-2">
+              {language === 'TA'
+                ? `உங்கள் தேடலுக்கு ஏற்ற ${matchingProfiles.length} பொருத்தமான வரன்கள் கீழே பட்டியலிடப்பட்டுள்ளன.`
+                : `Found ${matchingProfiles.length} profiles matching your preferences. View complete biodata directly.`}
+            </p>
+          </div>
+
+          {/* Loading State */}
+          {isSearching && (
+            <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
+              <Loader2 className="w-10 h-10 animate-spin text-[#D4AF37]" />
+              <p className="text-sm font-bold text-gray-700">
+                {language === 'TA' ? 'பொருத்தமான வரன்கள் தேடப்படுகின்றன...' : 'Finding best matches for you...'}
+              </p>
+            </div>
+          )}
+
+          {/* Results Grid */}
+          {!isSearching && matchingProfiles.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+              {matchingProfiles.map((p) => {
+                const pDisplayId = p.displayId || p.registrationId || 'NM-0001';
+                const pName = p.name || p.fullName || 'பெயர் வெளியிடப்படவில்லை';
+                const pGender = p.gender === 'FEMALE' ? 'மணமகள்' : 'மணமகன்';
+                const pAge = p.age || (p.dob ? Math.abs(new Date(Date.now() - new Date(p.dob).getTime()).getUTCFullYear() - 1970) : null);
+                const pHeight = p.height ? `${p.height} cm` : (p.heightCm ? `${p.heightCm} cm` : null);
+                const pCaste = p.caste || 'தமிழ் சமூகம்';
+                const pKoottam = p.koottam || p.kootam;
+                const isBiz = String(p.workNature).toUpperCase().includes('BUSINESS');
+                const pRole = p.designation || (isBiz ? (language === 'TA' ? 'சொந்த தொழில்' : 'Business') : '');
+                const pComp = p.companyName || p.organisation || '';
+                const pWork = pRole ? (pComp ? `${pRole} @ ${pComp}` : pRole) : (pComp || (p.workNature && p.workNature !== 'PRIVATE' ? p.workNature : (language === 'TA' ? 'பணியில் உள்ளார்' : 'Employed')));
+                const pCity = p.city || p.workCity || 'தமிழ்நாடு';
+                const pRasi = p.rasi;
+                const pNakshatra = p.nakshatra || p.nakshatram;
+                const pFather = p.fatherName || p.family?.fatherName || p.jathagamData?.fatherName;
+                const pMother = p.motherName || p.family?.motherName || p.jathagamData?.motherName;
+
+                return (
+                  <div
+                    key={p.id || pDisplayId}
+                    className="bg-white rounded-2xl border-2 border-[#D4AF37]/40 shadow-md hover:shadow-xl hover:border-primary/50 transition-all overflow-hidden flex flex-col justify-between group"
+                  >
+                    <div className="p-4 sm:p-5 space-y-3">
+                      {/* Top Bar with ID and Status */}
+                      <div className="flex items-center justify-between gap-2 border-b border-gray-100 pb-2.5">
+                        <span className="font-mono text-xs font-black text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20">
+                          {pDisplayId}
+                        </span>
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          <span>100% Verified</span>
+                        </span>
+                      </div>
+
+                      {/* Photo and Core Info */}
+                      <div className="flex items-start gap-3.5">
+                        <div className="w-20 h-24 rounded-xl overflow-hidden border border-[#D4AF37]/50 shrink-0 bg-primary/5 relative">
+                          {p.photoUrl ? (
+                            <img
+                              src={p.photoUrl}
+                              alt={pName}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center text-primary/60 p-1">
+                              <User className="w-8 h-8 text-[#D4AF37]" />
+                              <span className="text-[9px] font-bold text-gray-400 mt-1">Photo Protected</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <div className="inline-block text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-md">
+                            {pGender}
+                          </div>
+                          <h3 className="font-serif font-black text-base sm:text-lg text-primary truncate">
+                            {pName}
+                          </h3>
+                          <div className="text-xs font-bold text-gray-700 flex flex-wrap gap-1">
+                            {pAge && <span>{pAge} வயது</span>}
+                            {pHeight && <span>• {pHeight}</span>}
+                          </div>
+                          <p className="text-[11px] font-medium text-gray-600 truncate flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-primary shrink-0" />
+                            <span>{pCity}</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Caste & Koottam Badge */}
+                      <div className="bg-[#FFFDF9] border border-primary/10 rounded-xl p-2 text-xs space-y-0.5">
+                        <div className="flex items-center gap-1 text-gray-800">
+                          <span className="font-bold text-primary shrink-0">சமூகம்:</span>
+                          <span className="font-bold truncate">{pCaste}</span>
+                        </div>
+                        {pKoottam && (
+                          <div className="flex items-center gap-1 text-gray-800">
+                            <span className="font-bold text-[#D4AF37] shrink-0">கூட்டம்:</span>
+                            <span className="font-black text-primary truncate">{pKoottam}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Rasi & Star & Work Snippet */}
+                      <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                        <div className="p-1.5 bg-indigo-50/60 rounded-lg border border-indigo-100 truncate">
+                          <span className="text-gray-500 block text-[9px] uppercase font-bold">ராசி & நட்சத்திரம்</span>
+                          <span className="font-bold text-indigo-950 truncate">
+                            {pRasi || '-'}{pNakshatra ? ` • ${pNakshatra}` : ''}
+                          </span>
+                        </div>
+                        <div className="p-1.5 bg-amber-50/60 rounded-lg border border-amber-100 truncate">
+                          <span className="text-gray-500 block text-[9px] uppercase font-bold">பணி & தொழில்</span>
+                          <span className="font-bold text-amber-950 truncate">{pWork}</span>
+                        </div>
+                      </div>
+
+                      {/* Parents Snippet if available */}
+                      {(pFather || pMother) && (
+                        <div className="text-[11px] text-gray-600 border-t border-gray-100 pt-1.5 flex flex-wrap gap-x-2">
+                          {pFather && <span>தந்தை: <strong className="text-gray-800">{pFather}</strong></span>}
+                          {pMother && <span>தாய்: <strong className="text-gray-800">{pMother}</strong></span>}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* View Full Biodata Button */}
+                    <div className="p-3 bg-gradient-to-b from-[#FFFDF9] to-white border-t border-[#D4AF37]/30">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedProfileForModal(p)}
+                        className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-primary to-primary-light hover:from-primary-light hover:to-primary text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md transition-all cursor-pointer"
+                      >
+                        <User className="w-3.5 h-3.5 text-[#D4AF37]" />
+                        <span>{language === 'TA' ? 'முழு பயோடேட்டா காண்க' : 'View Full Biodata'}</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!isSearching && matchingProfiles.length === 0 && (
+            <div className="max-w-lg mx-auto bg-white rounded-3xl p-6 sm:p-8 text-center border-2 border-primary/20 shadow-md space-y-4">
+              <div className="w-14 h-14 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
+                <Search className="w-7 h-7 text-[#D4AF37]" />
+              </div>
+              <h3 className="font-serif font-black text-lg sm:text-xl text-primary">
+                {language === 'TA' ? 'வரன்கள் எதுவும் கிடைக்கவில்லை' : 'No Matching Profiles Found'}
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                {language === 'TA'
+                  ? 'நீங்கள் குறிப்பிட்ட வயது, சமூகம் அல்லது இருப்பிடத்திற்கு தற்போது புதிய வரன்கள் இல்லை. தயவுசெய்து வடிகட்டிகளை தளர்த்தி மீண்டும் தேடவும்.'
+                  : 'No active profiles match all current filters. Please adjust your age range or community filter to see more profiles.'}
+              </p>
+              <div className="pt-2 flex justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="px-4 py-2 rounded-full bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition-all cursor-pointer border border-primary/20"
+                >
+                  {language === 'TA' ? 'வடிகட்டிகளை மீட்டமைக்க' : 'Reset Filters'}
+                </button>
+                <Link
+                  href="/register"
+                  className="px-4 py-2 rounded-full bg-primary text-white text-xs font-bold hover:bg-primary-light transition-all cursor-pointer shadow-xs"
+                >
+                  {language === 'TA' ? '+ புதிய வரன் பதிவு' : '+ Register Profile'}
+                </Link>
+              </div>
+            </div>
+          )}
+
         </div>
       </section>
 
@@ -734,9 +996,16 @@ export default function LandingPage() {
               {language === 'TA' ? 'எனது சுயவிவரம் (பயோடேட்டா)' : 'My Profile / Biodata'}
             </button>
             <span className="hidden sm:inline text-gray-300">•</span>
-            <Link href="/admin" className="text-gray-400 hover:text-primary transition-colors">
-              {language === 'TA' ? 'நிர்வாக பலகை' : 'Admin Console'}
-            </Link>
+            <a
+              href="http://localhost:3001"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-primary transition-colors inline-flex items-center gap-1 font-medium"
+              title="Open Dedicated Admin Console on http://localhost:3001"
+            >
+              <span>{language === 'TA' ? 'நிர்வாக பலகை (Port 3001)' : 'Admin Console (Port 3001)'}</span>
+              <ExternalLink className="w-3 h-3 text-[#D4AF37]" />
+            </a>
           </div>
 
           <div className="pt-4 sm:pt-6 border-t border-gray-100 text-xs text-gray-400 px-2 leading-relaxed">
@@ -755,6 +1024,35 @@ export default function LandingPage() {
         isOpen={isProfileDrawerOpen}
         onClose={() => setIsProfileDrawerOpen(false)}
       />
+
+      {/* Full Biodata Modal Overlay */}
+      {selectedProfileForModal && (
+        <div
+          className="fixed inset-0 z-[120] bg-black/75 backdrop-blur-sm overflow-y-auto p-2 sm:p-4 flex items-start justify-center"
+          onClick={() => setSelectedProfileForModal(null)}
+        >
+          <div
+            className="relative max-w-4xl w-full my-4 sm:my-8 bg-white rounded-3xl shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setSelectedProfileForModal(null)}
+              className="absolute top-3 right-3 sm:top-5 sm:right-5 z-50 w-9 h-9 rounded-full bg-black/60 hover:bg-black text-white flex items-center justify-center font-bold text-base shadow-lg transition-all cursor-pointer border border-white/20"
+              title="Close Biodata"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <AkshayamProfileView
+              profile={selectedProfileForModal}
+              language={language}
+              onBack={() => setSelectedProfileForModal(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

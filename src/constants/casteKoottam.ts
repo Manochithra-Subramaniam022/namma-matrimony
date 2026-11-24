@@ -1,0 +1,306 @@
+export interface CasteKoottamConfig {
+  [casteName: string]: string[];
+}
+
+export const KONGU_KOOTTAMS = [
+  "Aandai (ஆந்தை)", "Aadar (ஆடர்)", "Aadhi (ஆதி / ஆதிக்குலம்)", "Aadhirai (ஆதிரை)",
+  "Aadhitreya Kumban (ஆதித்தேய கும்பன்)", "Aanthuvan (அந்துவன்)", "Aavan (ஆவன்)",
+  "Agini / Akini (அக்கினி)", "Alagan / Azhagu (அழகன் / அழகு)", "Anangan (அனகன் / அனங்கன்)",
+  "Ariyan / Ashariyan (ஆரியன் / அஷரியன்)", "Bharatan (பாரதன்)", "Bramman (பிரம்மா)",
+  "Dananjayan / Thananjayan (தனஞ்செயன்)", "Danavantan (தனவந்தன்)", "Devendran (தேவேந்திரன்)",
+  "Eenjan (ஈஞ்சன்)", "Ennai (எண்ணை)", "Kaadan (காடன்)", "Kaadai (காடை)",
+  "Kaari (காரி)", "Kalingarayan (காலிங்கராயன்)", "Kanavalan (கணவாளன்)", "Kanakkan (கணக்கன்)",
+  "Kannan (கண்ணன்)", "Kannanthai (கண்ணாந்தை)", "Keeran (கீரன்)", "Koorai (கூறை)",
+  "Koovendhar (கோவேந்தர்)", "Kuzhalayan (குழையன்)", "Maadar (மாடர்)", "Maadai (மாடை)",
+  "Maniyan (மணியன்)", "Mayilar (மயிலர்)", "Medhi (மேதி)", "Mulan (மூலன்)",
+  "Mutthan (முத்தன்)", "Muzhukathan (முழுக்காதன்)", "Neerunniyar (நீருண்ணியர்)", "Ozukkar (ஒழுக்கர்)",
+  "Pallavarayan (பல்லவராயன்)", "Panagkaadar (பனங்காடர்)", "Pandiyan (பாண்டியன்)", "Pannai (பண்ணை)",
+  "Pathuman (பதுமன்)", "Pavazhalar (பவழர்)", "Payiran (பயிரன்)", "Periyan (பெரியன்)",
+  "Perunkudi (பெருங்குடி)", "Pillar (பில்லர்)", "Podiyan (பொடியன்)", "Ponnar (பொன்னர்)",
+  "Poochadhai (பூச்சந்தை)", "Poodhiyan (பூதியன்)", "Poosan (பூசன்)", "Poondhai (பூந்தை)",
+  "Porulaanthai (பொருளாந்தை)", "Saakadai (சாகாடை)", "Sathanthai (சாத்தந்தை)", "Sanagan (சனகன்)",
+  "Sedan (சேடன்)", "Sellan (செல்லன்)", "Sembonn (செம்பொன்)", "Sempoothan (செம்பூதன்)",
+  "Semvan (செம்வன்)", "Sengannan (செங்கண்ணன்)", "Sengunni (செங்குன்னி)", "Seralan (சேரலன்)",
+  "Seran (சேரன்)", "Sevadi (சேவடி)", "Sevvayan (செவ்வாயர்)", "Sevvandhi (செவ்வந்தி)",
+  "Silamban (சிலம்பன்)", "Soman (சோமன்)", "Soolan (சூலன்)", "Sooriyan (சூரியன்)",
+  "Thanakkavan (தனக்கவன்)", "Thavalayan (தவளையன்)", "Themaan (தேமான்)", "Thodai (தோடை)",
+  "Thooran (தூரன்)", "Thorakkan (தொரக்கன்)", "Uvanan (உவணன்)", "Uzhavan (உழவன்)",
+  "Vaanan (வாணன்)", "Vannakkan (வண்ணக்கன்)", "Veliyan (வெளியன்)", "Vellamban (வெள்ளம்பர்)",
+  "Vendhai (வெந்தை)", "Viliyan (விளையன்)", "Villi (வில்லி)"
+];
+
+export const DEFAULT_CASTE_KOOTTAM_MAP: CasteKoottamConfig = {
+  "Kongu Vellala Gounder": [...KONGU_KOOTTAMS],
+
+  "Gounder (Other)": [
+    "Vettuva Kootam (வேட்டுவர் கூட்டம்)",
+    "Kurumba Kootam (குறும்பா கூட்டம்)",
+    "Anthuvan (அந்துவன்)",
+    "Pungambadi (புங்கம்பாடி)",
+    "Vennandur (வெண்ணந்தூர்)",
+    "Kalingarayan (காலிங்கராயன்)",
+    "Poochadhai (பூச்சந்தை)"
+  ],
+
+  "Chettiar": [
+    "Ilayathangudi - Okkoorudayar (இளையாத்தங்குடி - ஒக்கூருடையார்)",
+    "Ilayathangudi - Pattanasamiyar (இளையாத்தங்குடி - பட்டணசாமியார்)",
+    "Ilayathangudi - Perumarudur (இளையாத்தங்குடி - பெருமருதூர்)",
+    "Ilayathangudi - Kazhanivasalkudiyar (இளையாத்தங்குடி - கழனிவாசல்குடியார்)",
+    "Ilayathangudi - Kinginikudiyar (இளையாத்தங்குடி - கிங்கினிகுடியார்)",
+    "Mathur - Uraiyur (மாத்தூர் - உறையூர்)",
+    "Mathur - Arumbakkur (மாத்தூர் - அரும்பாக்கூர்)",
+    "Mathur - Manalur (மாத்தூர் - மணலூர்)",
+    "Mathur - Kannur (மாத்தூர் - கண்ணூர்)",
+    "Mathur - Karuppur (மாத்தூர் - கருப்பூர்)",
+    "Mathur - Kulathur (மாத்தூர் - குளத்தூர்)",
+    "Vairavanpatti (வைரவன்பட்டி)",
+    "Iraniyankovil (இரணியன்கோவில்)",
+    "Pillaiyarpatti (பிள்ளையார்பட்டி)",
+    "Nemam (நேமம்)",
+    "Iluppaikudi (இலுப்பைகுடி)",
+    "Soorakudi (சூரக்குடி)",
+    "Velangudi (வேலங்குடி)",
+    "Devanga Gotram (தேவாங்க கோத்ரம்)",
+    "Ayira Vysya Gotram (ஆயிர வைசிய கோத்ரம்)"
+  ],
+
+  "Thevar / Mukkulathor": [
+    "Kallar - Nattar (கள்ளர் - நாட்டார்)",
+    "Kallar - Ambalakarar (கள்ளர் - அம்பலக்காரர்)",
+    "Kallar - Gandharvakkottai (கள்ளர் - கந்தர்வக்கோட்டை)",
+    "Maravar - Sembiya Nattu Maravar (மறவர் - செம்பிய நாட்டு மறவர்)",
+    "Maravar - Kondayam Kottai (மறவர் - கொண்டையங்கோட்டை)",
+    "Maravar - Siruthali (மறவர் - சிறுதாலி)",
+    "Maravar - Karupatti (மறவர் - கருப்பட்டி)",
+    "Maravar - Vengai (மறவர் - வேங்கை)",
+    "Agamudayar - Servai (அகமுடையார் - சேர்வை)",
+    "Agamudayar - Rajakulam (அகமுடையார் - ராஜகுலம்)",
+    "Agamudayar - Thalaivar (அகமுடையார் - தலைவர்)"
+  ],
+
+  "Vanniyar": [
+    "Sambuvarayar (சம்புவரையர்)",
+    "Sembarayan (செம்பராயன்)",
+    "Kandar (கண்டர்)",
+    "Nayinar (நயினார்)",
+    "Mazhavarayar (மழவராயர்)",
+    "Pallava Gotram (பல்லவ கோத்ரம்)",
+    "Kadavarayan (காடவராயன்)",
+    "Boopathi (பூபதி)",
+    "Thondaiman (தொண்டைமான்)",
+    "Kalingarayar (காலிங்கராயர்)",
+    "Anjatha Singam (அஞ்சாத சிங்கம்)",
+    "Padayachi Kootam (படையாட்சி கூட்டம்)"
+  ],
+
+  "Nadar": [
+    "Karukkupattayar (கருக்குப்பட்டையார்)",
+    "Mel-nattar (மேல்நாட்டார்)",
+    "Mara-nattar (மறைநாட்டார்)",
+    "Nattathi (நாட்டாத்தி)",
+    "Kodikkal (கொடிக்கால்)",
+    "Kalla-nadar (கள்ள நாடார்)",
+    "Servaikaran (சேர்வைகாரன்)"
+  ],
+
+  "Mudaliar": [
+    "Thondaimandala Gotram (தொண்டைமண்டல கோத்ரம்)",
+    "Arcot Mudaliar Gotram (ஆற்காடு முதலியார் கோத்ரம்)",
+    "Saiva Mudaliar Kulam (சைவ முதலியார் குலம்)",
+    "Karkatha Mudaliar (கார்க்காத்த முதலியார்)",
+    "Senguntha Kulam (செங்குந்த குலம்)",
+    "Poonamallee Kulam (பூவிருந்தவல்லி குலம்)",
+    "Agathiya Gotram (அகத்திய கோத்ரம்)",
+    "Siva Gotram (சிவ கோத்ரம்)",
+    "Vishnu Gotram (விஷ்ணு கோத்ரம்)"
+  ],
+
+  "Pillai": [
+    "Saiva Pillai Kulam (சைவ பிள்ளை குலம்)",
+    "Karakatha Pillai (கார்க்காத்த பிள்ளை)",
+    "Tirunelveli Kottai Pillai (திருநெல்வேலி கோட்டை பிள்ளை)",
+    "Nanjil Nattu Pillai (நாஞ்சில் நாட்டு பிள்ளை)",
+    "Seer Karunigar (சீர் கருணீகர்)",
+    "Agasthya Gotram (அகஸ்திய கோத்ரம்)",
+    "Kashyapa Gotram (காஷ்யப கோத்ரம்)"
+  ],
+
+  "Brahmin": [
+    "Bharadwaja (பாரத்வாஜ)",
+    "Koundinya (கவுண்டின்ய)",
+    "Vatsa / Srivatsa (வத்ஸ / ஸ்ரீவத்ஸ)",
+    "Kashyapa (காஷ்யப)",
+    "Koushika (கௌசிக)",
+    "Harita (ஹரித)",
+    "Sandilya (சாண்டில்ய)",
+    "Gargeya (கார்கேய)",
+    "Gautama (கௌதம)",
+    "Atri (அத்ரி)",
+    "Jamadagni (ஜமதக்னி)",
+    "Viswamitra (விஸ்வாமித்ர)",
+    "Mudgala (முத்கல)",
+    "Parasara (பராசர)",
+    "Angirasa (ஆங்கீரச)",
+    "Vasishta (வசிஷ்ட)",
+    "Agasthya (அகஸ்திய)",
+    "Kapila (கபில)",
+    "Naidhruva (நைthruவ)",
+    "Vadula (வாதுல)"
+  ],
+
+  "Naidu": [
+    "Recharla Gotram (ரேச்சர்ல கோத்ரம்)",
+    "Palavelli Gotram (பாலவெல்லி கோத்ரம்)",
+    "Janakula Gotram (ஜனகுல கோத்ரம்)",
+    "Thulipala Gotram (துலிபாலா கோத்ரம்)",
+    "Cheruku Gotram (செருக்கு கோத்ரம்)",
+    "Kamma Gotras (கம்மா கோத்ரங்கள்)",
+    "Balija Gotras (பலிஜா கோத்ரங்கள்)",
+    "Kasyapa Gotram (காசியப கோத்ரம்)"
+  ],
+
+  "Viswakarma / Achari": [
+    "Manu - Sanaga Gotram (மனு - சனக கோத்ரம் - இரும்பு)",
+    "Maya - Sanathana Gotram (மய - சனாதன கோத்ரம் - மரம்)",
+    "Twashta - Abhouva Gotram (த்வஷ்டா - அபௌவ கோத்ரம் - பித்தளை/வெண்கலம்)",
+    "Shilpi - Prathnasa Gotram (சில்பி - ப்ரத்னஸ கோத்ரம் - கல் சிற்பம்)",
+    "Viswajna - Suparna Gotram (விஸ்வஜ்ஞ - சுபர்ண கோத்ரம் - தங்கம்)",
+    "Brahma Rishi Gotram (பிரம்ம ரிஷி கோத்ரம்)"
+  ],
+
+  "Yadav / Konar": [
+    "Sasikula (சசிகுலம்)",
+    "Gopala (கோபால குலம்)",
+    "Nandagopala (நந்தகோபால குலம்)",
+    "Karunila (கருநீல குலம்)",
+    "Pillan (பிள்ளான் கூட்டம்)",
+    "Azhagu (அழகு கூட்டம்)",
+    "Koundinya Gotram (கவுண்டின்ய கோத்ரம்)"
+  ],
+
+  "Sengunthar / Kaikolar": [
+    "Subramanya Gotram (சுப்பிரமணிய கோத்ரம்)",
+    "Siva Gotram (சிவ கோத்ரம்)",
+    "Muruga Kilai (முருக கிளை)",
+    "Vira Kilai (வீர கிளை)"
+  ],
+
+  "Devendra Kula Vellalar": [
+    "Kudumban (குடும்பன்)",
+    "Pannadi (பண்ணாடி)",
+    "Kaladi (காலாடி)",
+    "Vathiriyan (வத்திரியன்)",
+    "Kadaiyan (கடையன்)",
+    "Pallan (பள்ளன்)"
+  ],
+
+  "Sourashtra": [
+    "Vashishta Gotram (வசிஷ்ட கோத்ரம்)",
+    "Bharadwaja Gotram (பாரத்வாஜ கோத்ரம்)",
+    "Koundinya Gotram (கவுண்டின்ய கோத்ரம்)",
+    "Markandeya Gotram (மார்க்கண்டேய கோத்ரம்)",
+    "Kashyapa Gotram (காஷ்யப கோத்ரம்)"
+  ],
+
+  "Reddy": [
+    "Motati Gotram (மோடாட்டி கோத்ரம்)",
+    "Gudati Gotram (குடாட்டி கோத்ரம்)",
+    "Pokanati Gotram (போகனாட்டி கோத்ரம்)",
+    "Panta Gotram (பாண்டா கோத்ரம்)",
+    "Pedakanti Gotram (பெடகண்டி கோத்ரம்)"
+  ],
+
+  "Adidravidar": [
+    "Siva Gotram (சிவ கோத்ரம்)",
+    "Amman Kulam (அம்மன் குலம்)",
+    "Ayyanar Kulam (அய்யனார் குலம்)",
+    "Kulam / Pirivu (குலம் / பிரிவு)"
+  ]
+};
+
+/**
+ * Returns dynamic localized label for the Koottam/Clan/Gotram field based on caste
+ */
+export function getKoottamFieldLabel(caste: string, language: 'TA' | 'EN' = 'TA'): {
+  title: string;
+  placeholder: string;
+  isGotram: boolean;
+} {
+  const c = (caste || '').toLowerCase();
+
+  if (c.includes('brahmin') || c.includes('பிராமணர்')) {
+    return {
+      title: language === 'TA' ? 'கோத்ரம் / குலம் (Gotram / Clan)' : 'Gotram / Clan',
+      placeholder: language === 'TA' ? 'கோத்ரத்தைத் தேர்வு செய்யவும்' : 'Select Gotram',
+      isGotram: true
+    };
+  }
+
+  if (c.includes('chettiar') || c.includes('செட்டியார்')) {
+    return {
+      title: language === 'TA' ? 'கோவில் பிரிவு / கூட்டம் (Temple / Clan)' : 'Temple Pirivu / Clan',
+      placeholder: language === 'TA' ? 'கோவில் பிரிவைத் தேர்வு செய்யவும்' : 'Select Temple / Clan',
+      isGotram: false
+    };
+  }
+
+  if (c.includes('naidu') || c.includes('நாயுடு') || c.includes('reddy') || c.includes('ரெட்டி') || c.includes('viswakarma') || c.includes('விஸ்வகர்மா')) {
+    return {
+      title: language === 'TA' ? 'கோத்ரம் / கிளை (Gotram / Kilai)' : 'Gotram / Kilai',
+      placeholder: language === 'TA' ? 'கோத்ரம் / கிளையைத் தேர்வு செய்யவும்' : 'Select Gotram / Kilai',
+      isGotram: true
+    };
+  }
+
+  return {
+    title: language === 'TA' ? 'கூட்டம் / குலம் / கிளை (Koottam / Kulam / Clan)' : 'Koottam / Kulam / Clan',
+    placeholder: language === 'TA' ? 'கூட்டத்தைத் தேர்வு செய்யவும்' : 'Select Koottam / Kulam',
+    isGotram: false
+  };
+}
+
+/**
+ * Retrieves the koottam list for a given caste from an active mapping,
+ * falling back to defaults if not customized.
+ */
+export function getKoottamsForCaste(
+  caste: string,
+  customMap?: CasteKoottamConfig | null
+): string[] {
+  if (!caste) return [];
+
+  const map = customMap && Object.keys(customMap).length > 0
+    ? customMap
+    : DEFAULT_CASTE_KOOTTAM_MAP;
+
+  // Direct match
+  if (map[caste] && Array.isArray(map[caste]) && map[caste].length > 0) {
+    return map[caste];
+  }
+
+  // Case-insensitive or partial match
+  const normalizedKey = Object.keys(map).find(
+    (k) => k.toLowerCase() === caste.toLowerCase() ||
+      caste.toLowerCase().includes(k.toLowerCase()) ||
+      k.toLowerCase().includes(caste.toLowerCase())
+  );
+
+  if (normalizedKey && Array.isArray(map[normalizedKey]) && map[normalizedKey].length > 0) {
+    return map[normalizedKey];
+  }
+
+  // Fallback to default map if customMap had no entry
+  if (DEFAULT_CASTE_KOOTTAM_MAP[caste]) {
+    return DEFAULT_CASTE_KOOTTAM_MAP[caste];
+  }
+
+  // Fallback generic
+  return [
+    "Default / Family Clan",
+    "Agasthya Gotram",
+    "Siva Gotram",
+    "Vishnu Gotram",
+    "Amman Kulam"
+  ];
+}

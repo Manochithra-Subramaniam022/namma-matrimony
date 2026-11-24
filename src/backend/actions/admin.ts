@@ -58,18 +58,111 @@ export async function getAllProfilesForAdmin(options?: {
           }
         }
 
-        const { data: family } = p.userId
-          ? await supabase.from('Family').select('*').eq('userId', p.userId).maybeSingle()
-          : { data: null };
+        let family: any = null;
+        if (p.userId) {
+          const { data: f } = await supabase.from('Family').select('*').eq('userId', p.userId).maybeSingle();
+          family = f;
+        }
+        if (!family && p.profileCreatedBy) {
+          const { data: u } = await supabase.from('User').select('id').eq('mobile_no', p.profileCreatedBy).maybeSingle();
+          if (u?.id) {
+            const { data: f } = await supabase.from('Family').select('*').eq('userId', u.id).maybeSingle();
+            family = f;
+          }
+        }
 
         const { data: expectations } = p.userId
           ? await supabase.from('Expectations').select('*').eq('userId', p.userId).maybeSingle()
           : { data: null };
 
+        const { data: siblings } = family?.id
+          ? await supabase.from('Sibling').select('*').eq('familyId', family.id)
+          : { data: [] };
+
+        const { data: educations } = p.id
+          ? await supabase.from('Education').select('*').eq('profileId', p.id)
+          : { data: [] };
+
+        const dbSiblings = Array.isArray(siblings) && siblings.length > 0
+          ? siblings.map((s: any) => ({ name: s.name, relation: s.relation, maritalStatus: s.status }))
+          : [];
+        const jsonSiblings = Array.isArray(p.jathagamData?.siblingsList) && p.jathagamData.siblingsList.length > 0
+          ? p.jathagamData.siblingsList
+          : (family?.siteLand ? (() => { try { const parsed = JSON.parse(family.siteLand); return Array.isArray(parsed) ? parsed : []; } catch { return []; } })() : []);
+        const siblingsList = dbSiblings.length > 0 ? dbSiblings : jsonSiblings;
+
+        const dbEdu = Array.isArray(educations) && educations.length > 0
+          ? educations.map((e: any) => ({ level: e.level, degree: e.degreeName, institution: e.institution }))
+          : [];
+        const jsonEdu = Array.isArray(p.jathagamData?.educationList) && p.jathagamData.educationList.length > 0
+          ? p.jathagamData.educationList
+          : [];
+        const educationList = dbEdu.length > 0 ? dbEdu : (jsonEdu.length > 0 ? jsonEdu : (p.education ? [{ level: 'Degree', degree: p.education, institution: '' }] : []));
+
+        const isFatherLate = String(family?.fatherLivingStatus || p.jathagamData?.fatherLivingStatus || p.fatherLivingStatus || family?.fatherStatus || p.jathagamData?.fatherStatus || p.fatherStatus).toUpperCase() === 'LATE';
+        const isMotherLate = String(family?.motherLivingStatus || p.jathagamData?.motherLivingStatus || p.motherLivingStatus || family?.motherStatus || p.jathagamData?.motherStatus || p.motherStatus).toUpperCase() === 'LATE';
+
+        const fatherName = family?.fatherName || p.jathagamData?.fatherName || p.fatherName || null;
+        const fatherOccupation = isFatherLate ? null : (family?.fatherStatus || p.jathagamData?.fatherOccupation || p.fatherOccupation || null);
+        const fatherMobile = family?.fatherMobile || p.jathagamData?.fatherMobile || p.fatherMobile || null;
+
+        const motherName = family?.motherName || p.jathagamData?.motherName || p.motherName || null;
+        const motherOccupation = isMotherLate ? null : (family?.motherStatus || p.jathagamData?.motherOccupation || p.motherOccupation || null);
+        const motherMobile = family?.motherMobile || p.jathagamData?.motherMobile || p.motherMobile || null;
+
         return {
           ...p,
+          // Flattened backward-compatible accessors
+          fatherName,
+          fatherStatus: isFatherLate ? 'LATE' : (family?.fatherStatus || p.jathagamData?.fatherStatus || p.fatherStatus || 'ALIVE'),
+          fatherLivingStatus: isFatherLate ? 'LATE' : 'ALIVE',
+          fatherOccupation,
+          fatherMobile,
+
+          motherName,
+          motherStatus: isMotherLate ? 'LATE' : (family?.motherStatus || p.jathagamData?.motherStatus || p.motherStatus || 'ALIVE'),
+          motherLivingStatus: isMotherLate ? 'LATE' : 'ALIVE',
+          motherOccupation,
+          motherMobile,
+
+          workNature: family?.workNature || p.jathagamData?.workNature || p.workNature || null,
+          workSector: p.jathagamData?.workSector || null,
+          businessType: p.jathagamData?.businessType || null,
+          workMode: p.jathagamData?.workMode || null,
+          businessDetails: p.jathagamData?.businessDetails || null,
+          designation: family?.designation || p.jathagamData?.designation || p.designation || null,
+          companyName: family?.organisation || p.jathagamData?.companyName || p.companyName || null,
+          monthlyIncome: p.jathagamData?.monthlyIncome || null,
+          annualIncome: family?.salary || p.jathagamData?.annualIncome || p.annualIncome || null,
+          workCity: family?.workingAddress || p.jathagamData?.workCity || p.workCity || null,
+          workMapLink: family?.googleLocation || p.jathagamData?.workMapLink || p.workMapLink || null,
+
+          houseType: family?.houseType || p.jathagamData?.houseType || p.houseType || null,
+          houseSqft: family?.houseSqFt || p.jathagamData?.houseSqft || p.houseSqft || null,
+          rentalIncome: family?.rentalIncome || p.jathagamData?.rentalIncomeMonthly || p.rentalIncome || null,
+          thottam: family?.thottam || p.jathagamData?.agriculturalLandAcres || p.thottam || null,
+          vacantLand: family?.vacantLand || p.jathagamData?.vacantLandSqft || p.vacantLand || null,
+          totalAssetValue: family?.totalAssetValue || p.jathagamData?.totalNetAssets || p.totalAssetValue || null,
+          propertyComments: family?.assetComments || p.jathagamData?.propertyComments || p.propertyComments || null,
+          dowryDetails: family?.dowryDetails || p.jathagamData?.dowryDetails || p.dowryDetails || null,
+
+          educationList,
+          siblingsList,
           userContact,
-          family: family || {},
+          family: {
+            ...(family || {}),
+            fatherName,
+            fatherStatus: isFatherLate ? 'LATE' : (family?.fatherStatus || p.jathagamData?.fatherStatus || p.fatherStatus || 'ALIVE'),
+            fatherLivingStatus: isFatherLate ? 'LATE' : 'ALIVE',
+            fatherOccupation,
+            fatherMobile,
+            motherName,
+            motherStatus: isMotherLate ? 'LATE' : (family?.motherStatus || p.jathagamData?.motherStatus || p.motherStatus || 'ALIVE'),
+            motherLivingStatus: isMotherLate ? 'LATE' : 'ALIVE',
+            motherOccupation,
+            motherMobile,
+            siblings: siblingsList,
+          },
           expectations: expectations || {},
         };
       })
