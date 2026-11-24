@@ -469,7 +469,7 @@ export async function registerProfileWithPrisma(formData: any) {
       height: parseFloat(formData.heightCm || formData.height) || 165,
       weight: parseFloat(formData.weightKg || formData.weight) || 60,
       physicalCondition,
-      skinColour: formData.complexion || 'Wheatish',
+      skinColour: formData.complexion || null,
       maritalStatus,
       familyStatus,
       foodHabits: habitMap(formData.foodHabit || formData.foodHabits),

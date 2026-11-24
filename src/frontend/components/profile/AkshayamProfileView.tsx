@@ -208,24 +208,58 @@ export default function AkshayamProfileView({
     return map[rel.toUpperCase()] || rel;
   };
 
-  // Native Place & Family Setup
-  const nativePlace = fam.workingAddress || profile?.jathagamData?.nativePlace || profile?.nativePlace || profile?.city || 'Tamil Nadu';
-  const familyType = fam.familyType || profile?.jathagamData?.familyType || profile?.familyType || (profile?.familyStatus === 'NUCLEAR' ? 'தனிக்குடும்பம் (Nuclear)' : 'கூட்டுக் குடும்பம் (Joint Family)');
-  const familyValue = fam.familyValue || profile?.jathagamData?.familyValue || profile?.familyValue || 'பாரம்பரியம் (Traditional / Moderate)';
+  // Native Place & Family Setup (No assumptions)
+  const nativePlace = fam.workingAddress || profile?.jathagamData?.nativePlace || profile?.nativePlace || profile?.city || null;
+  const familyType = fam.familyType || profile?.jathagamData?.familyType || profile?.familyType || (profile?.familyStatus === 'NUCLEAR' ? 'தனிக்குடும்பம் (Nuclear)' : (profile?.familyStatus === 'JOINT' ? 'கூட்டுக் குடும்பம் (Joint)' : null));
 
-  // Property & Assets
-  const houseType = fam.houseType || profile?.houseType || 'Own House';
-  const houseSqft = fam.houseSqFt || fam.houseSqft || profile?.houseSqft;
-  const rentalIncome = fam.rentalIncome || profile?.rentalIncomeMonthly || profile?.rentalIncome;
-  const thottam = fam.thottam || profile?.agriculturalLandAcres || profile?.thottam;
-  const vacantLand = fam.vacantLand || profile?.vacantLandSqft || profile?.vacantLand;
-  const totalAssets = fam.totalAssetValue || profile?.totalNetAssets || profile?.totalAssetValue;
-  const goldPavun = profile?.goldPavun || fam.goldPavun;
-  const dowryDetails = fam.dowryDetails || profile?.dowryDetails;
-  const propertyComments = fam.assetComments || profile?.propertyComments || profile?.assetComments;
+  // Property & Assets (No assumptions - only what user entered)
+  const houseType = fam.houseType || profile?.houseType || null;
+  const houseSqft = fam.houseSqFt || fam.houseSqft || profile?.houseSqft || null;
+  const rentalIncome = fam.rentalIncome || profile?.rentalIncomeMonthly || profile?.rentalIncome || null;
+  const thottam = fam.thottam || profile?.agriculturalLandAcres || profile?.thottam || null;
+  const vacantLand = fam.vacantLand || profile?.vacantLandSqft || profile?.vacantLand || null;
+  const totalAssets = fam.totalAssetValue || profile?.totalNetAssets || profile?.totalAssetValue || null;
+  const goldPavun = profile?.goldPavun || fam.goldPavun || null;
+  const dowryDetails = fam.dowryDetails || profile?.dowryDetails || null;
+  const propertyComments = fam.assetComments || profile?.propertyComments || profile?.assetComments || null;
 
-  // Career / Education / Business (Detailed & Non-generic)
-  const educationDegree = profile?.educationList?.[0]?.degree || profile?.educationList?.[0]?.degreeName || profile?.education || (language === 'TA' ? 'பட்டதாரி' : 'Graduate');
+  // Has Property Details check
+  const hasPropertyDetails = !!(
+    houseType ||
+    houseSqft ||
+    rentalIncome ||
+    thottam ||
+    vacantLand ||
+    totalAssets ||
+    goldPavun ||
+    dowryDetails ||
+    propertyComments
+  );
+
+  // Detailed Career & Education (Multi-degree support, No generic assumptions)
+  const resolveDetailedEducations = () => {
+    if (Array.isArray(profile?.educationList) && profile.educationList.length > 0) {
+      return profile.educationList.filter((e: any) => e.degree || e.degreeName || e.level);
+    }
+    if (Array.isArray(profile?.jathagamData?.educationList) && profile.jathagamData.educationList.length > 0) {
+      return profile.jathagamData.educationList.filter((e: any) => e.degree || e.degreeName || e.level);
+    }
+    if (profile?.education) {
+      return [{ level: 'Degree', degree: profile.education, institution: '' }];
+    }
+    return [];
+  };
+  const detailedEducations = resolveDetailedEducations();
+  const educationDisplay = detailedEducations.length > 0
+    ? detailedEducations
+        .map((e: any) => {
+          const parts = [e.degree || e.degreeName || e.level];
+          if (e.institution) parts.push(`• ${e.institution}`);
+          return parts.join(' ');
+        })
+        .join(', ')
+    : profile?.education || null;
+
   const rawWorkNature = profile?.workNature || fam.workNature || '';
   const isBusiness = String(rawWorkNature).toUpperCase().includes('BUSINESS') || String(rawWorkNature).toUpperCase().includes('SELF');
   const isNotWorking = String(rawWorkNature).toUpperCase().includes('NOT_WORKING') || String(rawWorkNature).toUpperCase().includes('NOT WORKING');
@@ -237,20 +271,115 @@ export default function AkshayamProfileView({
     if (isGovt) return language === 'TA' ? 'அரசுப் பணி (Government / PSU)' : 'Government / PSU';
     if (isNri) return language === 'TA' ? 'வெளிநாட்டுப் பணி (Abroad / NRI)' : 'Abroad / NRI';
     if (isNotWorking) return language === 'TA' ? 'பணியில் இல்லை (Not Working / Preparing)' : 'Not Working';
-    return language === 'TA' ? 'தனியார் நிறுவனம் (Private Sector)' : 'Private Sector';
+    if (rawWorkNature) return language === 'TA' ? 'தனியார் நிறுவனம் (Private Sector)' : 'Private Sector';
+    return null;
   };
   const workNatureLabel = formatWorkNatureLabel();
 
-  const workDesignation = fam.designation || profile?.designation || (isBusiness ? (language === 'TA' ? 'தொழில் முனைவர் / உரிமையாளர்' : 'Business Owner') : (isNotWorking ? (language === 'TA' ? 'தயாரிப்பில்' : 'Preparing') : ''));
-  const companyName = fam.organisation || profile?.companyName || profile?.organisation || (isBusiness ? (language === 'TA' ? 'சொந்த நிறுவனம்' : 'Own Business Firm') : '');
-  const workCity = fam.workingAddress || profile?.workCity || profile?.workingAddress || profile?.city || '';
-  const annualIncome = fam.salary || profile?.annualIncome || profile?.salary;
-  const monthlyIncome = profile?.monthlyIncome || fam.monthlyIncome;
-  const workMapLink = fam.googleLocation || profile?.workMapLink;
-  const workSector = profile?.workSector || profile?.jathagamData?.workSector || fam.workSector || '';
-  const businessType = profile?.businessType || profile?.jathagamData?.businessType || fam.businessType || '';
-  const workMode = profile?.workMode || profile?.jathagamData?.workMode || '';
-  const businessDetails = profile?.businessDetails || profile?.jathagamData?.businessDetails || '';
+  const workDesignation = fam.designation || profile?.designation || (isBusiness ? (language === 'TA' ? 'தொழில் முனைவர்' : 'Business Owner') : (isNotWorking ? (language === 'TA' ? 'தயாரிப்பில்' : 'Preparing') : null));
+  const companyName = fam.organisation || profile?.companyName || profile?.organisation || null;
+  const workCity = fam.workingAddress || profile?.workCity || profile?.workingAddress || profile?.city || null;
+  const annualIncome = fam.salary || profile?.annualIncome || profile?.salary || null;
+  const monthlyIncome = profile?.monthlyIncome || fam.monthlyIncome || null;
+  const workMapLink = fam.googleLocation || profile?.workMapLink || null;
+  const workSector = profile?.workSector || profile?.jathagamData?.workSector || fam.workSector || null;
+  const businessType = profile?.businessType || profile?.jathagamData?.businessType || fam.businessType || null;
+  const workMode = profile?.workMode || profile?.jathagamData?.workMode || null;
+  const businessDetails = profile?.businessDetails || profile?.jathagamData?.businessDetails || null;
+
+  // Calculate Lagnam from uploaded Jathagam chart or DOB+TOB (No fake 'Mesham' assumption)
+  const calculateLagnamFromChart = (p: any) => {
+    if (p?.lagnam && p.lagnam !== 'மேஷம்') return p.lagnam;
+    if (p?.jathagamData?.lagnam && p.jathagamData.lagnam !== 'மேஷம்') return p.jathagamData.lagnam;
+    if (p?.family?.lagnam && p.family.lagnam !== 'மேஷம்') return p.family.lagnam;
+
+    const rasiNames = [
+      'மீனம் (Pisces)',
+      'மேஷம் (Aries)',
+      'ரிஷபம் (Taurus)',
+      'மிதுனம் (Gemini)',
+      'கடகம் (Cancer)',
+      'சிம்மம் (Leo)',
+      'கன்னி (Virgo)',
+      'துலாம் (Libra)',
+      'விருச்சிகம் (Scorpio)',
+      'தனுசு (Sagittarius)',
+      'மகரம் (Capricorn)',
+      'கும்பம் (Aquarius)',
+    ];
+
+    const houses = p?.rasiHouses || p?.jathagamData?.rasiHouses || p?.rasiGrid;
+    let parsedHouses: any[] = [];
+    if (Array.isArray(houses)) {
+      parsedHouses = houses;
+    } else if (typeof houses === 'string') {
+      try {
+        const parsed = JSON.parse(houses);
+        if (Array.isArray(parsed)) parsedHouses = parsed;
+      } catch {}
+    }
+
+    if (parsedHouses.length > 0) {
+      for (const h of parsedHouses) {
+        const idx = h.houseIndex !== undefined ? h.houseIndex : h.index;
+        const planets = Array.isArray(h.planets) ? h.planets : [];
+        const hasLagna = planets.some((pl: any) => {
+          const s = String(pl).toLowerCase().trim();
+          return s === 'ல' || s === 'லக்' || s === 'லக்னம்' || s === 'l' || s === 'lagna' || s === 'asc' || s === 'ascendant';
+        });
+        if (hasLagna && idx >= 0 && idx < 12) {
+          return rasiNames[idx];
+        }
+      }
+    }
+
+    // From DOB and TOB (Time of Birth)
+    const dobStr = p?.dob || p?.dateOfBirth || p?.jathagamData?.dob;
+    const tobStr = p?.tob || p?.timeOfBirth || p?.jathagamData?.tob;
+
+    if (dobStr && tobStr) {
+      const dob = new Date(dobStr);
+      if (!isNaN(dob.getTime())) {
+        const month = dob.getMonth() + 1;
+        const day = dob.getDate();
+
+        let sunSignIndex = 1;
+        if ((month === 4 && day >= 14) || (month === 5 && day < 15)) sunSignIndex = 1;
+        else if ((month === 5 && day >= 15) || (month === 6 && day < 15)) sunSignIndex = 2;
+        else if ((month === 6 && day >= 15) || (month === 7 && day < 16)) sunSignIndex = 3;
+        else if ((month === 7 && day >= 16) || (month === 8 && day < 17)) sunSignIndex = 4;
+        else if ((month === 8 && day >= 17) || (month === 9 && day < 17)) sunSignIndex = 5;
+        else if ((month === 9 && day >= 17) || (month === 10 && day < 17)) sunSignIndex = 6;
+        else if ((month === 10 && day >= 17) || (month === 11 && day < 16)) sunSignIndex = 7;
+        else if ((month === 11 && day >= 16) || (month === 12 && day < 16)) sunSignIndex = 8;
+        else if ((month === 12 && day >= 16) || (month === 1 && day < 14)) sunSignIndex = 9;
+        else if ((month === 1 && day >= 14) || (month === 2 && day < 13)) sunSignIndex = 10;
+        else if ((month === 2 && day >= 13) || (month === 3 && day < 14)) sunSignIndex = 11;
+        else sunSignIndex = 0;
+
+        let hours = 0;
+        let minutes = 0;
+        const tobParts = String(tobStr).trim().toUpperCase();
+        const match = tobParts.match(/(\d+):(\d+)(?:\s*(AM|PM))?/);
+        if (match) {
+          hours = parseInt(match[1], 10);
+          minutes = parseInt(match[2], 10);
+          if (match[3] === 'PM' && hours < 12) hours += 12;
+          if (match[3] === 'AM' && hours === 12) hours = 0;
+        }
+
+        const totalMinutesFromSunrise = (hours * 60 + minutes) - 360;
+        const normalizedMinutes = totalMinutesFromSunrise < 0 ? totalMinutesFromSunrise + 1440 : totalMinutesFromSunrise;
+        const lagnamShift = Math.floor(normalizedMinutes / 120);
+        const lagnamIndex = (sunSignIndex + lagnamShift) % 12;
+
+        return rasiNames[lagnamIndex];
+      }
+    }
+
+    return null;
+  };
+  const calculatedLagnam = calculateLagnamFromChart(profile);
 
   const formatBusinessTypeLabel = (type?: string) => {
     if (!type) return '';
@@ -304,21 +433,48 @@ export default function AkshayamProfileView({
     return map[mode.toUpperCase()] || mode;
   };
 
-  // Partner Expectations
-  const expectedAgeGap = exp.maxAgeLimit || profile?.expectedAgeGap;
-  const expectedMinHeightCm = exp.expectedHeight || profile?.expectedMinHeightCm;
-  const expectedMaxHeightCm = profile?.expectedMaxHeightCm;
+  // Partner Expectations (No assumptions - only what user specified)
+  const expectedAgeGap = exp.maxAgeLimit || profile?.expectedAgeGap || null;
+  const expectedMinHeightCm = exp.expectedHeight || profile?.expectedMinHeightCm || null;
+  const expectedMaxHeightCm = profile?.expectedMaxHeightCm || null;
   const expectedLocations = Array.isArray(exp.preferredLocations) && exp.preferredLocations.length > 0
     ? exp.preferredLocations.join(', ')
-    : ([profile?.preferredCity1, profile?.preferredCity2, profile?.preferredCity3].filter(Boolean).join(', ') || 'Any Region in Tamil Nadu');
+    : ([profile?.preferredCity1, profile?.preferredCity2, profile?.preferredCity3].filter(Boolean).join(', ') || null);
   const openToRemarriage = exp.acceptsDivorced !== undefined ? exp.acceptsDivorced : profile?.openToRemarriage;
-  const expectedIncome = exp.expectedIncome || profile?.expectedMinMonthlyIncome;
-  const partnerExpectationsNotes = exp.comments || profile?.partnerExpectationsNotes;
+  const expectedIncome = exp.expectedIncome || profile?.expectedMinMonthlyIncome || null;
+  const partnerExpectationsNotes = exp.comments || profile?.partnerExpectationsNotes || null;
 
-  // Contact & Privacy Details
-  const primaryMobile = profile?.userContact?.mobile || profile?.whatsappNumber || profile?.primaryMobile || profile?.profileCreatedBy;
-  const emailAddress = profile?.userContact?.email || profile?.email;
-  const residentialAddress = profile?.houseAddress || profile?.address || fam.houseAddress || `${profile?.city || 'Coimbatore'}, Tamil Nadu`;
+  const hasExpectations = !!(
+    expectedAgeGap ||
+    expectedMinHeightCm ||
+    profile?.expectedEducation ||
+    profile?.expectedProfession ||
+    expectedLocations ||
+    (openToRemarriage !== undefined && openToRemarriage !== null) ||
+    expectedIncome ||
+    partnerExpectationsNotes
+  );
+
+  // Contact & Privacy Details (No assumptions)
+  const primaryMobile = profile?.userContact?.mobile || profile?.whatsappNumber || profile?.primaryMobile || profile?.profileCreatedBy || null;
+  const emailAddress = profile?.userContact?.email || profile?.email || null;
+  const residentialAddress = profile?.houseAddress || profile?.address || fam.houseAddress || profile?.city || null;
+  const hasContactDetails = !!(primaryMobile || emailAddress || residentialAddress);
+
+  // Family details check
+  const hasFamilyDetails = !!(
+    fatherName ||
+    fatherOccupation ||
+    fatherMobile ||
+    motherName ||
+    motherOccupation ||
+    motherMobile ||
+    siblingsList.length > 0 ||
+    profile?.hasSiblings === false ||
+    fam?.hasSiblings === false ||
+    nativePlace ||
+    familyType
+  );
 
   // Format WhatsApp Share Message
   const handleShareWhatsApp = () => {
@@ -569,22 +725,30 @@ export default function AkshayamProfileView({
               </div>
 
               {/* Education & Profession Snippet */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                <div className="flex items-center gap-2 text-gray-700 bg-white p-2 rounded-lg border border-gray-100">
-                  <GraduationCap className="w-4 h-4 text-primary shrink-0" />
-                  <span className="truncate font-semibold">
-                    {educationDegree}
-                  </span>
+              {(educationDisplay || workDesignation || companyName || annualIncome) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {educationDisplay && (
+                    <div className="flex items-center gap-2 text-gray-700 bg-white p-2 rounded-lg border border-gray-100">
+                      <GraduationCap className="w-4 h-4 text-primary shrink-0" />
+                      <span className="truncate font-semibold" title={educationDisplay}>
+                        {educationDisplay}
+                      </span>
+                    </div>
+                  )}
+                  {(workDesignation || companyName || annualIncome) && (
+                    <div className="flex items-center gap-2 text-gray-700 bg-white p-2 rounded-lg border border-gray-100">
+                      <Briefcase className="w-4 h-4 text-primary shrink-0" />
+                      <span className="truncate font-semibold">
+                        {[
+                          workDesignation,
+                          companyName ? `@ ${companyName}` : null,
+                          annualIncome ? `(${annualIncome})` : null
+                        ].filter(Boolean).join(' ')}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-2 text-gray-700 bg-white p-2 rounded-lg border border-gray-100">
-                  <Briefcase className="w-4 h-4 text-primary shrink-0" />
-                  <span className="truncate font-semibold">
-                    {workDesignation}
-                    {companyName ? ` @ ${companyName}` : ''}
-                    {annualIncome ? ` (${annualIncome})` : ''}
-                  </span>
-                </div>
-              </div>
+              )}
             </div>
 
           </div>
@@ -611,48 +775,62 @@ export default function AkshayamProfileView({
                 <span className="text-[10px] text-gray-400 font-bold uppercase block">பாலினம்</span>
                 <span className="font-bold text-gray-900 text-sm">{gender}</span>
               </div>
-              <div className="p-2.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">பிறந்த தேதி & வயது</span>
-                <span className="font-bold text-gray-900 text-sm">
-                  {cleanDob || 'Not specified'} {age ? `(${age} வயது)` : ''}
-                </span>
-              </div>
-              <div className="p-2.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">பிறந்த நேரம்</span>
-                <span className="font-bold text-gray-900 text-sm">{profile?.birthTime || profile?.tob || 'Not specified'}</span>
-              </div>
-              <div className="p-2.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">பிறந்த ஊர்</span>
-                <span className="font-bold text-gray-900 text-sm">{profile?.birthPlace || profile?.lob || 'Not specified'}</span>
-              </div>
-              <div className="p-2.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">உயரம்</span>
-                <span className="font-bold text-gray-900 text-sm">{heightDisplay || 'Not specified'}</span>
-              </div>
-              <div className="p-2.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">எடை</span>
-                <span className="font-bold text-gray-900 text-sm">{profile?.weightKg || profile?.weight ? `${profile?.weightKg || profile?.weight} Kg` : 'Not specified'}</span>
-              </div>
-              <div className="p-2.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">நிறம் (Complexion)</span>
-                <span className="font-bold text-gray-900 text-sm">{profile?.complexion || profile?.skinColour || 'Wheatish'}</span>
-              </div>
-              <div className="p-2.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">உடல் நிலை</span>
-                <span className="font-bold text-gray-900 text-sm">{profile?.physicalCondition === 'NORMAL' || !profile?.physicalCondition ? 'இயல்பானது (Normal)' : profile?.physicalCondition}</span>
-              </div>
-              <div className="p-2.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">தாய்மொழி</span>
-                <span className="font-bold text-gray-900 text-sm">{profile?.motherTongue || 'தமிழ் (Tamil)'}</span>
-              </div>
-              <div className="p-2.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">உணவுப் பழக்கம்</span>
-                <span className="font-bold text-gray-900 text-sm">{profile?.foodHabit || profile?.foodHabits || 'சைவம் / அசைவம்'}</span>
-              </div>
-              <div className="p-2.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">பழக்கவழக்கம்</span>
-                <span className="font-bold text-emerald-700 text-sm">புகை / மது பழக்கம் இல்லை</span>
-              </div>
+              {cleanDob && (
+                <div className="p-2.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                  <span className="text-[10px] text-gray-400 font-bold uppercase block">பிறந்த தேதி & வயது</span>
+                  <span className="font-bold text-gray-900 text-sm">
+                    {cleanDob} {age ? `(${age} வயது)` : ''}
+                  </span>
+                </div>
+              )}
+              {(profile?.birthTime || profile?.tob) && (
+                <div className="p-2.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                  <span className="text-[10px] text-gray-400 font-bold uppercase block">பிறந்த நேரம்</span>
+                  <span className="font-bold text-gray-900 text-sm">{profile?.birthTime || profile?.tob}</span>
+                </div>
+              )}
+              {(profile?.birthPlace || profile?.lob) && (
+                <div className="p-2.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                  <span className="text-[10px] text-gray-400 font-bold uppercase block">பிறந்த ஊர்</span>
+                  <span className="font-bold text-gray-900 text-sm">{profile?.birthPlace || profile?.lob}</span>
+                </div>
+              )}
+              {heightDisplay && (
+                <div className="p-2.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                  <span className="text-[10px] text-gray-400 font-bold uppercase block">உயரம்</span>
+                  <span className="font-bold text-gray-900 text-sm">{heightDisplay}</span>
+                </div>
+              )}
+              {(profile?.weightKg || profile?.weight) && (
+                <div className="p-2.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                  <span className="text-[10px] text-gray-400 font-bold uppercase block">எடை</span>
+                  <span className="font-bold text-gray-900 text-sm">{profile?.weightKg || profile?.weight} Kg</span>
+                </div>
+              )}
+              {(profile?.complexion || profile?.skinColour) && (
+                <div className="p-2.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                  <span className="text-[10px] text-gray-400 font-bold uppercase block">நிறம் (Complexion)</span>
+                  <span className="font-bold text-gray-900 text-sm">{profile?.complexion || profile?.skinColour}</span>
+                </div>
+              )}
+              {profile?.physicalCondition && profile.physicalCondition !== 'NORMAL' && (
+                <div className="p-2.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                  <span className="text-[10px] text-gray-400 font-bold uppercase block">உடல் நிலை</span>
+                  <span className="font-bold text-gray-900 text-sm">{profile.physicalCondition}</span>
+                </div>
+              )}
+              {profile?.motherTongue && (
+                <div className="p-2.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                  <span className="text-[10px] text-gray-400 font-bold uppercase block">தாய்மொழி</span>
+                  <span className="font-bold text-gray-900 text-sm">{profile.motherTongue}</span>
+                </div>
+              )}
+              {(profile?.foodHabit || profile?.foodHabits) && (
+                <div className="p-2.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                  <span className="text-[10px] text-gray-400 font-bold uppercase block">உணவுப் பழக்கம்</span>
+                  <span className="font-bold text-gray-900 text-sm">{profile?.foodHabit || profile?.foodHabits}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -669,20 +847,31 @@ export default function AkshayamProfileView({
 
               {/* Planetary & Star Specs */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/15 text-center">
-                  <span className="text-[10px] text-gray-400 font-bold uppercase block mb-0.5">ராசி (Rasi)</span>
-                  <span className="text-base font-black text-primary font-serif">{profile?.rasi || 'Not specified'}</span>
-                </div>
-                <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/15 text-center">
-                  <span className="text-[10px] text-gray-400 font-bold uppercase block mb-0.5">நட்சத்திரம் (Nakshatram)</span>
-                  <span className="text-base font-black text-primary font-serif">{profile?.nakshatram || profile?.nakshatra || 'Not specified'}</span>
-                </div>
-                <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/15 text-center">
-                  <span className="text-[10px] text-gray-400 font-bold uppercase block mb-0.5">பாதம் & லக்னம்</span>
-                  <span className="text-sm font-bold text-gray-800">
-                    {profile?.paadham ? `${profile.paadham}-ஆம் பாதம்` : '1-ஆம் பாதம்'} • {profile?.lagnam || 'மேஷம்'}
-                  </span>
-                </div>
+                {profile?.rasi && (
+                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/15 text-center">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block mb-0.5">ராசி (Rasi)</span>
+                    <span className="text-base font-black text-primary font-serif">{profile.rasi}</span>
+                  </div>
+                )}
+                {(profile?.nakshatram || profile?.nakshatra) && (
+                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/15 text-center">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block mb-0.5">நட்சத்திரம் (Nakshatram)</span>
+                    <span className="text-base font-black text-primary font-serif">{profile?.nakshatram || profile?.nakshatra}</span>
+                  </div>
+                )}
+                {(calculatedLagnam || profile?.paadham) && (
+                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/15 text-center">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block mb-0.5">
+                      {calculatedLagnam && profile?.paadham ? 'பாதம் & லக்னம்' : calculatedLagnam ? 'லக்னம் (Lagnam)' : 'பாதம் (Paadham)'}
+                    </span>
+                    <span className="text-sm font-bold text-gray-800">
+                      {[
+                        profile?.paadham ? `${profile.paadham}-ஆம் பாதம்` : null,
+                        calculatedLagnam
+                      ].filter(Boolean).join(' • ')}
+                    </span>
+                  </div>
+                )}
                 <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/15 text-center">
                   <span className="text-[10px] text-gray-400 font-bold uppercase block mb-0.5">தோஷங்கள் (Doshams)</span>
                   <span className="text-sm font-bold text-emerald-700">
@@ -699,7 +888,7 @@ export default function AkshayamProfileView({
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-primary">திசை இருப்பு (Dasa Balance):</span>
                     <span className="font-black text-gray-900">
-                      {profile.dasaPlanet || 'கேது'} திசை: {profile.dasaYears || 0} ஆண்டுகள், {profile.dasaMonths || 0} மாதங்கள், {profile.dasaDays || 0} நாட்கள்
+                      {profile.dasaPlanet ? `${profile.dasaPlanet} திசை: ` : ''}{profile.dasaYears || 0} ஆண்டுகள், {profile.dasaMonths || 0} மாதங்கள், {profile.dasaDays || 0} நாட்கள்
                     </span>
                   </div>
                   <span className="text-[11px] text-gray-500 font-medium">துல்லியமான ஜாதகம்</span>
@@ -744,438 +933,512 @@ export default function AkshayamProfileView({
 
               {/* Education List */}
               <div className="space-y-2">
-                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wide block">கல்வித் தகுதிகள்</span>
-                {Array.isArray(profile?.educationList) && profile.educationList.length > 0 ? (
+                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wide block">கல்வித் தகுதிகள் (Education)</span>
+                {detailedEducations.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {profile.educationList.map((edu: any, idx: number) => (
+                    {detailedEducations.map((edu: any, idx: number) => (
                       <div key={idx} className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                        <span className="text-[10px] font-bold text-primary uppercase">{edu.level || 'Degree'}</span>
-                        <p className="font-extrabold text-gray-900 text-sm mt-0.5">{edu.degree || 'Degree'}</p>
+                        {edu.level && (
+                          <span className="text-[10px] font-bold text-primary uppercase bg-primary/5 px-2 py-0.5 rounded-md inline-block mb-1">
+                            {edu.level}
+                          </span>
+                        )}
+                        <p className="font-extrabold text-gray-900 text-sm">{edu.degree || edu.degreeName || 'Degree'}</p>
                         {edu.institution && (
-                          <p className="text-gray-600 text-[11px] mt-0.5">{edu.institution}</p>
+                          <p className="text-gray-600 text-xs mt-1 flex items-center gap-1 font-medium">
+                            <span>🏛️ {edu.institution}</span>
+                          </p>
                         )}
                       </div>
                     ))}
                   </div>
-                ) : (
+                ) : profile?.education ? (
                   <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
                     <p className="font-extrabold text-gray-900 text-sm">
-                      {profile?.education || 'Graduation / Post Graduation'}
+                      {profile.education}
                     </p>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10 text-gray-500">
+                    குறிப்பிடப்படவில்லை (Not specified)
                   </div>
                 )}
               </div>
 
               {/* Career & Income Details */}
-              <div className="pt-2 border-t border-gray-100 space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wide block">
-                    {isBusiness
-                      ? (language === 'TA' ? 'தொழில் & வணிக விரிவான விவரங்கள்' : 'Detailed Business Profile')
-                      : (language === 'TA' ? 'பணி & தொழில் விவரங்கள்' : 'Employment & Career Profile')}
-                  </span>
-                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                    {workNatureLabel}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {/* Field 1: Role / Position */}
-                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase block">
+              {(workNatureLabel || workDesignation || companyName || workSector || businessType || workMode || workCity || annualIncome || monthlyIncome || businessDetails) && (
+                <div className="pt-2 border-t border-gray-100 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wide block">
                       {isBusiness
-                        ? (language === 'TA' ? 'தொழிலில் பொறுப்பு / பதவி' : 'Role in Business')
-                        : (language === 'TA' ? 'பதவி / பதவிப் பெயர்' : 'Designation / Job Title')}
+                        ? (language === 'TA' ? 'தொழில் & வணிக விரிவான விவரங்கள்' : 'Detailed Business Profile')
+                        : (language === 'TA' ? 'பணி & தொழில் விவரங்கள்' : 'Employment & Career Profile')}
                     </span>
-                    <span className="font-bold text-gray-900 text-sm">
-                      {workDesignation || (isBusiness ? 'தொழில் முனைவர் / உரிமையாளர்' : 'Not specified')}
-                    </span>
+                    {workNatureLabel && (
+                      <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                        {workNatureLabel}
+                      </span>
+                    )}
                   </div>
 
-                  {/* Field 2: Company / Business Name */}
-                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase block">
-                      {isBusiness
-                        ? (language === 'TA' ? 'நிறுவனம் / வணிகப் பெயர்' : 'Company / Business Name')
-                        : (language === 'TA' ? 'நிறுவனம் / அலுவலகம்' : 'Company / Organization')}
-                    </span>
-                    <span className="font-bold text-gray-900 text-sm">
-                      {companyName || (isBusiness ? 'சொந்த நிறுவனம்' : 'Not specified')}
-                    </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {/* Field 1: Role / Position */}
+                    {workDesignation && (
+                      <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                        <span className="text-[10px] text-gray-400 font-bold uppercase block">
+                          {isBusiness
+                            ? (language === 'TA' ? 'தொழிலில் பொறுப்பு / பதவி' : 'Role in Business')
+                            : (language === 'TA' ? 'பதவி / பதவிப் பெயர்' : 'Designation / Job Title')}
+                        </span>
+                        <span className="font-bold text-gray-900 text-sm">
+                          {workDesignation}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Field 2: Company / Business Name */}
+                    {companyName && (
+                      <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                        <span className="text-[10px] text-gray-400 font-bold uppercase block">
+                          {isBusiness
+                            ? (language === 'TA' ? 'நிறுவனம் / வணிகப் பெயர்' : 'Company / Business Name')
+                            : (language === 'TA' ? 'நிறுவனம் / அலுவலகம்' : 'Company / Organization')}
+                        </span>
+                        <span className="font-bold text-gray-900 text-sm">
+                          {companyName}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Field 3: Sector / Industry */}
+                    {workSector && (
+                      <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                        <span className="text-[10px] text-gray-400 font-bold uppercase block">
+                          {language === 'TA' ? 'துறை / பிரிவு (Sector / Industry)' : 'Sector / Industry'}
+                        </span>
+                        <span className="font-bold text-gray-900 text-sm">
+                          {formatWorkSectorLabel(workSector) || workSector}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Field 4: Business Structure or Work Mode */}
+                    {isBusiness && businessType && (
+                      <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                        <span className="text-[10px] text-gray-400 font-bold uppercase block">
+                          {language === 'TA' ? 'வணிக அமைப்பு (Business Type)' : 'Business Structure'}
+                        </span>
+                        <span className="font-bold text-gray-900 text-sm">
+                          {formatBusinessTypeLabel(businessType) || businessType}
+                        </span>
+                      </div>
+                    )}
+                    {!isBusiness && workMode && (
+                      <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                        <span className="text-[10px] text-gray-400 font-bold uppercase block">
+                          {language === 'TA' ? 'பணி முறை (Work Mode)' : 'Work Mode'}
+                        </span>
+                        <span className="font-bold text-gray-900 text-sm">
+                          {formatWorkModeLabel(workMode) || workMode}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Field 5: Work Location */}
+                    {workCity && (
+                      <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                        <span className="text-[10px] text-gray-400 font-bold uppercase block">
+                          {isBusiness
+                            ? (language === 'TA' ? 'தொழில் நடைபெறும் இடம்' : 'Business Location')
+                            : (language === 'TA' ? 'பணிபுரியும் இடம் (Work City)' : 'Work City')}
+                        </span>
+                        <span className="font-bold text-gray-900 text-sm flex items-center justify-between">
+                          <span>{workCity}</span>
+                          {workMapLink && (
+                            <a
+                              href={workMapLink}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-primary hover:underline flex items-center gap-0.5 text-[11px]"
+                            >
+                              <MapPin className="w-3.5 h-3.5" /> Map
+                            </a>
+                          )}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Field 6: Annual Income / Profit */}
+                    {annualIncome && (
+                      <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                        <span className="text-[10px] text-gray-400 font-bold uppercase block">
+                          {isBusiness
+                            ? (language === 'TA' ? 'ஆண்டு வருமானம் / லாபம்' : 'Annual Income / Profit')
+                            : (language === 'TA' ? 'ஆண்டு வருமானம் (Annual CTC)' : 'Annual CTC')}
+                        </span>
+                        <span className="font-bold text-emerald-800 text-sm">
+                          {annualIncome}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Field 7: Monthly Income */}
+                    {monthlyIncome && (
+                      <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                        <span className="text-[10px] text-gray-400 font-bold uppercase block">
+                          {language === 'TA' ? 'மாத வருமானம்' : 'Monthly Income'}
+                        </span>
+                        <span className="font-bold text-gray-900 text-sm">₹{monthlyIncome}</span>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Field 3: Sector / Industry */}
-                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase block">
-                      {language === 'TA' ? 'துறை / பிரிவு (Sector / Industry)' : 'Sector / Industry'}
-                    </span>
-                    <span className="font-bold text-gray-900 text-sm">
-                      {formatWorkSectorLabel(workSector) || (isBusiness ? 'வணிகம் / உற்பத்தி' : 'Technology / Corporate')}
-                    </span>
-                  </div>
-
-                  {/* Field 4: Business Structure or Work Mode */}
-                  {isBusiness ? (
-                    <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                      <span className="text-[10px] text-gray-400 font-bold uppercase block">
-                        {language === 'TA' ? 'வணிக அமைப்பு (Business Type)' : 'Business Structure'}
+                  {/* Additional Business Details / Overview */}
+                  {businessDetails && (
+                    <div className="p-3.5 bg-[#FFFDF9] rounded-xl border border-primary/15">
+                      <span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">
+                        {isBusiness
+                          ? (language === 'TA' ? 'தொழில் தயாரிப்புகள் மற்றும் விவரங்கள் (Business Overview & Products)' : 'Business Overview & Products')
+                          : (language === 'TA' ? 'பணிப் பொறுப்புகள் மற்றும் அனுபவம் (Role & Experience Details)' : 'Role & Experience Overview')}
                       </span>
-                      <span className="font-bold text-gray-900 text-sm">
-                        {formatBusinessTypeLabel(businessType) || 'சுயதொழில் நிறுவனம்'}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                      <span className="text-[10px] text-gray-400 font-bold uppercase block">
-                        {language === 'TA' ? 'பணி முறை (Work Mode)' : 'Work Mode'}
-                      </span>
-                      <span className="font-bold text-gray-900 text-sm">
-                        {formatWorkModeLabel(workMode) || 'அலுவலக நேரடிப் பணி (Office)'}
-                      </span>
+                      <p className="text-gray-800 text-xs leading-relaxed font-medium">
+                        {businessDetails}
+                      </p>
                     </div>
                   )}
-
-                  {/* Field 5: Work Location */}
-                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase block">
-                      {isBusiness
-                        ? (language === 'TA' ? 'தொழில் நடைபெறும் இடம்' : 'Business Location')
-                        : (language === 'TA' ? 'பணிபுரியும் இடம் (Work City)' : 'Work City')}
-                    </span>
-                    <span className="font-bold text-gray-900 text-sm flex items-center justify-between">
-                      <span>{workCity || nativePlace || 'Tamil Nadu'}</span>
-                      {workMapLink && (
-                        <a
-                          href={workMapLink}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-primary hover:underline flex items-center gap-0.5 text-[11px]"
-                        >
-                          <MapPin className="w-3.5 h-3.5" /> Map
-                        </a>
-                      )}
-                    </span>
-                  </div>
-
-                  {/* Field 6: Annual Income / Profit */}
-                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase block">
-                      {isBusiness
-                        ? (language === 'TA' ? 'ஆண்டு வருமானம் / லாபம்' : 'Annual Income / Profit')
-                        : (language === 'TA' ? 'ஆண்டு வருமானம் (Annual CTC)' : 'Annual CTC')}
-                    </span>
-                    <span className="font-bold text-emerald-800 text-sm">
-                      {annualIncome || (monthlyIncome ? `₹${monthlyIncome} / month` : 'Disclosed during talk')}
-                    </span>
-                  </div>
-
-                  {/* Field 7: Monthly Income */}
-                  {monthlyIncome && (
-                    <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                      <span className="text-[10px] text-gray-400 font-bold uppercase block">
-                        {language === 'TA' ? 'மாத வருமானம்' : 'Monthly Income'}
-                      </span>
-                      <span className="font-bold text-gray-900 text-sm">₹{monthlyIncome}</span>
-                    </div>
-                  )}
                 </div>
-
-                {/* Additional Business Details / Overview */}
-                {businessDetails && (
-                  <div className="p-3.5 bg-[#FFFDF9] rounded-xl border border-primary/15">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">
-                      {isBusiness
-                        ? (language === 'TA' ? 'தொழில் தயாரிப்புகள் மற்றும் விவரங்கள் (Business Overview & Products)' : 'Business Overview & Products')
-                        : (language === 'TA' ? 'பணிப் பொறுப்புகள் மற்றும் அனுபவம் (Role & Experience Details)' : 'Role & Experience Overview')}
-                    </span>
-                    <p className="text-gray-800 text-xs leading-relaxed font-medium">
-                      {businessDetails}
-                    </p>
-                  </div>
-                )}
-              </div>
+              )}
 
             </div>
           </div>
 
           {/* SECTION 4: FAMILY DETAILS */}
-          <div className="bg-white rounded-2xl border border-primary/20 shadow-xs overflow-hidden">
-            <div className="bg-gradient-to-r from-primary to-primary-light text-white px-4 py-2.5 sm:px-6 sm:py-3 flex items-center justify-between">
-              <h3 className="text-sm sm:text-base font-serif font-black flex items-center gap-2">
-                <HomeIcon className="w-4 h-4 text-[#D4AF37]" />
-                <span>4. குடும்ப விவரங்கள் (Family Background)</span>
-              </h3>
-            </div>
-
-            <div className="p-4 sm:p-6 space-y-4 text-xs">
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-                {/* Father Info */}
-                <div className="p-3.5 bg-[#FFFDF9] rounded-xl border border-primary/10 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-gray-400 uppercase">
-                      {language === 'TA' ? 'தந்தை பெயர்' : 'Father Name'}
-                    </span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isFatherLate ? 'bg-gray-200 text-gray-700' : 'bg-emerald-100 text-emerald-800'}`}>
-                      {isFatherLate ? (language === 'TA' ? 'மறைந்தார் (Late)' : 'Late') : (language === 'TA' ? 'உயிருடன் (Alive)' : 'Alive')}
-                    </span>
-                  </div>
-                  <p className="font-black text-gray-900 text-base">
-                    {fatherName || (language === 'TA' ? 'பெயர் குறிப்பிடப்படவில்லை' : 'Not specified')}
-                  </p>
-                  {!isFatherLate && (
-                    <>
-                      <p className="text-gray-700">
-                        {language === 'TA' ? 'தொழில்:' : 'Occupation:'}{' '}
-                        <span className="font-bold">
-                          {fatherOccupation || (language === 'TA' ? 'குறிப்பிடப்படவில்லை' : 'Not specified')}
-                        </span>
-                      </p>
-                      {fatherMobile && !profile?.hideMobile && (
-                        <p className="text-gray-700">
-                          {language === 'TA' ? 'தொடர்பு:' : 'Contact:'}{' '}
-                          <span className="font-bold font-mono">{fatherMobile}</span>
-                        </p>
-                      )}
-                    </>
-                  )}
-                </div>
-
-                {/* Mother Info */}
-                <div className="p-3.5 bg-[#FFFDF9] rounded-xl border border-primary/10 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-gray-400 uppercase">
-                      {language === 'TA' ? 'தாய் பெயர்' : 'Mother Name'}
-                    </span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isMotherLate ? 'bg-gray-200 text-gray-700' : 'bg-emerald-100 text-emerald-800'}`}>
-                      {isMotherLate ? (language === 'TA' ? 'மறைந்தார் (Late)' : 'Late') : (language === 'TA' ? 'உயிருடன் (Alive)' : 'Alive')}
-                    </span>
-                  </div>
-                  <p className="font-black text-gray-900 text-base">
-                    {motherName || (language === 'TA' ? 'பெயர் குறிப்பிடப்படவில்லை' : 'Not specified')}
-                  </p>
-                  {!isMotherLate && (
-                    <>
-                      <p className="text-gray-700">
-                        {language === 'TA' ? 'தொழில்:' : 'Occupation:'}{' '}
-                        <span className="font-bold">
-                          {motherOccupation || (language === 'TA' ? 'குறிப்பிடப்படவில்லை' : 'Not specified')}
-                        </span>
-                      </p>
-                      {motherMobile && !profile?.hideMobile && (
-                        <p className="text-gray-700">
-                          {language === 'TA' ? 'தொடர்பு:' : 'Contact:'}{' '}
-                          <span className="font-bold font-mono">{motherMobile}</span>
-                        </p>
-                      )}
-                    </>
-                  )}
-                </div>
-
+          {hasFamilyDetails && (
+            <div className="bg-white rounded-2xl border border-primary/20 shadow-xs overflow-hidden">
+              <div className="bg-gradient-to-r from-primary to-primary-light text-white px-4 py-2.5 sm:px-6 sm:py-3 flex items-center justify-between">
+                <h3 className="text-sm sm:text-base font-serif font-black flex items-center gap-2">
+                  <HomeIcon className="w-4 h-4 text-[#D4AF37]" />
+                  <span>4. குடும்ப விவரங்கள் (Family Background)</span>
+                </h3>
               </div>
 
-              {/* Siblings List */}
-              <div className="p-3.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[11px] font-bold text-gray-400 uppercase block mb-1.5">
-                  {language === 'TA' ? 'உடன்பிறப்புகள் (Siblings)' : 'Siblings'}
-                </span>
-                {siblingsList.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {siblingsList.map((sib: any, idx: number) => (
-                      <div key={idx} className="flex items-center justify-between bg-white p-2.5 rounded-lg border border-gray-100 shadow-2xs">
-                        <div className="min-w-0 pr-2">
-                          <span className="font-bold text-gray-900 block truncate">
-                            {sib.name || `${language === 'TA' ? 'உடன்பிறப்பு' : 'Sibling'} ${idx + 1}`}
+              <div className="p-4 sm:p-6 space-y-4 text-xs">
+
+                {/* Parents Info */}
+                {(fatherName || motherName) && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                    {/* Father Info */}
+                    {fatherName && (
+                      <div className="p-3.5 bg-[#FFFDF9] rounded-xl border border-primary/10 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-gray-400 uppercase">
+                            {language === 'TA' ? 'தந்தை பெயர்' : 'Father Name'}
                           </span>
-                          <span className="text-[11px] text-gray-500 font-medium">
-                            {formatSiblingRelation(sib.relation)}
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isFatherLate ? 'bg-gray-200 text-gray-700' : 'bg-emerald-100 text-emerald-800'}`}>
+                            {isFatherLate ? (language === 'TA' ? 'மறைந்தார் (Late)' : 'Late') : (language === 'TA' ? 'உயிருடன் (Alive)' : 'Alive')}
                           </span>
                         </div>
-                        <span className="text-[11px] font-semibold text-primary bg-primary/5 px-2 py-0.5 rounded-md shrink-0">
-                          {sib.maritalStatus === 'MARRIED'
-                            ? (language === 'TA' ? 'திருமணமானவர்' : 'Married')
-                            : (language === 'TA' ? 'திருமணமாகாதவர்' : 'Unmarried')}
-                        </span>
+                        <p className="font-black text-gray-900 text-base">
+                          {fatherName}
+                        </p>
+                        {!isFatherLate && (
+                          <>
+                            {fatherOccupation && (
+                              <p className="text-gray-700">
+                                {language === 'TA' ? 'தொழில்:' : 'Occupation:'}{' '}
+                                <span className="font-bold">{fatherOccupation}</span>
+                              </p>
+                            )}
+                            {fatherMobile && !profile?.hideMobile && (
+                              <p className="text-gray-700">
+                                {language === 'TA' ? 'தொடர்பு:' : 'Contact:'}{' '}
+                                <span className="font-bold font-mono">{fatherMobile}</span>
+                              </p>
+                            )}
+                          </>
+                        )}
                       </div>
-                    ))}
+                    )}
+
+                    {/* Mother Info */}
+                    {motherName && (
+                      <div className="p-3.5 bg-[#FFFDF9] rounded-xl border border-primary/10 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-gray-400 uppercase">
+                            {language === 'TA' ? 'தாய் பெயர்' : 'Mother Name'}
+                          </span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isMotherLate ? 'bg-gray-200 text-gray-700' : 'bg-emerald-100 text-emerald-800'}`}>
+                            {isMotherLate ? (language === 'TA' ? 'மறைந்தார் (Late)' : 'Late') : (language === 'TA' ? 'உயிருடன் (Alive)' : 'Alive')}
+                          </span>
+                        </div>
+                        <p className="font-black text-gray-900 text-base">
+                          {motherName}
+                        </p>
+                        {!isMotherLate && (
+                          <>
+                            {motherOccupation && (
+                              <p className="text-gray-700">
+                                {language === 'TA' ? 'தொழில்:' : 'Occupation:'}{' '}
+                                <span className="font-bold">{motherOccupation}</span>
+                              </p>
+                            )}
+                            {motherMobile && !profile?.hideMobile && (
+                              <p className="text-gray-700">
+                                {language === 'TA' ? 'தொடர்பு:' : 'Contact:'}{' '}
+                                <span className="font-bold font-mono">{motherMobile}</span>
+                              </p>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+
                   </div>
-                ) : (
-                  <p className="text-gray-700 font-semibold">
-                    {language === 'TA'
-                      ? 'உடன்பிறப்புகள் இல்லை (Only Child / விவரம் இல்லை)'
-                      : 'No siblings (Only Child / Not specified)'}
-                  </p>
                 )}
-              </div>
 
-              {/* Family Values & Native */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                  <span className="text-[10px] text-gray-400 font-bold uppercase block">பூர்வீகம் (Native Place)</span>
-                  <span className="font-bold text-gray-900">{nativePlace}</span>
-                </div>
-                <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                  <span className="text-[10px] text-gray-400 font-bold uppercase block">குடும்ப அமைப்பு</span>
-                  <span className="font-bold text-gray-900">{familyType}</span>
-                </div>
-                <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                  <span className="text-[10px] text-gray-400 font-bold uppercase block">குடும்ப மதிப்பு</span>
-                  <span className="font-bold text-gray-900">{familyValue}</span>
-                </div>
-              </div>
+                {/* Siblings List */}
+                {(siblingsList.length > 0 || profile?.hasSiblings === false || fam?.hasSiblings === false) && (
+                  <div className="p-3.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                    <span className="text-[11px] font-bold text-gray-400 uppercase block mb-1.5">
+                      {language === 'TA' ? 'உடன்பிறப்புகள் (Siblings)' : 'Siblings'}
+                    </span>
+                    {siblingsList.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {siblingsList.map((sib: any, idx: number) => (
+                          <div key={idx} className="flex items-center justify-between bg-white p-2.5 rounded-lg border border-gray-100 shadow-2xs">
+                            <div className="min-w-0 pr-2">
+                              <span className="font-bold text-gray-900 block truncate">
+                                {sib.name || `${language === 'TA' ? 'உடன்பிறப்பு' : 'Sibling'} ${idx + 1}`}
+                              </span>
+                              <span className="text-[11px] text-gray-500 font-medium">
+                                {formatSiblingRelation(sib.relation)}
+                              </span>
+                            </div>
+                            <span className="text-[11px] font-semibold text-primary bg-primary/5 px-2 py-0.5 rounded-md shrink-0">
+                              {sib.maritalStatus === 'MARRIED'
+                                ? (language === 'TA' ? 'திருமணமானவர்' : 'Married')
+                                : (language === 'TA' ? 'திருமணமாகாதவர்' : 'Unmarried')}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-700 font-semibold">
+                        {language === 'TA'
+                          ? 'உடன்பிறப்புகள் இல்லை (Only Child)'
+                          : 'No siblings (Only Child)'}
+                      </p>
+                    )}
+                  </div>
+                )}
 
+                {/* Native Place & Family Setup (NO Kudumba Mathipu) */}
+                {(nativePlace || familyType) && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {nativePlace && (
+                      <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                        <span className="text-[10px] text-gray-400 font-bold uppercase block">பூர்வீகம் (Native Place)</span>
+                        <span className="font-bold text-gray-900">{nativePlace}</span>
+                      </div>
+                    )}
+                    {familyType && (
+                      <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                        <span className="text-[10px] text-gray-400 font-bold uppercase block">குடும்ப அமைப்பு</span>
+                        <span className="font-bold text-gray-900">{familyType}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+              </div>
             </div>
-          </div>
+          )}
 
           {/* SECTION 5: PROPERTY & SEERVARISAI DETAILS */}
-          <div className="bg-white rounded-2xl border border-primary/20 shadow-xs overflow-hidden">
-            <div className="bg-gradient-to-r from-primary to-primary-light text-white px-4 py-2.5 sm:px-6 sm:py-3 flex items-center justify-between">
-              <h3 className="text-sm sm:text-base font-serif font-black flex items-center gap-2">
-                <Award className="w-4 h-4 text-[#D4AF37]" />
-                <span>5. சொத்து & சீர்வரிசை விவரங்கள் (Property & Assets)</span>
-              </h3>
-            </div>
-
-            <div className="p-4 sm:p-6 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 text-xs">
-              <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">சொந்த வீடு</span>
-                <span className="font-bold text-gray-900 text-sm">
-                  {houseType} {houseSqft ? `(${houseSqft})` : ''}
-                </span>
-              </div>
-              <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">மாத வாடகை வருமானம்</span>
-                <span className="font-bold text-gray-900 text-sm">
-                  {rentalIncome ? `₹${rentalIncome}` : 'None'}
-                </span>
-              </div>
-              <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">தோட்டம் / நஞ்சை-புஞ்சை நிலம்</span>
-                <span className="font-bold text-gray-900 text-sm">
-                  {thottam || 'None'}
-                </span>
-              </div>
-              <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">காலி மனை (Vacant Land)</span>
-                <span className="font-bold text-gray-900 text-sm">
-                  {vacantLand || 'None'}
-                </span>
-              </div>
-              <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">தோராய சொத்து மதிப்பு</span>
-                <span className="font-bold text-emerald-800 text-sm">
-                  {totalAssets || 'Disclosed during talk'}
-                </span>
-              </div>
-              <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">சீர்வரிசை / தங்கம்</span>
-                <span className="font-bold text-gray-900 text-sm">
-                  {goldPavun ? `${goldPavun} பவுன்` : (dowryDetails || 'Mutual Discussion')}
-                </span>
+          {hasPropertyDetails && (
+            <div className="bg-white rounded-2xl border border-primary/20 shadow-xs overflow-hidden">
+              <div className="bg-gradient-to-r from-primary to-primary-light text-white px-4 py-2.5 sm:px-6 sm:py-3 flex items-center justify-between">
+                <h3 className="text-sm sm:text-base font-serif font-black flex items-center gap-2">
+                  <Award className="w-4 h-4 text-[#D4AF37]" />
+                  <span>5. சொத்து & சீர்வரிசை விவரங்கள் (Property & Assets)</span>
+                </h3>
               </div>
 
-              {propertyComments && (
-                <div className="col-span-2 sm:col-span-3 p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                  <span className="text-[10px] text-gray-400 font-bold uppercase block mb-0.5">கூடுதல் சொத்து விவரங்கள்</span>
-                  <p className="text-gray-800 text-xs leading-relaxed">{propertyComments}</p>
-                </div>
-              )}
+              <div className="p-4 sm:p-6 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 text-xs">
+                {houseType && (
+                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">சொந்த வீடு</span>
+                    <span className="font-bold text-gray-900 text-sm">
+                      {houseType} {houseSqft ? `(${houseSqft})` : ''}
+                    </span>
+                  </div>
+                )}
+                {rentalIncome && (
+                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">மாத வாடகை வருமானம்</span>
+                    <span className="font-bold text-gray-900 text-sm">
+                      ₹{rentalIncome}
+                    </span>
+                  </div>
+                )}
+                {thottam && (
+                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">தோட்டம் / நஞ்சை-புஞ்சை நிலம்</span>
+                    <span className="font-bold text-gray-900 text-sm">
+                      {thottam}
+                    </span>
+                  </div>
+                )}
+                {vacantLand && (
+                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">காலி மனை (Vacant Land)</span>
+                    <span className="font-bold text-gray-900 text-sm">
+                      {vacantLand}
+                    </span>
+                  </div>
+                )}
+                {totalAssets && (
+                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">தோராய சொத்து மதிப்பு</span>
+                    <span className="font-bold text-emerald-800 text-sm">
+                      {totalAssets}
+                    </span>
+                  </div>
+                )}
+                {(goldPavun || dowryDetails) && (
+                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">சீர்வரிசை / தங்கம்</span>
+                    <span className="font-bold text-gray-900 text-sm">
+                      {goldPavun ? `${goldPavun} பவுன்` : dowryDetails}
+                    </span>
+                  </div>
+                )}
+
+                {propertyComments && (
+                  <div className="col-span-2 sm:col-span-3 p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block mb-0.5">கூடுதல் சொத்து விவரங்கள்</span>
+                    <p className="text-gray-800 text-xs leading-relaxed">{propertyComments}</p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* SECTION 6: PARTNER EXPECTATIONS */}
-          <div className="bg-white rounded-2xl border border-primary/20 shadow-xs overflow-hidden">
-            <div className="bg-gradient-to-r from-primary to-primary-light text-white px-4 py-2.5 sm:px-6 sm:py-3 flex items-center justify-between">
-              <h3 className="text-sm sm:text-base font-serif font-black flex items-center gap-2">
-                <Heart className="w-4 h-4 text-[#D4AF37]" />
-                <span>6. துணைவர் எதிர்பார்ப்புகள் (Partner Preferences)</span>
-              </h3>
-            </div>
-
-            <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 text-xs">
-              <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">எதிர்பார்க்கும் வயது வரம்பு</span>
-                <span className="font-bold text-gray-900 text-sm">
-                  {expectedAgeGap ? `Up to ${expectedAgeGap} Yrs difference` : 'Suitable match'}
-                </span>
-              </div>
-              <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">எதிர்பார்க்கும் உயரம்</span>
-                <span className="font-bold text-gray-900 text-sm">
-                  {expectedMinHeightCm ? `${expectedMinHeightCm} cm to ${expectedMaxHeightCm || 185} cm` : 'Any suitable height'}
-                </span>
-              </div>
-              <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">கல்வி & தொழில்</span>
-                <span className="font-bold text-gray-900 text-sm">
-                  {profile?.expectedEducation || profile?.expectedProfession || 'Any Graduate / Working'}
-                </span>
-              </div>
-              <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">விரும்பும் மாவட்டங்கள்</span>
-                <span className="font-bold text-gray-900 text-sm">
-                  {expectedLocations}
-                </span>
-              </div>
-              <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">மறுமணம் சம்மதம்</span>
-                <span className="font-bold text-gray-900 text-sm">
-                  {openToRemarriage ? 'சம்மதம் (Open to Remarriage)' : 'முதல் மணம் மட்டும் (Unmarried Only)'}
-                </span>
-              </div>
-              <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">மாத வருமான எதிர்பார்ப்பு</span>
-                <span className="font-bold text-gray-900 text-sm">
-                  {expectedIncome || 'Mutual understanding'}
-                </span>
+          {hasExpectations && (
+            <div className="bg-white rounded-2xl border border-primary/20 shadow-xs overflow-hidden">
+              <div className="bg-gradient-to-r from-primary to-primary-light text-white px-4 py-2.5 sm:px-6 sm:py-3 flex items-center justify-between">
+                <h3 className="text-sm sm:text-base font-serif font-black flex items-center gap-2">
+                  <Heart className="w-4 h-4 text-[#D4AF37]" />
+                  <span>6. துணைவர் எதிர்பார்ப்புகள் (Partner Preferences)</span>
+                </h3>
               </div>
 
-              {partnerExpectationsNotes && (
-                <div className="col-span-1 sm:col-span-2 md:col-span-3 p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                  <span className="text-[10px] text-gray-400 font-bold uppercase block mb-0.5">கூடுதல் குறிப்புகள்</span>
-                  <p className="text-gray-800 text-xs leading-relaxed">{partnerExpectationsNotes}</p>
-                </div>
-              )}
+              <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 text-xs">
+                {expectedAgeGap && (
+                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">எதிர்பார்க்கும் வயது வரம்பு</span>
+                    <span className="font-bold text-gray-900 text-sm">
+                      Up to {expectedAgeGap} Yrs difference
+                    </span>
+                  </div>
+                )}
+                {expectedMinHeightCm && (
+                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">எதிர்பார்க்கும் உயரம்</span>
+                    <span className="font-bold text-gray-900 text-sm">
+                      {expectedMinHeightCm} cm {expectedMaxHeightCm ? `to ${expectedMaxHeightCm} cm` : 'and above'}
+                    </span>
+                  </div>
+                )}
+                {(profile?.expectedEducation || profile?.expectedProfession) && (
+                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">கல்வி & தொழில்</span>
+                    <span className="font-bold text-gray-900 text-sm">
+                      {[profile?.expectedEducation, profile?.expectedProfession].filter(Boolean).join(' • ')}
+                    </span>
+                  </div>
+                )}
+                {expectedLocations && (
+                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">விரும்பும் மாவட்டங்கள்</span>
+                    <span className="font-bold text-gray-900 text-sm">
+                      {expectedLocations}
+                    </span>
+                  </div>
+                )}
+                {openToRemarriage !== undefined && openToRemarriage !== null && (
+                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">மறுமணம் சம்மதம்</span>
+                    <span className="font-bold text-gray-900 text-sm">
+                      {openToRemarriage ? 'சம்மதம் (Open to Remarriage)' : 'முதல் மணம் மட்டும் (Unmarried Only)'}
+                    </span>
+                  </div>
+                )}
+                {expectedIncome && (
+                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">மாத வருமான எதிர்பார்ப்பு</span>
+                    <span className="font-bold text-gray-900 text-sm">
+                      ₹{expectedIncome}
+                    </span>
+                  </div>
+                )}
+
+                {partnerExpectationsNotes && (
+                  <div className="col-span-1 sm:col-span-2 md:col-span-3 p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block mb-0.5">கூடுதல் குறிப்புகள்</span>
+                    <p className="text-gray-800 text-xs leading-relaxed">{partnerExpectationsNotes}</p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* SECTION 7: CONTACT & VERIFICATION DETAILS */}
-          <div className="bg-white rounded-2xl border border-primary/20 shadow-xs overflow-hidden">
-            <div className="bg-gradient-to-r from-primary to-primary-light text-white px-4 py-2.5 sm:px-6 sm:py-3 flex items-center justify-between">
-              <h3 className="text-sm sm:text-base font-serif font-black flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-[#D4AF37]" />
-                <span>7. தொடர்பு & தனியுரிமை (Contact & Privacy Details)</span>
-              </h3>
-            </div>
-
-            <div className="p-4 sm:p-6 space-y-4 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-3.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                  <span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">முதன்மை தொடர்பு எண்</span>
-                  <p className="font-black text-gray-900 text-base font-mono flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-primary" />
-                    <span>{primaryMobile || 'Contact protected'}</span>
-                  </p>
-                </div>
-
-                <div className="p-3.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                  <span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">மின்னஞ்சல் முகவரி</span>
-                  <p className="font-bold text-gray-900 text-sm font-mono flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-primary" />
-                    <span>{emailAddress || 'Not provided'}</span>
-                  </p>
-                </div>
+          {hasContactDetails && (
+            <div className="bg-white rounded-2xl border border-primary/20 shadow-xs overflow-hidden">
+              <div className="bg-gradient-to-r from-primary to-primary-light text-white px-4 py-2.5 sm:px-6 sm:py-3 flex items-center justify-between">
+                <h3 className="text-sm sm:text-base font-serif font-black flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#D4AF37]" />
+                  <span>7. தொடர்பு & இருப்பிடம் (Contact & Address)</span>
+                </h3>
               </div>
 
-              <div className="p-3.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                <span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">இருப்பிட முகவரி (Address)</span>
-                <p className="font-bold text-gray-800 text-sm leading-relaxed">
-                  {residentialAddress}
-                </p>
+              <div className="p-4 sm:p-6 space-y-4 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {primaryMobile && (
+                    <div className="p-3.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                      <span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">முதன்மை தொடர்பு எண்</span>
+                      <p className="font-black text-gray-900 text-base font-mono flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-primary" />
+                        <span>{primaryMobile}</span>
+                      </p>
+                    </div>
+                  )}
+
+                  {emailAddress && (
+                    <div className="p-3.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                      <span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">மின்னஞ்சல் முகவரி</span>
+                      <p className="font-bold text-gray-900 text-sm font-mono flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-primary" />
+                        <span>{emailAddress}</span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {residentialAddress && (
+                  <div className="p-3.5 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">இருப்பிட முகவரி (Address)</span>
+                    <p className="font-bold text-gray-800 text-sm leading-relaxed">
+                      {residentialAddress}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
+          )}
 
         </div>
 
