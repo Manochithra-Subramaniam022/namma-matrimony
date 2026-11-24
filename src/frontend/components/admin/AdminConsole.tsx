@@ -386,15 +386,15 @@ export default function AdminConsole() {
 
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 space-y-6">
         
-        {/* 1.5 ADMIN NAVIGATION TABS */}
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-2 sm:p-2.5 rounded-2xl border border-primary/20 shadow-sm">
+        {/* 1.5 ADMIN NAVIGATION & COMPACT STATS TOOLBAR (DE-CONGESTED / NO QUOTES) */}
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-2.5 sm:p-3 rounded-2xl border border-primary/15 shadow-xs">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setAdminActiveTab('PROFILES')}
-              className={`inline-flex items-center gap-2 px-3.5 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
                 adminActiveTab === 'PROFILES'
-                  ? 'bg-primary text-white shadow-md ring-2 ring-primary/20'
+                  ? 'bg-primary text-white shadow-sm'
                   : 'bg-stone-50 text-gray-700 hover:bg-stone-100 hover:text-primary border border-gray-200'
               }`}
             >
@@ -410,9 +410,9 @@ export default function AdminConsole() {
             <button
               type="button"
               onClick={() => setAdminActiveTab('CASTE_KOOTTAM')}
-              className={`inline-flex items-center gap-2 px-3.5 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
                 adminActiveTab === 'CASTE_KOOTTAM'
-                  ? 'bg-primary text-white shadow-md ring-2 ring-primary/20'
+                  ? 'bg-primary text-white shadow-sm'
                   : 'bg-stone-50 text-gray-700 hover:bg-stone-100 hover:text-primary border border-gray-200'
               }`}
             >
@@ -421,10 +421,57 @@ export default function AdminConsole() {
             </button>
           </div>
 
-          <div className="hidden sm:flex items-center text-xs text-gray-500 font-semibold px-2">
-            {adminActiveTab === 'PROFILES'
-              ? (language === 'TA' ? 'பதிவு செய்யப்பட்ட வரன்களை சரிபார்த்து ஒப்புதல் செய்க' : 'Review & approve registered candidate profiles')
-              : (language === 'TA' ? 'ஒவ்வொரு சாதிக்கான கூட்டம் / கோத்ரங்களை நிர்வகிக்கவும்' : 'Manage Koottams & Gotrams per Caste')}
+          {/* Quick Stat Pill Chips */}
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs">
+            <button
+              type="button"
+              onClick={() => setStatusFilter('ALL')}
+              className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer transition-all border ${
+                statusFilter === 'ALL'
+                  ? 'bg-primary text-white border-primary shadow-2xs'
+                  : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+              }`}
+            >
+              {language === 'TA' ? 'மொத்தம்' : 'Total'}: <strong className="font-mono font-black">{stats.total}</strong>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setStatusFilter('PENDING')}
+              className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer transition-all border flex items-center gap-1 ${
+                statusFilter === 'PENDING'
+                  ? 'bg-amber-600 text-white border-amber-600 shadow-2xs'
+                  : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+              <span>{language === 'TA' ? 'நிலுவை' : 'Pending'}:</span>
+              <strong className="font-mono font-black">{stats.pending}</strong>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setStatusFilter('APPROVED')}
+              className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer transition-all border ${
+                statusFilter === 'APPROVED'
+                  ? 'bg-emerald-700 text-white border-emerald-700 shadow-2xs'
+                  : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+              }`}
+            >
+              {language === 'TA' ? 'ஒப்புதல்' : 'Approved'}: <strong className="font-mono font-black">{stats.approved}</strong>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setStatusFilter('REJECTED')}
+              className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer transition-all border ${
+                statusFilter === 'REJECTED'
+                  ? 'bg-rose-700 text-white border-rose-700 shadow-2xs'
+                  : 'bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100'
+              }`}
+            >
+              {language === 'TA' ? 'நிராகரிப்பு' : 'Denied'}: <strong className="font-mono font-black">{stats.rejected}</strong>
+            </button>
           </div>
         </div>
 
@@ -432,85 +479,6 @@ export default function AdminConsole() {
           <CasteKoottamManager language={language} showToast={showToast} />
         ) : (
           <>
-            {/* 2. ADMIN HERO TITLE & STATS COUNTERS */}
-            <div className="bg-gradient-to-br from-primary via-[#580016] to-primary text-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xl border-2 border-[#D4AF37]/50 relative overflow-hidden">
-          <div className="absolute top-0 right-0 -mr-12 -mt-12 w-48 h-48 bg-[#D4AF37]/20 rounded-full blur-2xl pointer-events-none"></div>
-
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6">
-            <div className="space-y-1.5">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D4AF37]/25 text-[#F3E5AB] text-xs font-bold border border-[#D4AF37]/40">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#D4AF37]" />
-                <span>{language === 'TA' ? 'வரன் சரிபார்ப்பு & ஒப்புதல் மையம்' : 'Profile Verification & Approval Console'}</span>
-              </div>
-              <h1 className="text-xl sm:text-3xl font-serif font-black tracking-tight text-white">
-                {language === 'TA' ? 'நம்ம மேட்ரிமோனி - நிர்வாகப் பலகை' : 'Namma Matrimony Admin Console'}
-              </h1>
-              <p className="text-xs sm:text-sm text-rose-100/90 max-w-xl leading-relaxed">
-                {language === 'TA'
-                  ? 'பதிவு செய்யப்பட்ட வரன் சுயவிவரங்கள், சான்றிதழ்கள் மற்றும் ஜாதகங்களை ஆய்வு செய்து ஒப்புதல் (Approve) அல்லது நிராகரிப்பு (Deny) செய்க.'
-                  : 'Review submitted candidate biodatas, documents, and astrology charts. Approve genuine profiles for live matching or deny invalid submissions.'}
-              </p>
-            </div>
-
-            {/* Quick Stat Counter Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 shrink-0">
-              <div
-                onClick={() => setStatusFilter('ALL')}
-                className={`p-3 sm:p-4 rounded-2xl text-center cursor-pointer transition-all border ${
-                  statusFilter === 'ALL' ? 'bg-white/20 border-white ring-2 ring-white/50' : 'bg-white/10 border-white/20 hover:bg-white/15'
-                }`}
-              >
-                <span className="text-[10px] sm:text-xs text-rose-200 uppercase font-bold block">
-                  {language === 'TA' ? 'மொத்தம்' : 'Total'}
-                </span>
-                <span className="text-2xl sm:text-3xl font-black text-white font-serif">{stats.total}</span>
-              </div>
-
-              <div
-                onClick={() => setStatusFilter('PENDING')}
-                className={`p-3 sm:p-4 rounded-2xl text-center cursor-pointer transition-all border ${
-                  statusFilter === 'PENDING'
-                    ? 'bg-amber-500/30 border-amber-300 ring-2 ring-amber-300'
-                    : 'bg-amber-500/15 border-amber-400/40 hover:bg-amber-500/20'
-                }`}
-              >
-                <span className="text-[10px] sm:text-xs text-amber-200 uppercase font-bold block flex items-center justify-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-                  {language === 'TA' ? 'நிலுவை' : 'Pending'}
-                </span>
-                <span className="text-2xl sm:text-3xl font-black text-amber-300 font-serif">{stats.pending}</span>
-              </div>
-
-              <div
-                onClick={() => setStatusFilter('APPROVED')}
-                className={`p-3 sm:p-4 rounded-2xl text-center cursor-pointer transition-all border ${
-                  statusFilter === 'APPROVED'
-                    ? 'bg-emerald-500/30 border-emerald-300 ring-2 ring-emerald-300'
-                    : 'bg-emerald-500/15 border-emerald-400/40 hover:bg-emerald-500/20'
-                }`}
-              >
-                <span className="text-[10px] sm:text-xs text-emerald-200 uppercase font-bold block">
-                  {language === 'TA' ? 'ஒப்புதல்' : 'Approved'}
-                </span>
-                <span className="text-2xl sm:text-3xl font-black text-emerald-300 font-serif">{stats.approved}</span>
-              </div>
-
-              <div
-                onClick={() => setStatusFilter('REJECTED')}
-                className={`p-3 sm:p-4 rounded-2xl text-center cursor-pointer transition-all border ${
-                  statusFilter === 'REJECTED'
-                    ? 'bg-rose-500/30 border-rose-300 ring-2 ring-rose-300'
-                    : 'bg-rose-500/15 border-rose-400/40 hover:bg-rose-500/20'
-                }`}
-              >
-                <span className="text-[10px] sm:text-xs text-rose-200 uppercase font-bold block">
-                  {language === 'TA' ? 'நிராகரிப்பு' : 'Denied'}
-                </span>
-                <span className="text-2xl sm:text-3xl font-black text-rose-300 font-serif">{stats.rejected}</span>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* 3. FILTER & SEARCH TOOLBAR */}
         <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-primary/15 shadow-sm space-y-3.5">
@@ -610,8 +578,8 @@ export default function AdminConsole() {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={
                 language === 'TA'
-                  ? 'வரன் பெயர், பதிவு எண் (nm-0001), மொபைல் எண், ஊர் அல்லது சமூகம் மூலம் தேடுக...'
-                  : 'Search by candidate name, registration ID (nm-0001), mobile, city, or community...'
+                  ? 'வரன் பெயர், எண், ஊர் அல்லது சமூகம் மூலம் தேடுக...'
+                  : 'Search by candidate name, ID, city, or community...'
               }
               className="w-full h-11 pl-10 pr-10 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 text-xs sm:text-sm font-medium focus:border-primary focus:bg-white focus:outline-none transition-all"
             />
@@ -940,10 +908,13 @@ export default function AdminConsole() {
                           <h4 className="text-[11px] font-black uppercase text-gray-400 tracking-wider">
                             {language === 'TA' ? 'பணி & குடும்பம்' : 'Career & Family'}
                           </h4>
-                          <p className="text-gray-800 flex items-center gap-1">
-                            <GraduationCap className="w-3.5 h-3.5 text-primary shrink-0" />
-                            <span className="font-semibold">{candidate.education || candidate.qualification || (language === 'TA' ? 'பட்டம் குறிப்பிடப்படவில்லை' : 'Not specified')}</span>
-                          </p>
+                          {/* Education (only if present) */}
+                          {(candidate.education || candidate.qualification) && (
+                            <p className="text-gray-800 flex items-center gap-1">
+                              <GraduationCap className="w-3.5 h-3.5 text-primary shrink-0" />
+                              <span className="font-semibold">{candidate.education || candidate.qualification}</span>
+                            </p>
+                          )}
 
                           {/* Rich Career Display */}
                           {(() => {
@@ -959,55 +930,69 @@ export default function AdminConsole() {
                               : isNri
                               ? 'NRI'
                               : (language === 'TA' ? 'தனியார்' : 'Private');
-                            const income = candidate.annualIncome || candidate.salary || candidate.income;
+                            const rawIncome = candidate.annualIncome || candidate.salary || candidate.income;
+                            const formatIncome = (val: any) => {
+                              if (!val || val === 'Not mentioned' || val === 'nil') return null;
+                              const num = parseFloat(String(val).replace(/[^0-9.]/g, ''));
+                              if (!isNaN(num) && num >= 100000) {
+                                if (num >= 10000000) return `₹${(num / 10000000).toFixed(1)} Cr / ஆண்டு`;
+                                return `₹${(num / 100000).toFixed(1)} Lakhs / ஆண்டு`;
+                              }
+                              return String(val);
+                            };
+                            const income = formatIncome(rawIncome);
 
                             return (
                               <div className="space-y-0.5">
-                                <p className="text-gray-900 flex items-start gap-1.5 text-xs">
-                                  <Briefcase className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
-                                  <span className="leading-tight">
-                                    <span className="font-bold">
-                                      {role || (language === 'TA' ? 'பணி குறிப்பிடப்படவில்லை' : 'Not specified')}
+                                {(role || comp) && (
+                                  <p className="text-gray-900 flex items-start gap-1.5 text-xs">
+                                    <Briefcase className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                                    <span className="leading-tight">
+                                      <span className="font-bold">{role || comp}</span>
+                                      {role && comp && <span className="text-gray-700"> @ {comp}</span>}
+                                      <span className="ml-1 text-[9px] font-black px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase">
+                                        {natureTag}
+                                      </span>
                                     </span>
-                                    {comp && <span className="text-gray-700"> @ {comp}</span>}
-                                    <span className="ml-1 text-[9px] font-black px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase">
-                                      {natureTag}
-                                    </span>
-                                  </span>
-                                </p>
-                                <p className="text-gray-700 text-xs">
-                                  <span className="font-bold">{language === 'TA' ? 'வருமானம்:' : 'Income:'}</span>{' '}
-                                  <span className="font-semibold text-emerald-800">
-                                    {income && income !== 'Not mentioned' ? income : (language === 'TA' ? 'நேரடி பேச்சில்' : 'Disclosed during talk')}
-                                  </span>
-                                  {candidate.workCity && (
-                                    <span className="text-gray-500 font-normal"> • {candidate.workCity}</span>
-                                  )}
-                                </p>
+                                  </p>
+                                )}
+                                {income && (
+                                  <p className="text-gray-700 text-xs">
+                                    <span className="font-bold">{language === 'TA' ? 'வருமானம்:' : 'Income:'}</span>{' '}
+                                    <span className="font-semibold text-emerald-800">{income}</span>
+                                    {candidate.workCity && (
+                                      <span className="text-gray-500 font-normal"> • {candidate.workCity}</span>
+                                    )}
+                                  </p>
+                                )}
                               </div>
                             );
                           })()}
 
                           {/* Parents & Siblings Information */}
                           <div className="pt-1 border-t border-gray-100 text-xs space-y-0.5">
-                            <p className="text-gray-700">
-                              <span className="font-bold">{language === 'TA' ? 'தந்தை:' : 'Father:'}</span>{' '}
-                              <span className="font-semibold text-gray-900">
-                                {candidate.fatherName || candidate.family?.fatherName || candidate.jathagamData?.fatherName || '-'}
-                              </span>
-                              {candidate.fatherOccupation && (
-                                <span className="text-gray-500 text-[11px]"> ({candidate.fatherOccupation})</span>
-                              )}
-                            </p>
-                            <p className="text-gray-700">
-                              <span className="font-bold">{language === 'TA' ? 'தாய்:' : 'Mother:'}</span>{' '}
-                              <span className="font-semibold text-gray-900">
-                                {candidate.motherName || candidate.family?.motherName || candidate.jathagamData?.motherName || '-'}
-                              </span>
-                              {candidate.motherOccupation && (
-                                <span className="text-gray-500 text-[11px]"> ({candidate.motherOccupation})</span>
-                              )}
-                            </p>
+                            {(candidate.fatherName || candidate.family?.fatherName || candidate.jathagamData?.fatherName) && (
+                              <p className="text-gray-700">
+                                <span className="font-bold">{language === 'TA' ? 'தந்தை:' : 'Father:'}</span>{' '}
+                                <span className="font-semibold text-gray-900">
+                                  {candidate.fatherName || candidate.family?.fatherName || candidate.jathagamData?.fatherName}
+                                </span>
+                                {candidate.fatherOccupation && (
+                                  <span className="text-gray-500 text-[11px]"> ({candidate.fatherOccupation})</span>
+                                )}
+                              </p>
+                            )}
+                            {(candidate.motherName || candidate.family?.motherName || candidate.jathagamData?.motherName) && (
+                              <p className="text-gray-700">
+                                <span className="font-bold">{language === 'TA' ? 'தாய்:' : 'Mother:'}</span>{' '}
+                                <span className="font-semibold text-gray-900">
+                                  {candidate.motherName || candidate.family?.motherName || candidate.jathagamData?.motherName}
+                                </span>
+                                {candidate.motherOccupation && (
+                                  <span className="text-gray-500 text-[11px]"> ({candidate.motherOccupation})</span>
+                                )}
+                              </p>
+                            )}
                             {Array.isArray(candidate.siblingsList) && candidate.siblingsList.length > 0 && (
                               <p className="text-gray-600 text-[11px]">
                                 <span className="font-bold">{language === 'TA' ? 'உடன்பிறப்பு:' : 'Siblings:'}</span>{' '}
@@ -1029,13 +1014,13 @@ export default function AdminConsole() {
                             </span>
                           </p>
                           <p className="text-gray-700">
-                            <span className="font-bold">{language === 'TA' ? 'தோஷம்:' : 'Dosham:'}</span> {candidate.dosham || (language === 'TA' ? 'சுத்த ஜாதகம்' : 'Sutham')}
+                            <span className="font-bold">{language === 'TA' ? 'தோஷம்:' : 'Dosham:'}</span> {candidate.dosham || (language === 'TA' ? 'இல்லை (None)' : 'None')}
                           </p>
                           <p className="text-gray-800 font-mono font-bold flex items-center gap-1">
                             <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                             <span>{candidate.userContact?.mobile || candidate.profileCreatedBy || candidate.whatsappNumber || '-'}</span>
                           </p>
-                          {candidate.userContact?.email && (
+                          {candidate.userContact?.email && !candidate.userContact.email.includes('@nammamatrimony.local') && (
                             <p className="text-gray-600 flex items-center gap-1 truncate text-[11px]">
                               <Mail className="w-3.5 h-3.5 text-primary shrink-0" />
                               <span className="truncate">{candidate.userContact.email}</span>

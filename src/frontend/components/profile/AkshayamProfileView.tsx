@@ -444,44 +444,29 @@ export default function AkshayamProfileView({
           </div>
         </div>
 
-        {/* 2. TRADITIONAL AUSPICIOUS HEADER BANNER */}
-        <div className="bg-gradient-to-b from-[#580016] to-primary text-white p-3.5 sm:p-5 text-center relative overflow-hidden border-b-2 border-[#D4AF37]">
-          {/* Sacred Invocations - Clean without unwanted symbols or pipes */}
-          <div className="text-[11px] sm:text-xs font-serif font-bold text-[#F3E5AB] tracking-wide mb-1 flex items-center justify-center gap-2">
-            <span>ஸ்ரீ விநாயகர் துணை</span>
-            <span className="text-[#D4AF37]">•</span>
-            <span>வாழ்க வளமுடன்</span>
-            <span className="text-[#D4AF37]">•</span>
-            <span>ஸ்ரீ குலதெய்வம் துணை</span>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-1.5 mb-0.5">
-            <h1 className="text-lg sm:text-2xl font-serif font-black text-white tracking-tight">
+        {/* 2. CLEAN HEADER BANNER (NO QUOTES / DECORATIVE FLUFF) */}
+        <div className="bg-gradient-to-r from-[#580016] via-primary to-[#580016] text-white px-4 py-3 sm:py-3.5 flex flex-wrap items-center justify-between gap-2 border-b-2 border-[#D4AF37]">
+          <div className="flex items-center gap-2">
+            <h1 className="text-base sm:text-xl font-serif font-black text-white tracking-tight">
               {BRANDING.brandNameTamil}
             </h1>
-            <span className="text-[#D4AF37] font-serif text-sm hidden sm:inline">•</span>
-            <span className="text-xs sm:text-base font-bold text-amber-200 font-serif">
+            <span className="text-[#D4AF37] font-serif text-xs">•</span>
+            <span className="text-xs sm:text-sm font-bold text-amber-200 font-serif">
               {BRANDING.brandName}
             </span>
           </div>
 
-          <p className="text-[10px] sm:text-xs text-rose-100/90 font-medium max-w-lg mx-auto">
-            {language === 'TA'
-              ? 'மக்களுக்கு உதவும் 100% முற்றிலும் இலவச திருமண தகவல் மையம்'
-              : '100% Free Public Community Matrimonial Service'}
-          </p>
-
           {/* ID & Verification Badge */}
-          <div className="mt-2 inline-flex items-center gap-2 bg-black/25 px-3 py-1 rounded-full border border-[#D4AF37]/50 shadow-xs">
-            <span className="text-[10px] sm:text-[11px] font-bold text-amber-300 uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 bg-black/30 px-3 py-1 rounded-full border border-[#D4AF37]/50 shadow-xs text-xs">
+            <span className="font-bold text-amber-300 uppercase tracking-wider">
               {language === 'TA' ? 'பதிவு எண்' : 'ID'}:
             </span>
-            <span className="text-sm sm:text-base font-black font-mono text-[#D4AF37]">
+            <span className="font-black font-mono text-[#D4AF37]">
               {displayId}
             </span>
             <span className="text-white/30">•</span>
-            <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] text-emerald-300 font-bold">
-              <CheckCircle2 className="w-3 h-3" /> சரிபார்க்கப்பட்டது
+            <span className="inline-flex items-center gap-1 text-emerald-300 font-bold">
+              <CheckCircle2 className="w-3 h-3 text-emerald-400" /> சரிபார்க்கப்பட்டது
             </span>
           </div>
         </div>
@@ -615,7 +600,6 @@ export default function AkshayamProfileView({
                 <User className="w-4 h-4 text-[#D4AF37]" />
                 <span>1. தனிப்பட்ட & உடல் விவரங்கள் (Personal & Physical Information)</span>
               </h3>
-              <span className="text-[11px] text-[#F3E5AB] font-bold">விவரங்கள்</span>
             </div>
 
             <div className="p-4 sm:p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 text-xs">
@@ -679,7 +663,6 @@ export default function AkshayamProfileView({
                 <Sparkles className="w-4 h-4 text-[#D4AF37]" />
                 <span>2. ஜோதிடம் & ஜாதக விவரங்கள் (Astrological Details)</span>
               </h3>
-              <span className="text-[11px] text-[#F3E5AB] font-bold">ஜாதக விவரங்கள்</span>
             </div>
 
             <div className="p-4 sm:p-6 space-y-6">
@@ -755,7 +738,6 @@ export default function AkshayamProfileView({
                 <GraduationCap className="w-4 h-4 text-[#D4AF37]" />
                 <span>3. கல்வி & பணி விவரங்கள் (Education & Career)</span>
               </h3>
-              <span className="text-[11px] text-[#F3E5AB] font-bold">தொழில்</span>
             </div>
 
             <div className="p-4 sm:p-6 space-y-4 text-xs">
@@ -923,7 +905,6 @@ export default function AkshayamProfileView({
                 <HomeIcon className="w-4 h-4 text-[#D4AF37]" />
                 <span>4. குடும்ப விவரங்கள் (Family Background)</span>
               </h3>
-              <span className="text-[11px] text-[#F3E5AB] font-bold">பாரம்பரியம்</span>
             </div>
 
             <div className="p-4 sm:p-6 space-y-4 text-xs">
@@ -1054,7 +1035,6 @@ export default function AkshayamProfileView({
                 <Award className="w-4 h-4 text-[#D4AF37]" />
                 <span>5. சொத்து & சீர்வரிசை விவரங்கள் (Property & Assets)</span>
               </h3>
-              <span className="text-[11px] text-[#F3E5AB] font-bold">வளமை</span>
             </div>
 
             <div className="p-4 sm:p-6 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 text-xs">
@@ -1111,7 +1091,6 @@ export default function AkshayamProfileView({
                 <Heart className="w-4 h-4 text-[#D4AF37]" />
                 <span>6. துணைவர் எதிர்பார்ப்புகள் (Partner Preferences)</span>
               </h3>
-              <span className="text-[11px] text-[#F3E5AB] font-bold">விருப்பங்கள்</span>
             </div>
 
             <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 text-xs">
@@ -1168,7 +1147,6 @@ export default function AkshayamProfileView({
                 <ShieldCheck className="w-4 h-4 text-[#D4AF37]" />
                 <span>7. தொடர்பு & தனியுரிமை (Contact & Privacy Details)</span>
               </h3>
-              <span className="text-[11px] text-[#F3E5AB] font-bold">பாதுகாப்பானது</span>
             </div>
 
             <div className="p-4 sm:p-6 space-y-4 text-xs">
@@ -1195,16 +1173,6 @@ export default function AkshayamProfileView({
                 <p className="font-bold text-gray-800 text-sm leading-relaxed">
                   {residentialAddress}
                 </p>
-              </div>
-
-              <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-2.5 text-emerald-900">
-                <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-bold text-xs">100% இலவச மக்கள் சேவை உத்தரவாதம்</p>
-                  <p className="text-[11px] text-emerald-700 mt-0.5 leading-relaxed">
-                    எந்தவித கட்டணமும் இன்றி குடும்பங்கள் நேரடியாக தொடர்பு கொண்டு பேச இந்த சுயவிவரம் வழங்கப்படுகிறது.
-                  </p>
-                </div>
               </div>
             </div>
           </div>
