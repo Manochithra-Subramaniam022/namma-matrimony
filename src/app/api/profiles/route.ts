@@ -170,7 +170,10 @@ export async function GET(req: NextRequest) {
           vacantLand: family?.vacantLand || p.jathagamData?.vacantLandSqft || p.vacantLand || null,
           totalAssetValue: family?.totalAssetValue || p.jathagamData?.totalNetAssets || p.totalAssetValue || null,
           propertyComments: family?.assetComments || p.jathagamData?.propertyComments || p.propertyComments || null,
-          dowryDetails: family?.dowryDetails || p.jathagamData?.dowryDetails || p.dowryDetails || null,
+          goldPavun: p.jathagamData?.goldPavun || p.goldPavun || null,
+          seerCash: p.jathagamData?.seerCash || p.seerCash || null,
+          seerVehicle: p.jathagamData?.seerVehicle || p.seerVehicle || null,
+          dowryDetails: (family?.dowryDetails && !family.dowryDetails.includes('Gold: 0 Pavun')) ? family.dowryDetails : (p.jathagamData?.dowryDetails || null),
 
           educationList,
           siblingsList,
@@ -188,7 +191,7 @@ export async function GET(req: NextRequest) {
             motherMobile,
             siblings: siblingsList,
           },
-          expectations: expectations || {},
+          expectations: expectations || p.jathagamData?.expectations || {},
           userContact,
         };
       })

@@ -146,7 +146,10 @@ export async function getProfilesByMobile(mobile: string) {
           vacantLand: family?.vacantLand || p.jathagamData?.vacantLandSqft || p.vacantLand || null,
           totalAssetValue: family?.totalAssetValue || p.jathagamData?.totalNetAssets || p.totalAssetValue || null,
           propertyComments: family?.assetComments || p.jathagamData?.propertyComments || p.propertyComments || null,
-          dowryDetails: family?.dowryDetails || p.jathagamData?.dowryDetails || p.dowryDetails || null,
+          goldPavun: p.jathagamData?.goldPavun || p.goldPavun || null,
+          seerCash: p.jathagamData?.seerCash || p.seerCash || null,
+          seerVehicle: p.jathagamData?.seerVehicle || p.seerVehicle || null,
+          dowryDetails: (family?.dowryDetails && !family.dowryDetails.includes('Gold: 0 Pavun')) ? family.dowryDetails : (p.jathagamData?.dowryDetails || null),
 
           educationList,
           siblingsList,
@@ -164,7 +167,7 @@ export async function getProfilesByMobile(mobile: string) {
             motherMobile,
             siblings: siblingsList,
           },
-          expectations: expectations || {},
+          expectations: expectations || p.jathagamData?.expectations || {},
           userContact: {
             mobile: user?.mobile_no || cleanMobile,
             email: user?.email,
@@ -274,7 +277,10 @@ export async function getProfileById(displayIdOrId: string) {
       vacantLand: family?.vacantLand || profile.jathagamData?.vacantLandSqft || profile.vacantLand || null,
       totalAssetValue: family?.totalAssetValue || profile.jathagamData?.totalNetAssets || profile.totalAssetValue || null,
       propertyComments: family?.assetComments || profile.jathagamData?.propertyComments || profile.propertyComments || null,
-      dowryDetails: family?.dowryDetails || profile.jathagamData?.dowryDetails || profile.dowryDetails || null,
+      goldPavun: profile.jathagamData?.goldPavun || profile.goldPavun || null,
+      seerCash: profile.jathagamData?.seerCash || profile.seerCash || null,
+      seerVehicle: profile.jathagamData?.seerVehicle || profile.seerVehicle || null,
+      dowryDetails: (family?.dowryDetails && !family.dowryDetails.includes('Gold: 0 Pavun')) ? family.dowryDetails : (profile.jathagamData?.dowryDetails || null),
 
       educationList,
       siblingsList,
@@ -292,7 +298,7 @@ export async function getProfileById(displayIdOrId: string) {
         motherMobile,
         siblings: siblingsList,
       },
-      expectations: expectations || {},
+      expectations: expectations || profile.jathagamData?.expectations || {},
     };
   } catch (err) {
     console.error('getProfileById error:', err);
@@ -510,7 +516,7 @@ export async function registerProfileWithPrisma(formData: any) {
         workMode: formData.workMode || null,
         businessDetails: formData.businessDetails || null,
         monthlyIncome: formData.monthlyIncome || null,
-        annualIncome: formData.annualIncome || formData.monthlyIncome || null,
+        annualIncome: formData.annualIncome || null,
         companyName: formData.companyName || null,
         designation: formData.designation || null,
         workCity: formData.workCity || formData.workLocation || null,
@@ -532,6 +538,27 @@ export async function registerProfileWithPrisma(formData: any) {
         goldPavun: formData.goldPavun || formData.seerGoldPavun || null,
         seerCash: formData.seerCash || null,
         seerVehicle: formData.seerVehicle || null,
+        expectations: {
+          expectedAgeGap: formData.expectedAgeGap ? Number(formData.expectedAgeGap) : null,
+          expectedMinHeightCm: formData.expectedMinHeightCm ? Number(formData.expectedMinHeightCm) : null,
+          expectedMaxHeightCm: formData.expectedMaxHeightCm ? Number(formData.expectedMaxHeightCm) : null,
+          complexionPreference: formData.complexionPreference || null,
+          careerTypePreference: formData.careerTypePreference || null,
+          preferredSectors: Array.isArray(formData.preferredSectors) ? formData.preferredSectors : [],
+          expectedMinMonthlyIncome: formData.expectedMinMonthlyIncome || null,
+          expectsRentalIncome: Boolean(formData.expectsRentalIncome),
+          expectsThottamLand: Boolean(formData.expectsThottamLand),
+          expectsVacantLand: Boolean(formData.expectsVacantLand),
+          openToRemarriage: Boolean(formData.openToRemarriage),
+          distanceRadiusKm: formData.distanceRadiusKm ? Number(formData.distanceRadiusKm) : null,
+          preferredCity1: formData.preferredCity1 || null,
+          preferredCity2: formData.preferredCity2 || null,
+          preferredCity3: formData.preferredCity3 || null,
+          preferredLocations: [formData.preferredCity1, formData.preferredCity2, formData.preferredCity3].filter(Boolean),
+          livingAreaType: formData.livingAreaType || null,
+          referredBy: formData.referredBy || null,
+          comments: formData.partnerExpectationsNotes || formData.comments || null,
+        },
       },
       idProofUrl: formData.idProofUrl || null,
       casteCertificateUrl: formData.casteCertificateUrl || null,
@@ -565,6 +592,12 @@ export async function registerProfileWithPrisma(formData: any) {
     }
 
     // 3. Family Data
+    const seerParts: string[] = [];
+    if (formData.goldPavun && formData.goldPavun !== '0') seerParts.push(`தங்கம்: ${formData.goldPavun} பவுன்`);
+    if (formData.seerCash && formData.seerCash !== '0') seerParts.push(`ரொக்கம்: ${formData.seerCash}`);
+    if (formData.seerVehicle && formData.seerVehicle.toLowerCase() !== 'none') seerParts.push(`வாகனம்: ${formData.seerVehicle}`);
+    const resolvedDowryDetails = seerParts.length > 0 ? seerParts.join(', ') : null;
+
     const familyPayload = {
       userId: targetCandidateUserId,
       fatherName: formData.fatherName || null,
@@ -576,7 +609,7 @@ export async function registerProfileWithPrisma(formData: any) {
       motherStatus: String(formData.motherStatus).toUpperCase() === 'LATE' ? null : (formData.motherOccupation || null),
       motherMobile: String(formData.motherStatus).toUpperCase() === 'LATE' ? null : (formData.motherMobile || null),
       workNature,
-      salary: formData.annualIncome || formData.monthlyIncome || null,
+      salary: formData.annualIncome || (formData.monthlyIncome ? `₹${formData.monthlyIncome} / month` : null),
       organisation: formData.companyName || null,
       designation: formData.designation || null,
       workingAddress: formData.workCity || formData.workLocation || null,
@@ -589,7 +622,7 @@ export async function registerProfileWithPrisma(formData: any) {
       vacantLand: formData.vacantLandSqft || formData.commercialSqft || null,
       totalAssetValue: formData.totalNetAssets || formData.netAssets || null,
       assetComments: formData.propertyComments || formData.assetComments || null,
-      dowryDetails: `Gold: ${formData.goldPavun || formData.seerGoldPavun || '0'} Pavun, Cash: ${formData.seerCash || '0'}, Vehicle: ${formData.seerVehicle || 'None'}`,
+      dowryDetails: resolvedDowryDetails,
     };
 
     const { data: existingFamily } = await supabase
@@ -660,6 +693,7 @@ export async function registerProfileWithPrisma(formData: any) {
       expectsVacantLand: Boolean(formData.expectsVacantLand),
       acceptsDivorced: Boolean(formData.openToRemarriage),
       preferredDistanceRadius: parseFloat(formData.distanceRadiusKm) || 100,
+      preferredResidentArea: formData.livingAreaType || null,
       referredBy: formData.referredBy || null,
       comments: formData.partnerExpectationsNotes || formData.openExpectations || null,
     };

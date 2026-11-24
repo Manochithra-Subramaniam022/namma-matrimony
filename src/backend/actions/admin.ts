@@ -38,7 +38,7 @@ export async function getAllProfilesForAdmin(options?: {
     const mobiles = Array.from(new Set(profiles.map((p) => p.profileCreatedBy).filter(Boolean)));
 
     // Fetch in parallel
-    const [usersByIdRes, usersByMobileRes, familiesByUserIdRes, educationsRes] = await Promise.all([
+    const [usersByIdRes, usersByMobileRes, familiesByUserIdRes, educationsRes, expectationsRes] = await Promise.all([
       userIds.length > 0
         ? supabase.from('User').select('id, email, mobile_no, whatsappProfileDeliveryNumber, createdAt').in('id', userIds)
         : { data: [] },
@@ -50,6 +50,9 @@ export async function getAllProfilesForAdmin(options?: {
         : { data: [] },
       profileIds.length > 0
         ? supabase.from('Education').select('*').in('profileId', profileIds)
+        : { data: [] },
+      userIds.length > 0
+        ? supabase.from('Expectations').select('*').in('userId', userIds)
         : { data: [] },
     ]);
 
@@ -63,14 +66,21 @@ export async function getAllProfilesForAdmin(options?: {
     const familiesByUserIdMap = new Map<string, any>();
     (familiesByUserIdRes.data || []).forEach((f: any) => familiesByUserIdMap.set(f.userId, f));
 
-    // Fetch any families by creator mobile user IDs if not found by profile.userId
+    const expectationsByUserIdMap = new Map<string, any>();
+    (expectationsRes.data || []).forEach((exp: any) => expectationsByUserIdMap.set(exp.userId, exp));
+
+    // Fetch any families and expectations by creator mobile user IDs if not found by profile.userId
     const secondaryUserIdsToFetch = mobiles
       .map((m) => usersByMobileMap.get(m)?.id)
-      .filter((uid) => uid && !familiesByUserIdMap.has(uid));
+      .filter((uid) => uid && (!familiesByUserIdMap.has(uid) || !expectationsByUserIdMap.has(uid)));
 
     if (secondaryUserIdsToFetch.length > 0) {
-      const { data: extraFamilies } = await supabase.from('Family').select('*').in('userId', secondaryUserIdsToFetch);
-      (extraFamilies || []).forEach((f: any) => familiesByUserIdMap.set(f.userId, f));
+      const [extraFamiliesRes, extraExpRes] = await Promise.all([
+        supabase.from('Family').select('*').in('userId', secondaryUserIdsToFetch),
+        supabase.from('Expectations').select('*').in('userId', secondaryUserIdsToFetch),
+      ]);
+      (extraFamiliesRes.data || []).forEach((f: any) => familiesByUserIdMap.set(f.userId, f));
+      (extraExpRes.data || []).forEach((exp: any) => expectationsByUserIdMap.set(exp.userId, exp));
     }
 
     // Collect all family IDs for bulk Sibling fetch
@@ -173,7 +183,10 @@ export async function getAllProfilesForAdmin(options?: {
         vacantLand: family?.vacantLand || p.jathagamData?.vacantLandSqft || p.vacantLand || null,
         totalAssetValue: family?.totalAssetValue || p.jathagamData?.totalNetAssets || p.totalAssetValue || null,
         propertyComments: family?.assetComments || p.jathagamData?.propertyComments || p.propertyComments || null,
-        dowryDetails: family?.dowryDetails || p.jathagamData?.dowryDetails || p.dowryDetails || null,
+        goldPavun: p.jathagamData?.goldPavun || p.goldPavun || null,
+        seerCash: p.jathagamData?.seerCash || p.seerCash || null,
+        seerVehicle: p.jathagamData?.seerVehicle || p.seerVehicle || null,
+        dowryDetails: (family?.dowryDetails && !family.dowryDetails.includes('Gold: 0 Pavun')) ? family.dowryDetails : (p.jathagamData?.dowryDetails || null),
 
         educationList,
         siblingsList,
@@ -192,7 +205,7 @@ export async function getAllProfilesForAdmin(options?: {
           motherMobile,
           siblings: siblingsList,
         },
-        expectations: {},
+        expectations: (p.userId ? expectationsByUserIdMap.get(p.userId) : null) || (user?.id ? expectationsByUserIdMap.get(user.id) : null) || p.jathagamData?.expectations || {},
       };
     });
 

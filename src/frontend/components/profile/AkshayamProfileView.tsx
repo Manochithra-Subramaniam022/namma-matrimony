@@ -125,7 +125,6 @@ export default function AkshayamProfileView({
 
   // Normalized Family, Expectations & JathagamData Containers
   const fam = resolveJsonObject(profile?.family);
-  const exp = resolveJsonObject(profile?.expectations);
   const jData = resolveJsonObject(profile?.jathagamData);
 
   // Status & Verification state
@@ -269,16 +268,86 @@ export default function AkshayamProfileView({
   const nativePlace = fam.workingAddress || jData?.nativePlace || profile?.nativePlace || profile?.city || null;
   const familyType = fam.familyType || jData?.familyType || profile?.familyType || (profile?.familyStatus === 'NUCLEAR' ? 'தனிக்குடும்பம் (Nuclear)' : (profile?.familyStatus === 'JOINT' ? 'கூட்டுக் குடும்பம் (Joint)' : null));
 
-  // Property & Assets (No assumptions - only what user entered)
-  const houseType = fam.houseType || profile?.houseType || null;
-  const houseSqft = fam.houseSqFt || fam.houseSqft || profile?.houseSqft || null;
-  const rentalIncome = fam.rentalIncome || profile?.rentalIncomeMonthly || profile?.rentalIncome || null;
-  const thottam = fam.thottam || profile?.agriculturalLandAcres || profile?.thottam || null;
-  const vacantLand = fam.vacantLand || profile?.vacantLandSqft || profile?.vacantLand || null;
-  const totalAssets = fam.totalAssetValue || profile?.totalNetAssets || profile?.totalAssetValue || null;
-  const goldPavun = profile?.goldPavun || fam.goldPavun || null;
-  const dowryDetails = fam.dowryDetails || profile?.dowryDetails || null;
-  const propertyComments = fam.assetComments || profile?.propertyComments || profile?.assetComments || null;
+  // Helper to filter out placeholder strings entered by users or DB defaults
+  const isNoneValue = (val?: string | null) => {
+    if (!val) return true;
+    const clean = String(val).trim().toLowerCase();
+    return ['none', 'nil', 'nothing', 'no', 'null', '0', 'n/a', '-', 'undefined'].includes(clean);
+  };
+
+  // Helper to format currency numbers nicely
+  const formatCurrencyDisplay = (val?: string | number | null) => {
+    if (!val) return null;
+    const s = String(val).trim();
+    if (isNoneValue(s)) return null;
+    if (/^\d+$/.test(s)) {
+      const num = parseInt(s, 10);
+      if (num >= 100000) {
+        const lakhs = (num / 100000).toFixed(num % 100000 === 0 ? 0 : 1);
+        return `₹${lakhs} Lakhs (${num.toLocaleString('en-IN')})`;
+      }
+      return `₹${num.toLocaleString('en-IN')}`;
+    }
+    return s.startsWith('₹') ? s : (s.toLowerCase().includes('lpa') || s.toLowerCase().includes('lakh') || s.toLowerCase().includes('cr') ? s : `₹${s}`);
+  };
+
+  // Smart Dowry & Seer parser to extract clean components from formatted strings
+  const parseDowryString = (str?: string | null) => {
+    if (!str) return { gold: null, cash: null, vehicle: null, raw: null };
+    const match = str.match(/Gold:\s*([^,]+?)(?:\s*Pavun)?,\s*Cash:\s*([^,]+?),\s*Vehicle:\s*(.+)/i);
+    if (!match) {
+      return { gold: null, cash: null, vehicle: null, raw: isNoneValue(str) ? null : str };
+    }
+    const cleanVal = (v?: string | null) => {
+      if (!v) return null;
+      const trimmed = v.trim();
+      const lower = trimmed.toLowerCase();
+      if (['0', 'none', 'nothing', 'nil', 'no', 'null', '0 pavun', 'nil pavun', 'none pavun'].includes(lower)) return null;
+      return trimmed;
+    };
+    return {
+      gold: cleanVal(match[1]),
+      cash: cleanVal(match[2]),
+      vehicle: cleanVal(match[3]),
+      raw: null,
+    };
+  };
+
+  // Property & Assets (No assumptions - only what candidate actually entered)
+  const rawHouseType = fam.houseType || profile?.houseType || jData?.houseType || null;
+  const houseType = isNoneValue(rawHouseType) ? null : rawHouseType;
+
+  const rawHouseSqft = fam.houseSqFt || fam.houseSqft || profile?.houseSqft || jData?.houseSqft || null;
+  const houseSqft = isNoneValue(rawHouseSqft) ? null : rawHouseSqft;
+
+  const rawRental = fam.rentalIncome || profile?.rentalIncomeMonthly || profile?.rentalIncome || jData?.rentalIncomeMonthly || jData?.rentalIncome || null;
+  const rentalIncome = isNoneValue(rawRental) ? null : rawRental;
+
+  const rawThottam = fam.thottam || profile?.agriculturalLandAcres || profile?.thottam || jData?.agriculturalLandAcres || jData?.thottam || null;
+  const thottam = isNoneValue(rawThottam) ? null : rawThottam;
+
+  const rawVacant = fam.vacantLand || profile?.vacantLandSqft || profile?.vacantLand || jData?.vacantLandSqft || jData?.vacantLand || null;
+  const vacantLand = isNoneValue(rawVacant) ? null : rawVacant;
+
+  const rawAssets = fam.totalAssetValue || profile?.totalNetAssets || profile?.totalAssetValue || jData?.totalNetAssets || jData?.totalAssetValue || null;
+  const totalAssets = isNoneValue(rawAssets) ? null : rawAssets;
+
+  const rawDowryText = fam.dowryDetails || profile?.dowryDetails || jData?.dowryDetails || null;
+  const parsedDowry = parseDowryString(rawDowryText);
+
+  const rawGold = profile?.goldPavun || fam.goldPavun || jData?.goldPavun || parsedDowry.gold || null;
+  const goldPavun = isNoneValue(rawGold) ? null : rawGold;
+
+  const rawCash = profile?.seerCash || jData?.seerCash || parsedDowry.cash || null;
+  const seerCash = isNoneValue(rawCash) ? null : rawCash;
+
+  const rawVehicle = profile?.seerVehicle || jData?.seerVehicle || parsedDowry.vehicle || null;
+  const seerVehicle = isNoneValue(rawVehicle) ? null : rawVehicle;
+
+  const dowryDetails = parsedDowry.raw;
+
+  const rawComments = fam.assetComments || profile?.propertyComments || profile?.assetComments || jData?.propertyComments || null;
+  const propertyComments = isNoneValue(rawComments) ? null : rawComments;
 
   const hasPropertyDetails = !!(
     houseType ||
@@ -288,6 +357,8 @@ export default function AkshayamProfileView({
     vacantLand ||
     totalAssets ||
     goldPavun ||
+    seerCash ||
+    seerVehicle ||
     dowryDetails ||
     propertyComments
   );
@@ -335,8 +406,10 @@ export default function AkshayamProfileView({
   const workDesignation = fam.designation || profile?.designation || jData?.designation || null;
   const companyName = fam.organisation || profile?.companyName || profile?.organisation || jData?.companyName || null;
   const workCity = fam.workingAddress || profile?.workCity || profile?.workingAddress || jData?.workCity || null;
-  const annualIncome = fam.salary || profile?.annualIncome || profile?.salary || jData?.annualIncome || null;
-  const monthlyIncome = profile?.monthlyIncome || fam.monthlyIncome || jData?.monthlyIncome || null;
+  const rawAnnualIncome = fam.salary || profile?.annualIncome || profile?.salary || jData?.annualIncome || null;
+  const annualIncome = isNoneValue(rawAnnualIncome) ? null : formatCurrencyDisplay(rawAnnualIncome);
+  const rawMonthlyIncome = profile?.monthlyIncome || fam.monthlyIncome || jData?.monthlyIncome || null;
+  const monthlyIncome = isNoneValue(rawMonthlyIncome) ? null : formatCurrencyDisplay(rawMonthlyIncome);
   const workMapLink = fam.googleLocation || profile?.workMapLink || jData?.workMapLink || null;
   const workSector = profile?.workSector || jData?.workSector || fam.workSector || null;
   const businessType = profile?.businessType || jData?.businessType || fam.businessType || null;
@@ -454,24 +527,69 @@ export default function AkshayamProfileView({
     return map[mode.toUpperCase()] || mode;
   };
 
-  // Partner Expectations (No assumptions)
-  const expectedAgeGap = exp.maxAgeLimit || profile?.expectedAgeGap || null;
-  const expectedMinHeightCm = exp.expectedHeight || profile?.expectedMinHeightCm || null;
-  const expectedMaxHeightCm = profile?.expectedMaxHeightCm || null;
-  const expectedLocations = Array.isArray(exp.preferredLocations) && exp.preferredLocations.length > 0
-    ? exp.preferredLocations.join(', ')
-    : ([profile?.preferredCity1, profile?.preferredCity2, profile?.preferredCity3].filter(Boolean).join(', ') || null);
-  const openToRemarriage = exp.acceptsDivorced !== undefined ? exp.acceptsDivorced : profile?.openToRemarriage;
-  const expectedIncome = exp.expectedIncome || profile?.expectedMinMonthlyIncome || null;
-  const partnerExpectationsNotes = exp.comments || profile?.partnerExpectationsNotes || null;
+  // Partner Expectations (Robust resolution: exp or jData.expectations)
+  const expObj = resolveJsonObject(profile?.expectations);
+  const expJData = resolveJsonObject(jData?.expectations);
+  const exp = Object.keys(expObj).length > 0 ? expObj : expJData;
+
+  const expectedAgeGap = exp.maxAgeLimit || exp.expectedAgeGap || profile?.expectedAgeGap || null;
+  const expectedMinHeightCm = exp.expectedHeight || exp.expectedMinHeightCm || profile?.expectedMinHeightCm || null;
+  const expectedMaxHeightCm = exp.expectedMaxHeightCm || profile?.expectedMaxHeightCm || null;
+  const complexionPreference = exp.colourPreference || exp.complexionPreference || profile?.complexionPreference || null;
+  const careerTypePreference = exp.careerTypePreference || profile?.careerTypePreference || null;
+
+  const preferredSectorsList: string[] = Array.isArray(exp.preferredSectors) && exp.preferredSectors.length > 0
+    ? exp.preferredSectors
+    : (Array.isArray(profile?.preferredSectors) ? profile.preferredSectors : []);
+
+  const preferredLocsRaw = Array.isArray(exp.preferredLocations) && exp.preferredLocations.length > 0
+    ? exp.preferredLocations
+    : [profile?.preferredCity1 || exp.preferredCity1, profile?.preferredCity2 || exp.preferredCity2, profile?.preferredCity3 || exp.preferredCity3].filter(Boolean);
+  const expectedLocations = preferredLocsRaw.length > 0 ? preferredLocsRaw.join(', ') : null;
+
+  const openToRemarriage = exp.acceptsDivorced !== undefined
+    ? exp.acceptsDivorced
+    : (exp.openToRemarriage !== undefined ? exp.openToRemarriage : profile?.openToRemarriage);
+
+  const expectedIncome = exp.expectedIncome || exp.expectedMinMonthlyIncome || profile?.expectedMinMonthlyIncome || null;
+
+  const expectsRentalIncome = exp.expectsRentalIncome ?? profile?.expectsRentalIncome;
+  const expectsThottamLand = exp.expectsThottam ?? exp.expectsThottamLand ?? profile?.expectsThottamLand;
+  const expectsVacantLand = exp.expectsVacantLand ?? profile?.expectsVacantLand;
+  const distanceRadiusKm = exp.preferredDistanceRadius || exp.distanceRadiusKm || profile?.distanceRadiusKm || null;
+  const livingAreaType = exp.preferredResidentArea || exp.livingAreaType || profile?.livingAreaType || null;
+
+  const partnerExpectationsNotes = exp.comments || exp.partnerExpectationsNotes || profile?.partnerExpectationsNotes || null;
 
   const hasExpectations = !!(
     expectedAgeGap ||
     expectedMinHeightCm ||
+    (complexionPreference && complexionPreference !== 'ANY') ||
+    careerTypePreference ||
+    preferredSectorsList.length > 0 ||
     expectedLocations ||
     expectedIncome ||
+    expectsRentalIncome ||
+    expectsThottamLand ||
+    expectsVacantLand ||
+    openToRemarriage !== undefined ||
     partnerExpectationsNotes
   );
+
+  const formatSectorLabel = (sectorId: string) => {
+    const map: Record<string, string> = {
+      IT_SOFTWARE: language === 'TA' ? 'ஐடி / சாப்ட்வேர்' : 'IT / Software',
+      BANKING_FINANCE: language === 'TA' ? 'வங்கி & நிதித் துறை' : 'Banking & Finance',
+      GOVT_CIVIL: language === 'TA' ? 'அரசுப் பணி' : 'Govt Services',
+      CORE_ENGINEERING: language === 'TA' ? 'பொறியியல் துறை' : 'Core Engineering',
+      BUSINESS_SELF: language === 'TA' ? 'சொந்த தொழில்' : 'Business / Self-Employed',
+      GARMENTS_TEXTILE: language === 'TA' ? 'ஆடை & ஏற்றுமதி' : 'Garments & Textile',
+      AGRICULTURE_FARMER: language === 'TA' ? 'விவசாயம் & பண்ணை' : 'Agriculture',
+      MEDICAL_HEALTHCARE: language === 'TA' ? 'மருத்துவம் / மருத்துவர்' : 'Doctor / Healthcare',
+      TEACHING_PROFESSOR: language === 'TA' ? 'பேராசிரியர் / ஆசிரியர்' : 'Teacher / Professor',
+    };
+    return map[sectorId] || sectorId;
+  };
 
   // Contact & Privacy Details
   const rawMobile = profile?.userContact?.mobile || profile?.whatsappNumber || profile?.primaryMobile || profile?.profileCreatedBy || '';
@@ -777,7 +895,11 @@ export default function AkshayamProfileView({
                       <span className="truncate font-semibold">
                         {workDesignation || ''}
                         {companyName ? (workDesignation ? ` @ ${companyName}` : companyName) : ''}
-                        {annualIncome ? ` (${annualIncome})` : ''}
+                        {annualIncome
+                          ? (workDesignation || companyName
+                              ? ` (${annualIncome})`
+                              : `${language === 'TA' ? 'ஆண்டு வருமானம்' : 'Annual Income'}: ${annualIncome}`)
+                          : ''}
                       </span>
                     </div>
                   )}
@@ -1127,7 +1249,7 @@ export default function AkshayamProfileView({
                       <span className="text-[10px] text-gray-400 font-bold uppercase block">
                         {language === 'TA' ? 'மாத வருமானம்' : 'Monthly Income'}
                       </span>
-                      <span className="font-bold text-gray-900 text-sm">₹{monthlyIncome}</span>
+                      <span className="font-bold text-gray-900 text-sm">{monthlyIncome}</span>
                     </div>
                   )}
                 </div>
@@ -1295,9 +1417,18 @@ export default function AkshayamProfileView({
               <div className="p-4 sm:p-6 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 text-xs">
                 {houseType && (
                   <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase block">சொந்த வீடு</span>
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">சொந்த வீடு (House)</span>
                     <span className="font-bold text-gray-900 text-sm">
-                      {houseType} {houseSqft ? `(${houseSqft})` : ''}
+                      {houseType === 'OWN_HOUSE'
+                        ? (language === 'TA' ? 'சொந்த வீடு / பங்களா' : 'Own House')
+                        : houseType === 'OWN_APARTMENT'
+                        ? (language === 'TA' ? 'சொந்த அடுக்குமாடி' : 'Own Apartment')
+                        : houseType === 'RENTED'
+                        ? (language === 'TA' ? 'வாடகை வீடு' : 'Rented')
+                        : houseType === 'ANCESTRAL'
+                        ? (language === 'TA' ? 'பூர்வீக வீடு' : 'Ancestral')
+                        : houseType}
+                      {houseSqft ? ` • ${houseSqft}` : ''}
                     </span>
                   </div>
                 )}
@@ -1305,13 +1436,13 @@ export default function AkshayamProfileView({
                   <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
                     <span className="text-[10px] text-gray-400 font-bold uppercase block">மாத வாடகை வருமானம்</span>
                     <span className="font-bold text-gray-900 text-sm">
-                      ₹{rentalIncome}
+                      {rentalIncome.startsWith('₹') ? rentalIncome : `₹${rentalIncome}`}
                     </span>
                   </div>
                 )}
                 {thottam && (
                   <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase block">தோட்டம் / நஞ்சை-புஞ்சை நிலம்</span>
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">தோட்டம் / விவசாய நிலம்</span>
                     <span className="font-bold text-gray-900 text-sm">
                       {thottam}
                     </span>
@@ -1319,7 +1450,7 @@ export default function AkshayamProfileView({
                 )}
                 {vacantLand && (
                   <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase block">காலி மனை (Vacant Land)</span>
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">காலி மனை / மனை இடம்</span>
                     <span className="font-bold text-gray-900 text-sm">
                       {vacantLand}
                     </span>
@@ -1333,11 +1464,35 @@ export default function AkshayamProfileView({
                     </span>
                   </div>
                 )}
-                {(goldPavun || dowryDetails) && (
+                {goldPavun && (
                   <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
                     <span className="text-[10px] text-gray-400 font-bold uppercase block">சீர்வரிசை / தங்கம்</span>
                     <span className="font-bold text-gray-900 text-sm">
-                      {goldPavun ? `${goldPavun} பவுன்` : dowryDetails}
+                      {goldPavun.includes('பவுன்') || goldPavun.toLowerCase().includes('pavun') ? goldPavun : `${goldPavun} பவுன்`}
+                    </span>
+                  </div>
+                )}
+                {seerCash && (
+                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">சீர்வரிசை ரொக்கம் (Cash)</span>
+                    <span className="font-bold text-gray-900 text-sm">
+                      {seerCash.startsWith('₹') ? seerCash : `₹${seerCash}`}
+                    </span>
+                  </div>
+                )}
+                {seerVehicle && (
+                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">சீர்வரிசை வாகனம்</span>
+                    <span className="font-bold text-gray-900 text-sm">
+                      {seerVehicle}
+                    </span>
+                  </div>
+                )}
+                {!goldPavun && !seerCash && !seerVehicle && dowryDetails && (
+                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">சீர்வரிசை விவரங்கள்</span>
+                    <span className="font-bold text-gray-900 text-sm">
+                      {dowryDetails}
                     </span>
                   </div>
                 )}
@@ -1363,11 +1518,13 @@ export default function AkshayamProfileView({
               </div>
 
               <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 text-xs">
-                {expectedAgeGap && (
+                {expectedAgeGap !== null && expectedAgeGap !== undefined && (
                   <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
                     <span className="text-[10px] text-gray-400 font-bold uppercase block">எதிர்பார்க்கும் வயது வரம்பு</span>
                     <span className="font-bold text-gray-900 text-sm">
-                      {`Up to ${expectedAgeGap} Yrs difference`}
+                      {expectedAgeGap === 0
+                        ? (language === 'TA' ? 'ஒரே வயது (Same Age)' : 'Same Age (0 Yrs)')
+                        : (language === 'TA' ? `அதிகபட்சம் ${expectedAgeGap} ஆண்டுகள் வரை` : `Up to ${expectedAgeGap} Years Gap`)}
                     </span>
                   </div>
                 )}
@@ -1375,23 +1532,82 @@ export default function AkshayamProfileView({
                   <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
                     <span className="text-[10px] text-gray-400 font-bold uppercase block">எதிர்பார்க்கும் உயரம்</span>
                     <span className="font-bold text-gray-900 text-sm">
-                      {`${expectedMinHeightCm} cm to ${expectedMaxHeightCm || 185} cm`}
+                      {`${expectedMinHeightCm} cm ${expectedMaxHeightCm ? `முதல் ${expectedMaxHeightCm} cm வரை` : 'குறைந்தபட்சம்'}`}
                     </span>
                   </div>
                 )}
-                {(profile?.expectedEducation || profile?.expectedProfession) && (
+                {complexionPreference && complexionPreference !== 'ANY' && (
                   <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase block">கல்வி & தொழில்</span>
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">நிற விருப்பம்</span>
                     <span className="font-bold text-gray-900 text-sm">
-                      {profile?.expectedEducation || profile?.expectedProfession}
+                      {complexionPreference === 'FAIR'
+                        ? (language === 'TA' ? 'சிகப்பு (Fair)' : 'Fair')
+                        : complexionPreference === 'VERY_FAIR'
+                        ? (language === 'TA' ? 'மிகவும் சிகப்பு (Very Fair)' : 'Very Fair')
+                        : complexionPreference === 'WHEATISH'
+                        ? (language === 'TA' ? 'மாநிறம் (Wheatish)' : 'Wheatish')
+                        : complexionPreference}
                     </span>
+                  </div>
+                )}
+                {(careerTypePreference || preferredSectorsList.length > 0) && (
+                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">பணி & தொழில் விருப்பம்</span>
+                    <span className="font-bold text-gray-900 text-sm block">
+                      {careerTypePreference === 'JOB'
+                        ? (language === 'TA' ? 'மாத சம்பள வேலை மட்டும்' : 'Job Only')
+                        : careerTypePreference === 'BUSINESS'
+                        ? (language === 'TA' ? 'சொந்த தொழில் மட்டும்' : 'Business Only')
+                        : careerTypePreference === 'BOTH'
+                        ? (language === 'TA' ? 'வேலை அல்லது தொழில்' : 'Job or Business')
+                        : ''}
+                    </span>
+                    {preferredSectorsList.length > 0 && (
+                      <p className="text-[11px] text-primary font-medium mt-1">
+                        {preferredSectorsList.map(formatSectorLabel).join(', ')}
+                      </p>
+                    )}
                   </div>
                 )}
                 {expectedLocations && (
                   <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase block">விரும்பும் மாவட்டங்கள்</span>
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">விரும்பும் மாவட்டங்கள் / ஊர்</span>
                     <span className="font-bold text-gray-900 text-sm">
                       {expectedLocations}
+                    </span>
+                  </div>
+                )}
+                {distanceRadiusKm && (
+                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">தூர எல்லை (Distance)</span>
+                    <span className="font-bold text-gray-900 text-sm">
+                      {`${distanceRadiusKm} கி.மீ எல்லைக்குள்`}
+                    </span>
+                  </div>
+                )}
+                {livingAreaType && livingAreaType !== 'ANY' && (
+                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">பகுதியின் தன்மை</span>
+                    <span className="font-bold text-gray-900 text-sm">
+                      {livingAreaType === 'METRO'
+                        ? (language === 'TA' ? 'பெருநகரம் (Metro)' : 'Metro')
+                        : livingAreaType === 'SEMI_URBAN'
+                        ? (language === 'TA' ? 'நகரம் / பேரூர் (Semi-Urban)' : 'Town / Semi-Urban')
+                        : livingAreaType === 'VILLAGE'
+                        ? (language === 'TA' ? 'கிராமப்புறம் (Rural)' : 'Village / Rural')
+                        : livingAreaType}
+                    </span>
+                  </div>
+                )}
+                {(expectsThottamLand || expectsRentalIncome || expectsVacantLand) && (
+                  <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block">சொத்து எதிர்பார்ப்புகள்</span>
+                    <span className="font-bold text-emerald-800 text-sm block">
+                      {[
+                        expectsThottamLand ? (language === 'TA' ? 'விவசாய நிலம் / தோட்டம்' : 'Thottam / Farm') : null,
+                        expectsRentalIncome ? (language === 'TA' ? 'வாடகை வருமானம்' : 'Rental Income') : null,
+                        expectsVacantLand ? (language === 'TA' ? 'காலி மனை' : 'Vacant Land') : null,
+                      ].filter(Boolean).join(' • ')}
                     </span>
                   </div>
                 )}
@@ -1399,7 +1615,9 @@ export default function AkshayamProfileView({
                   <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
                     <span className="text-[10px] text-gray-400 font-bold uppercase block">மறுமணம் சம்மதம்</span>
                     <span className="font-bold text-gray-900 text-sm">
-                      {openToRemarriage ? 'சம்மதம் (Open to Remarriage)' : 'முதல் மணம் மட்டும் (Unmarried Only)'}
+                      {openToRemarriage
+                        ? (language === 'TA' ? 'மறுமணம் / விவாகரத்து சம்மதம்' : 'Open to Remarriage')
+                        : (language === 'TA' ? 'முதல் மணம் மட்டும்' : 'Never Married Only')}
                     </span>
                   </div>
                 )}
@@ -1407,7 +1625,7 @@ export default function AkshayamProfileView({
                   <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/10">
                     <span className="text-[10px] text-gray-400 font-bold uppercase block">மாத வருமான எதிர்பார்ப்பு</span>
                     <span className="font-bold text-gray-900 text-sm">
-                      {expectedIncome}
+                      {expectedIncome.startsWith('₹') ? expectedIncome : `₹${expectedIncome}`}
                     </span>
                   </div>
                 )}
