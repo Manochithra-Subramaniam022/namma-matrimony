@@ -699,59 +699,6 @@ export default function AdminConsole() {
               <span>{language === 'TA' ? 'சாதி & கூட்டம் மேலாண்மை' : 'Caste & Koottam Manager'}</span>
             </button>
           </div>
-
-          {/* Quick Stat Pill Chips */}
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs">
-            <button
-              type="button"
-              onClick={() => setStatusFilter('ALL')}
-              className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer transition-all border ${
-                statusFilter === 'ALL'
-                  ? 'bg-primary text-white border-primary shadow-2xs'
-                  : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
-              }`}
-            >
-              {language === 'TA' ? 'மொத்தம்' : 'Total'}: <strong className="font-mono font-black">{isLoading ? '...' : stats.total}</strong>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setStatusFilter('PENDING')}
-              className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer transition-all border flex items-center gap-1 ${
-                statusFilter === 'PENDING'
-                  ? 'bg-amber-600 text-white border-amber-600 shadow-2xs'
-                  : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
-              }`}
-            >
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-              <span>{language === 'TA' ? 'நிலுவை' : 'Pending'}:</span>
-              <strong className="font-mono font-black">{isLoading ? '...' : stats.pending}</strong>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setStatusFilter('APPROVED')}
-              className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer transition-all border ${
-                statusFilter === 'APPROVED'
-                  ? 'bg-emerald-700 text-white border-emerald-700 shadow-2xs'
-                  : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
-              }`}
-            >
-              {language === 'TA' ? 'ஒப்புதல்' : 'Approved'}: <strong className="font-mono font-black">{isLoading ? '...' : stats.approved}</strong>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setStatusFilter('REJECTED')}
-              className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer transition-all border ${
-                statusFilter === 'REJECTED'
-                  ? 'bg-rose-700 text-white border-rose-700 shadow-2xs'
-                  : 'bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100'
-              }`}
-            >
-              {language === 'TA' ? 'நிராகரிப்பு' : 'Denied'}: <strong className="font-mono font-black">{isLoading ? '...' : stats.rejected}</strong>
-            </button>
-          </div>
         </div>
 
         {adminActiveTab === 'CASTE_KOOTTAM' ? (
