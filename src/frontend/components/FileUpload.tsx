@@ -146,8 +146,16 @@ export function FileUpload({
             setError(uploadErr.message || `Upload to ${bucket} failed`);
           }
         } else if (uploadData) {
-          const { data: pubData } = supabase.storage.from(bucket).getPublicUrl(filePath);
-          uploadedUrl = pubData.publicUrl;
+          // Generate long-lived signed URL for private bucket access
+          const { data: signedData } = await supabase.storage
+            .from(bucket)
+            .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year
+          if (signedData?.signedUrl) {
+            uploadedUrl = signedData.signedUrl;
+          } else {
+            const { data: pubData } = supabase.storage.from(bucket).getPublicUrl(filePath);
+            uploadedUrl = pubData.publicUrl;
+          }
         }
       }
 

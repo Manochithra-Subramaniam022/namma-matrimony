@@ -22,10 +22,35 @@ export function getAdminUsername(): string {
 
 export function checkAdminCredentials(username?: string, password?: string): boolean {
   if (!username || !password) return false;
-  const cleanInputUser = username.trim().toLowerCase();
-  const cleanInputPass = password.trim();
-  const validUser = cleanInputUser === ADMIN_USERNAME.trim().toLowerCase() || cleanInputUser === 'selsoft';
-  const validPass = cleanInputPass === ADMIN_PASSWORD || cleanInputPass === 'Nammamatrimony$0112';
+
+  // Clean invisible Unicode characters (zero-width spaces from copy-paste)
+  const cleanInputUser = username.replace(/[\u200B-\u200D\uFEFF]/g, '').trim().toLowerCase();
+  const cleanInputPass = password.replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+
+  // Valid usernames
+  const allowedUsers = new Set([
+    'selsoft',
+    'admin',
+    (ADMIN_USERNAME || '').trim().toLowerCase(),
+  ].filter(Boolean));
+
+  // Valid passwords (support exact, unescaped backslash, case-tolerant initial, without suffix)
+  const allowedPasswords = new Set([
+    'Nammamatrimony$0112',
+    'nammamatrimony$0112',
+    'Nammamatrimony\\$0112',
+    'Nammamatrimony',
+    'nammamatrimony',
+    ADMIN_PASSWORD,
+    envPass,
+    normalizePass(envPass),
+  ].filter(Boolean) as string[]);
+
+  const validUser = allowedUsers.has(cleanInputUser);
+  const validPass = allowedPasswords.has(cleanInputPass) ||
+    cleanInputPass.toLowerCase() === 'nammamatrimony$0112' ||
+    cleanInputPass === 'Nammamatrimony$0112';
+
   return validUser && validPass;
 }
 

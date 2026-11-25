@@ -92,11 +92,22 @@ export default function AdminConsole() {
     return clean.endsWith('.pdf') || url.startsWith('data:application/pdf');
   };
 
-  const openDocPreview = (url: string, title: string, candidate: any) => {
+  const getDocumentViewerUrl = (url?: string | null): string => {
+    if (!url) return '';
+    if (url.startsWith('data:')) return url;
+    if (url.startsWith('/api/storage/document')) return url;
+    if (url.includes('/storage/v1/object/')) {
+      return `/api/storage/document?url=${encodeURIComponent(url)}`;
+    }
+    return url;
+  };
+
+  const openDocPreview = (rawUrl: string, title: string, candidate: any) => {
+    const safeUrl = getDocumentViewerUrl(rawUrl);
     setPreviewDoc({
-      url,
+      url: safeUrl,
       title,
-      isPdf: isPdfUrl(url),
+      isPdf: isPdfUrl(rawUrl),
       candidateName: candidate.name || candidate.fullName,
       displayId: candidate.displayId || candidate.registrationId,
     });
@@ -935,7 +946,8 @@ export default function AdminConsole() {
                 const cName = candidate.name || candidate.fullName || 'பெயர் குறிப்பிடப்படவில்லை';
                 const isBride = candidate.gender === 'FEMALE';
                 const cAge = calculateAge(candidate.dob) || candidate.age;
-                const cPhoto = candidate.photoUrl || candidate.profilePhotoUrl;
+                const rawPhoto = candidate.photoUrl || candidate.profilePhotoUrl;
+                const cPhoto = getDocumentViewerUrl(rawPhoto);
                 const status = candidate.status || 'PENDING';
                 const isApproved = status === 'APPROVED';
                 const isRejected = status === 'REJECTED';
@@ -1194,13 +1206,13 @@ export default function AdminConsole() {
                       {/* Photo Thumbnail */}
                       <div className="shrink-0 flex sm:flex-col items-center gap-3">
                         <div
-                          onClick={() => cPhoto && setPreviewPhotoUrl(cPhoto)}
+                          onClick={() => cPhoto && setPreviewPhotoUrl(getDocumentViewerUrl(cPhoto))}
                           className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden bg-gray-100 border-2 border-primary/20 shadow-xs relative group cursor-pointer"
                         >
                           {cPhoto ? (
                             <>
                               <img
-                                src={cPhoto}
+                                src={getDocumentViewerUrl(cPhoto)}
                                 alt={cName}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-all"
                               />
@@ -1219,7 +1231,7 @@ export default function AdminConsole() {
                         {cPhoto && (
                           <button
                             type="button"
-                            onClick={() => setPreviewPhotoUrl(cPhoto)}
+                            onClick={() => setPreviewPhotoUrl(getDocumentViewerUrl(cPhoto))}
                             className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
                           >
                             <ImageIcon className="w-3 h-3 text-[#D4AF37]" />
@@ -1431,7 +1443,7 @@ export default function AdminConsole() {
                                 <span>{language === 'TA' ? 'பார்வை' : 'Preview'}</span>
                               </button>
                               <a
-                                href={candidate.idProofUrl}
+                                href={getDocumentViewerUrl(candidate.idProofUrl)}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="p-1.5 rounded-lg bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 transition-all cursor-pointer"
@@ -1484,7 +1496,7 @@ export default function AdminConsole() {
                                 <span>{language === 'TA' ? 'பார்வை' : 'Preview'}</span>
                               </button>
                               <a
-                                href={candidate.casteCertificateUrl}
+                                href={getDocumentViewerUrl(candidate.casteCertificateUrl)}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="p-1.5 rounded-lg bg-white border border-purple-200 text-purple-700 hover:bg-purple-50 transition-all cursor-pointer"
@@ -1537,7 +1549,7 @@ export default function AdminConsole() {
                                 <span>{language === 'TA' ? 'பார்வை' : 'Preview'}</span>
                               </button>
                               <a
-                                href={candidate.jathakamUrl || candidate.horoscopeUrl}
+                                href={getDocumentViewerUrl(candidate.jathakamUrl || candidate.horoscopeUrl)}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="p-1.5 rounded-lg bg-white border border-amber-200 text-amber-800 hover:bg-amber-50 transition-all cursor-pointer"

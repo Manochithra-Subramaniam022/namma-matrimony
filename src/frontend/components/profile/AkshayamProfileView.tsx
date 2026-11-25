@@ -60,11 +60,29 @@ export default function AkshayamProfileView({
     return clean.endsWith('.pdf') || url.startsWith('data:application/pdf');
   };
 
+  const getDocumentViewerUrl = (url?: string | null): string => {
+    if (!url) return '';
+    if (url.startsWith('data:')) return url;
+    if (url.startsWith('/api/storage/document')) return url;
+    if (url.includes('/storage/v1/object/')) {
+      return `/api/storage/document?url=${encodeURIComponent(url)}`;
+    }
+    return url;
+  };
+
+  // Profile Photo
+  const rawPhoto = profile?.photoUrl || profile?.profilePhotoUrl || profile?.jathagamData?.photoUrl || null;
+  const profilePhotoUrl = getDocumentViewerUrl(rawPhoto);
+
   // Verification Documents
-  const idProofUrl = profile?.idProofUrl || profile?.jathagamData?.idProofUrl || null;
-  const casteCertUrl = profile?.casteCertificateUrl || profile?.jathagamData?.casteCertificateUrl || null;
-  const horoscopeDocUrl = profile?.jathakamUrl || profile?.horoscopeUrl || profile?.jathagamData?.jathakamUrl || profile?.jathagamData?.horoscopeUrl || null;
-  const hasDocuments = !!(idProofUrl || casteCertUrl || horoscopeDocUrl);
+  const rawIdProof = profile?.idProofUrl || profile?.jathagamData?.idProofUrl || null;
+  const rawCasteCert = profile?.casteCertificateUrl || profile?.jathagamData?.casteCertificateUrl || null;
+  const rawHoroscope = profile?.jathakamUrl || profile?.horoscopeUrl || profile?.jathagamData?.jathakamUrl || profile?.jathagamData?.horoscopeUrl || null;
+
+  const idProofUrl = getDocumentViewerUrl(rawIdProof);
+  const casteCertUrl = getDocumentViewerUrl(rawCasteCert);
+  const horoscopeDocUrl = getDocumentViewerUrl(rawHoroscope);
+  const hasDocuments = !!(rawIdProof || rawCasteCert || rawHoroscope);
 
   // Derived Values
   const displayId = profile?.registrationId || profile?.displayId || profile?.refId || 'NM-0001';
@@ -794,11 +812,11 @@ export default function AkshayamProfileView({
             <div className="shrink-0 text-center">
               <div
                 className="relative w-32 h-40 sm:w-40 sm:h-48 rounded-2xl overflow-hidden border-3 border-[#D4AF37] shadow-md bg-gray-100 group cursor-pointer"
-                onClick={() => profile?.photoUrl && setPhotoModalOpen(true)}
+                onClick={() => profilePhotoUrl && setPhotoModalOpen(true)}
               >
-                {profile?.photoUrl ? (
+                {profilePhotoUrl ? (
                   <img
-                    src={profile.photoUrl}
+                    src={profilePhotoUrl}
                     alt={fullName}
                     className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300"
                   />
@@ -810,7 +828,7 @@ export default function AkshayamProfileView({
                   </div>
                 )}
 
-                {profile?.photoUrl && (
+                {profilePhotoUrl && (
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1 no-print">
                     <Eye className="w-4 h-4" /> பெரிதாக்குக
                   </div>
@@ -1824,7 +1842,7 @@ export default function AkshayamProfileView({
       </div>
 
       {/* PHOTO LIGHTBOX MODAL */}
-      {photoModalOpen && profile?.photoUrl && (
+      {photoModalOpen && profilePhotoUrl && (
         <div
           className="fixed inset-0 z-[110] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setPhotoModalOpen(false)}
@@ -1834,7 +1852,7 @@ export default function AkshayamProfileView({
             onClick={(e) => e.stopPropagation()}
           >
             <img
-              src={profile.photoUrl}
+              src={profilePhotoUrl}
               alt={fullName}
               className="w-full max-h-[80vh] object-contain rounded-xl"
             />

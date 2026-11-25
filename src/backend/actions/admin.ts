@@ -1,5 +1,35 @@
 import { supabase } from '@/lib/supabase';
 
+export function parseSupabaseStorageUrl(url?: string | null): { bucket: string; path: string } | null {
+  if (!url || typeof url !== 'string') return null;
+  const match = url.match(/\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/(.+?)(?:\?.*)?$/);
+  if (!match) return null;
+  const bucket = decodeURIComponent(match[1]);
+  const path = decodeURIComponent(match[2]);
+  return { bucket, path };
+}
+
+export async function signStorageUrl(url?: string | null, expiresIn = 86400 * 7): Promise<string | null> {
+  if (!url || typeof url !== 'string') return null;
+  if (url.startsWith('data:')) return url;
+  if (url.includes('/storage/v1/object/sign/') && url.includes('token=')) return url;
+
+  const parsed = parseSupabaseStorageUrl(url);
+  if (!parsed) return url;
+
+  try {
+    const { data, error } = await supabase.storage
+      .from(parsed.bucket)
+      .createSignedUrl(parsed.path, expiresIn);
+    if (!error && data?.signedUrl) {
+      return data.signedUrl;
+    }
+  } catch (e) {
+    console.warn('signStorageUrl error:', e);
+  }
+  return url;
+}
+
 export interface AdminProfileStats {
   total: number;
   pending: number;
@@ -216,11 +246,31 @@ export async function getAllProfilesForAdmin(options?: {
       };
     });
 
+    // Sign private storage URLs with 7-day validity so they render seamlessly
+    const signedProfiles = await Promise.all(
+      enrichedProfiles.map(async (p) => {
+        const [photoUrl, jathakamUrl, idProofUrl, casteCertificateUrl] = await Promise.all([
+          signStorageUrl(p.photoUrl),
+          signStorageUrl(p.jathakamUrl),
+          signStorageUrl(p.idProofUrl),
+          signStorageUrl(p.casteCertificateUrl),
+        ]);
+        return {
+          ...p,
+          photoUrl: photoUrl || p.photoUrl,
+          jathakamUrl: jathakamUrl || p.jathakamUrl,
+          horoscopeUrl: jathakamUrl || p.jathakamUrl,
+          idProofUrl: idProofUrl || p.idProofUrl,
+          casteCertificateUrl: casteCertificateUrl || p.casteCertificateUrl,
+        };
+      })
+    );
+
     // Filter by search term if provided
-    let filtered = enrichedProfiles;
+    let filtered = signedProfiles;
     if (options?.search && options.search.trim()) {
       const q = options.search.trim().toLowerCase();
-      filtered = enrichedProfiles.filter((p) => {
+      filtered = signedProfiles.filter((p) => {
         const name = (p.name || '').toLowerCase();
         const displayId = (p.displayId || '').toLowerCase();
         const mobile = (p.userContact?.mobile || '').toLowerCase();
@@ -238,10 +288,10 @@ export async function getAllProfilesForAdmin(options?: {
 
     // Compute stats across all profiles
     const stats: AdminProfileStats = {
-      total: enrichedProfiles.length,
-      pending: enrichedProfiles.filter((p) => !p.status || p.status === 'PENDING').length,
-      approved: enrichedProfiles.filter((p) => p.status === 'APPROVED').length,
-      rejected: enrichedProfiles.filter((p) => p.status === 'REJECTED').length,
+      total: signedProfiles.length,
+      pending: signedProfiles.filter((p) => !p.status || p.status === 'PENDING').length,
+      approved: signedProfiles.filter((p) => p.status === 'APPROVED').length,
+      rejected: signedProfiles.filter((p) => p.status === 'REJECTED').length,
     };
 
     return {
