@@ -1049,18 +1049,34 @@ export function Step1PersonalInfo({
             <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
               {language === 'TA' ? 'தோஷ அமைப்புகள் (Dosham Details)' : 'Dosham Configuration'}
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-2.5">
               {[
-                { id: 'NONE', nameEn: 'Suddha Jathagam (No Dosham)', nameTa: 'சுத்த ஜாதகம் (தோஷமில்லை)' },
-                { id: 'SEVVAI', nameEn: 'Sevvai / Manglik', nameTa: 'செவ்வாய் தோஷம்' },
-                { id: 'RAHU_KETHU', nameEn: 'Rahu - Ketu', nameTa: 'ராகு - கேது தோஷம்' },
-                { id: 'NAGA', nameEn: 'Naga Dosham', nameTa: 'நாக தோஷம்' },
+                { id: 'NONE', nameEn: 'Suddha Jathagam (No Dosham)', nameTa: '🕊️ சுத்த ஜாதகம் (தோஷமில்லை)' },
+                { id: 'RAHU_KETHU', nameEn: 'Rahu - Ketu Dosham', nameTa: '🪐 ராகு - கேது தோஷம்' },
+                { id: 'SEVVAI', nameEn: 'Sevvai / Manglik Dosham', nameTa: '🔴 செவ்வாய் தோஷம்' },
+                { id: 'SEVVAI_RAHU_KETHU', nameEn: 'Sevvai & Rahu-Ketu Both', nameTa: '⚡ செவ்வாய் & ராகு-கேது இரண்டும்' },
+                { id: 'NAGA', nameEn: 'Naga & Other Doshams', nameTa: '🔮 நாக தோஷம் / இதர தோஷங்கள்' },
               ].map((d) => {
-                const isChecked = watchDoshams?.includes(d.id);
+                const isChecked = d.id === 'SEVVAI_RAHU_KETHU'
+                  ? watchDoshams?.includes('SEVVAI_RAHU_KETHU') || (watchDoshams?.includes('SEVVAI') && watchDoshams?.includes('RAHU_KETHU'))
+                  : watchDoshams?.includes(d.id);
                 return (
                   <div
                     key={d.id}
-                    onClick={() => toggleDosham(d.id)}
+                    onClick={() => {
+                      if (d.id === 'SEVVAI_RAHU_KETHU') {
+                        const cur = watchDoshams || [];
+                        const hasBoth = cur.includes('SEVVAI') && cur.includes('RAHU_KETHU');
+                        if (hasBoth) {
+                          setValue('doshams', cur.filter((x) => x !== 'SEVVAI' && x !== 'RAHU_KETHU' && x !== 'SEVVAI_RAHU_KETHU'));
+                        } else {
+                          const withoutNone = cur.filter((x) => x !== 'NONE');
+                          setValue('doshams', Array.from(new Set([...withoutNone, 'SEVVAI', 'RAHU_KETHU', 'SEVVAI_RAHU_KETHU'])));
+                        }
+                      } else {
+                        toggleDosham(d.id);
+                      }
+                    }}
                     className={`p-3 rounded-xl border text-xs font-bold cursor-pointer transition-all flex items-center gap-2 select-none ${
                       isChecked
                         ? 'bg-primary text-white border-primary shadow-xs'

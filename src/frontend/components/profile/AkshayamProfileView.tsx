@@ -1181,9 +1181,19 @@ export default function AkshayamProfileView({
                 <div className="p-3 bg-[#FFFDF9] rounded-xl border border-primary/15 text-center">
                   <span className="text-[10px] text-gray-400 font-bold uppercase block mb-0.5">தோஷங்கள் (Doshams)</span>
                   <span className="text-sm font-bold text-emerald-700">
-                    {Array.isArray(profile?.doshams) && profile.doshams.length > 0 && !profile.doshams.includes('NONE')
-                      ? profile.doshams.join(', ')
-                      : 'தோஷம் இல்லை (None)'}
+                    {(() => {
+                      const dList = Array.isArray(profile?.doshams) ? profile.doshams : (profile?.dosham ? [profile.dosham] : []);
+                      const cleanList = dList.filter((d: any) => d && d !== 'NONE' && d !== 'null');
+                      if (cleanList.length === 0) return language === 'TA' ? '🕊️ சுத்த ஜாதகம் (தோஷமில்லை)' : 'Sutham (No Dosham)';
+                      return cleanList.map((d: any) => {
+                        const s = String(d).toUpperCase();
+                        if (s === 'SEVVAI') return language === 'TA' ? '🔴 செவ்வாய் தோஷம்' : 'Sevvai Dosham';
+                        if (s === 'RAHU_KETHU' || s === 'RAGU_KETHU') return language === 'TA' ? '🪐 ராகு - கேது தோஷம்' : 'Rahu - Ketu Dosham';
+                        if (s === 'SEVVAI_RAHU_KETHU') return language === 'TA' ? '⚡ செவ்வாய் & ராகு-கேது' : 'Sevvai & Rahu-Ketu';
+                        if (s === 'NAGA') return language === 'TA' ? '🔮 நாக தோஷம்' : 'Naga Dosham';
+                        return d;
+                      }).join(', ');
+                    })()}
                   </span>
                 </div>
               </div>

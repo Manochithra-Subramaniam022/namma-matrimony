@@ -38,8 +38,18 @@ import {
   ThumbsUp,
   Trash2,
   Bell,
+  Layers,
+  Briefcase,
 } from 'lucide-react';
-import { rasiOptions, nakshatraByRasi, allNakshatras } from '@/frontend/utils/astrology';
+import {
+  rasiOptions,
+  nakshatraByRasi,
+  allNakshatras,
+  DoshamGroupKey,
+  DOSHAM_GROUPS,
+  getProfileDoshamCategory,
+  getDoshamBadgeInfo,
+} from '@/frontend/utils/astrology';
 
 const AGE_OPTIONS = Array.from({ length: 55 - 18 + 1 }, (_, i) => 18 + i);
 
@@ -108,6 +118,10 @@ export default function LandingPage() {
   const [activeDecisionTab, setActiveDecisionTab] = useState<'NEW' | 'SHORTLISTED' | 'HOLD' | 'REMOVED'>('NEW');
   const [hideAlreadySeen, setHideAlreadySeen] = useState<boolean>(false);
   const [toastNotification, setToastNotification] = useState<{ message: string; type: 'success' | 'info' | 'warn'; undoKey?: string } | null>(null);
+
+  // 5 Dosham Grouping Filter & View Mode
+  const [selectedDoshamGroup, setSelectedDoshamGroup] = useState<DoshamGroupKey>('ALL');
+  const [isGroupedByDosham, setIsGroupedByDosham] = useState<boolean>(false);
 
   // Load Decisions from localStorage on mount
   useEffect(() => {
@@ -273,6 +287,53 @@ export default function LandingPage() {
     }
   }, [activeDecisionTab, newProfiles, shortlistedProfiles, holdProfiles, removedProfiles]);
 
+  // Dynamic count of profiles for each of the 5 dosham groups in active decision tab
+  const doshamCounts = useMemo(() => {
+    const base = activeDecisionTab === 'SHORTLISTED' ? shortlistedProfiles
+      : activeDecisionTab === 'HOLD' ? holdProfiles
+      : activeDecisionTab === 'REMOVED' ? removedProfiles
+      : newProfiles;
+    
+    const counts: Record<DoshamGroupKey, number> = {
+      ALL: base.length,
+      SUTHAM: 0,
+      RAGU_KETHU: 0,
+      SEVVAI: 0,
+      SEVVAI_RAGU_KETHU: 0,
+      OTHER: 0,
+    };
+
+    base.forEach((p) => {
+      const cat = getProfileDoshamCategory(p);
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+
+    return counts;
+  }, [newProfiles, shortlistedProfiles, holdProfiles, removedProfiles, activeDecisionTab]);
+
+  // Profiles filtered by the selected 5-dosham group
+  const finalFilteredProfiles = useMemo(() => {
+    if (selectedDoshamGroup === 'ALL') return displayedProfiles;
+    return displayedProfiles.filter((p) => getProfileDoshamCategory(p) === selectedDoshamGroup);
+  }, [displayedProfiles, selectedDoshamGroup]);
+
+  // Profiles grouped by the 5 dosham categories for grouped section view
+  const groupedProfilesByDosham = useMemo(() => {
+    const groups: {
+      group: typeof DOSHAM_GROUPS[number];
+      profiles: any[];
+    }[] = [];
+
+    DOSHAM_GROUPS.filter((g) => g.key !== 'ALL').forEach((g) => {
+      const profs = displayedProfiles.filter((p) => getProfileDoshamCategory(p) === g.key);
+      if (profs.length > 0) {
+        groups.push({ group: g, profiles: profs });
+      }
+    });
+
+    return groups;
+  }, [displayedProfiles]);
+
   const handleSearchProfiles = async (shouldScroll = true) => {
     if (isAgeInvalid) return;
     setIsSearching(true);
@@ -355,6 +416,218 @@ export default function LandingPage() {
   const numAgeFrom = parseInt(ageFrom, 10);
   const numAgeTo = parseInt(ageTo, 10);
   const isAgeInvalid = !isNaN(numAgeFrom) && !isNaN(numAgeTo) && numAgeTo <= numAgeFrom;
+
+  // Reusable Candidate Profile Card Renderer
+  const renderCandidateCard = (p: any) => {
+    const pDisplayId = p.displayId || p.registrationId || 'NM-0001';
+    const pName = p.name || p.fullName || 'பெயர் வெளியிடப்படவில்லை';
+    const pGender = p.gender === 'FEMALE' ? 'மணமகள்' : 'மணமகன்';
+    const pAge = p.age || (p.dob ? Math.abs(new Date(Date.now() - new Date(p.dob).getTime()).getUTCFullYear() - 1970) : null);
+    const pHeight = p.height ? `${p.height} cm` : (p.heightCm ? `${p.heightCm} cm` : null);
+    const pCaste = p.caste || 'தமிழ் சமூகம்';
+    const pKoottam = p.koottam || p.kootam;
+    const isBiz = String(p.workNature).toUpperCase().includes('BUSINESS');
+    const pRole = p.designation || (isBiz ? (language === 'TA' ? 'சொந்த தொழில்' : 'Business') : '');
+    const pComp = p.companyName || p.organisation || '';
+    const pWork = pRole ? (pComp ? `${pRole} @ ${pComp}` : pRole) : (pComp || (p.workNature && p.workNature !== 'PRIVATE' ? p.workNature : (language === 'TA' ? 'பணியில் உள்ளார்' : 'Employed')));
+    const pCity = p.city || p.workCity || 'தமிழ்நாடு';
+    const pRasi = p.rasi;
+    const pNakshatra = p.nakshatra || p.nakshatram;
+    const pFather = p.fatherName || p.family?.fatherName || p.jathagamData?.fatherName;
+    const pMother = p.motherName || p.family?.motherName || p.jathagamData?.motherName;
+
+    const pKey = getProfileKey(p);
+    const decRecord = profileDecisions[pKey];
+    const catKey = getProfileDoshamCategory(p);
+    const grp = getDoshamBadgeInfo(catKey);
+
+    return (
+      <div
+        key={p.id || pDisplayId}
+        className="bg-white rounded-2xl border-2 border-[#D4AF37]/40 shadow-md hover:shadow-xl hover:border-primary/50 transition-all overflow-hidden flex flex-col justify-between group"
+      >
+        <div className="p-4 sm:p-5 space-y-3">
+          {/* Top Bar with ID and Status Badges */}
+          <div className="flex items-center justify-between gap-2 border-b border-gray-100 pb-2.5">
+            <span className="font-mono text-xs font-black text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20">
+              {pDisplayId}
+            </span>
+            <div className="flex items-center gap-1.5 flex-wrap justify-end">
+              {decRecord?.status === 'SHORTLISTED' && (
+                <span className="text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <Heart className="w-3 h-3 fill-current text-rose-500" />
+                  <span>{language === 'TA' ? 'விருப்பம்' : 'Shortlisted'}</span>
+                </span>
+              )}
+              {decRecord?.status === 'HOLD' && (
+                <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-amber-600" />
+                  <span>Hold</span>
+                </span>
+              )}
+              {decRecord?.seen && !decRecord?.status && (
+                <span className="text-[10px] font-bold text-gray-600 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <Eye className="w-3 h-3 text-gray-500" />
+                  <span>{language === 'TA' ? 'பார்த்தவை' : 'Seen'}</span>
+                </span>
+              )}
+
+              {/* 5-Dosham Group Badge */}
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 ${grp.badgeBg} ${grp.badgeBorder} ${grp.badgeText}`}>
+                <span>{grp.icon}</span>
+                <span>{language === 'TA' ? grp.shortTa : grp.shortEn}</span>
+              </span>
+
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                <span>100% Verified</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Photo and Core Info */}
+          <div className="flex items-start gap-3.5">
+            <div className="w-20 h-24 rounded-xl overflow-hidden border border-[#D4AF37]/50 shrink-0 bg-primary/5 relative">
+              {p.photoUrl ? (
+                <img
+                  src={getDocumentViewerUrl(p.photoUrl)}
+                  alt={pName}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-primary/60 p-1">
+                  <User className="w-8 h-8 text-[#D4AF37]" />
+                  <span className="text-[9px] font-bold text-gray-400 mt-1">Photo Protected</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex-1 min-w-0 space-y-1">
+              <h4 className="font-serif font-black text-base sm:text-lg text-primary truncate group-hover:text-primary-light transition-colors">
+                {pName}
+              </h4>
+              <p className="text-xs font-bold text-gray-700">
+                {pAge ? `${pAge} வயது` : ''} {pHeight ? `• ${pHeight}` : ''}
+              </p>
+              <p className="text-xs text-gray-600 font-semibold truncate">
+                {pCaste} {pKoottam ? `• ${pKoottam}` : ''}
+              </p>
+            </div>
+          </div>
+
+          {/* Details Grid */}
+          <div className="space-y-1.5 text-xs text-gray-600 bg-stone-50/70 rounded-xl p-2.5 border border-stone-200/60">
+            <div className="flex items-center gap-1.5 truncate">
+              <Briefcase className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" />
+              <span className="truncate font-medium">{pWork}</span>
+            </div>
+            <div className="flex items-center gap-1.5 truncate">
+              <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span className="truncate font-medium">{pCity}</span>
+            </div>
+            {(pRasi || pNakshatra) && (
+              <div className="flex items-center gap-1.5 truncate">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                <span className="truncate font-medium">
+                  {pRasi ? `${pRasi} ராசி` : ''} {pNakshatra ? `• ${pNakshatra}` : ''}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Parents Snippet if available */}
+          {(pFather || pMother) && (
+            <div className="text-[11px] text-gray-600 border-t border-gray-100 pt-1.5 flex flex-wrap gap-x-2">
+              {pFather && <span>தந்தை: <strong className="text-gray-800">{pFather}</strong></span>}
+              {pMother && <span>தாய்: <strong className="text-gray-800">{pMother}</strong></span>}
+            </div>
+          )}
+        </div>
+
+        {/* Card Actions Footer */}
+        <div className="p-3 bg-gradient-to-b from-[#FFFDF9] to-white border-t border-[#D4AF37]/30 space-y-2">
+          <button
+            type="button"
+            onClick={() => handleOpenProfileModal(p)}
+            className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-primary to-primary-light hover:from-primary-light hover:to-primary text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md transition-all cursor-pointer"
+          >
+            <User className="w-3.5 h-3.5 text-[#D4AF37]" />
+            <span>{language === 'TA' ? 'முழு பயோடேட்டா காண்க' : 'View Full Biodata'}</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Request Private Contact / Photo Action */}
+          <button
+            type="button"
+            onClick={() => {
+              setDataRequestTarget(p);
+              setIsDataRequestModalOpen(true);
+            }}
+            className="w-full py-1.5 px-3 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+            title={language === 'TA' ? 'தொடர்பு எண் மற்றும் புகைப்படத்தை கோரவும்' : 'Request contact number and photo'}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+            <span>{language === 'TA' ? '📱 தொடர்பு எண் / புகைப்படம் கோரவும்' : 'Request Phone / Photo'}</span>
+          </button>
+
+          {/* Quick Decision Action Buttons */}
+          {activeDecisionTab === 'REMOVED' ? (
+            <button
+              type="button"
+              onClick={() => handleUpdateDecision(p, null)}
+              className="w-full py-1.5 px-3 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer border border-primary/20"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>{language === 'TA' ? 'மீண்டும் பட்டியலில் சேர்க்க (Restore)' : 'Restore to Active List'}</span>
+            </button>
+          ) : (
+            <div className="grid grid-cols-3 gap-1.5 pt-0.5">
+              {/* 1. Shortlist */}
+              <button
+                type="button"
+                onClick={() => handleUpdateDecision(p, decRecord?.status === 'SHORTLISTED' ? null : 'SHORTLISTED')}
+                className={`py-1.5 px-2 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer border ${
+                  decRecord?.status === 'SHORTLISTED'
+                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
+                    : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
+                }`}
+                title={decRecord?.status === 'SHORTLISTED' ? 'Remove from Shortlist' : 'Shortlist Match'}
+              >
+                <Heart className={`w-3 h-3 ${decRecord?.status === 'SHORTLISTED' ? 'fill-current text-white' : 'text-emerald-600'}`} />
+                <span className="truncate">{decRecord?.status === 'SHORTLISTED' ? (language === 'TA' ? 'விருப்பமானது' : 'Shortlisted') : (language === 'TA' ? 'விருப்பம்' : 'Shortlist')}</span>
+              </button>
+
+              {/* 2. Hold */}
+              <button
+                type="button"
+                onClick={() => handleUpdateDecision(p, decRecord?.status === 'HOLD' ? null : 'HOLD')}
+                className={`py-1.5 px-2 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer border ${
+                  decRecord?.status === 'HOLD'
+                    ? 'bg-amber-600 text-white border-amber-600 shadow-2xs'
+                    : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200'
+                }`}
+                title={decRecord?.status === 'HOLD' ? 'Remove Hold' : 'Put on Hold'}
+              >
+                <Clock className="w-3 h-3 text-amber-600" />
+                <span className="truncate">{decRecord?.status === 'HOLD' ? (language === 'TA' ? 'Hold-ல் உள்ளது' : 'On Hold') : 'Hold'}</span>
+              </button>
+
+              {/* 3. Remove from List */}
+              <button
+                type="button"
+                onClick={() => handleUpdateDecision(p, 'REMOVED')}
+                className="py-1.5 px-2 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 bg-gray-50 hover:bg-rose-50 text-gray-600 hover:text-rose-700 border border-gray-200 hover:border-rose-200 transition-all cursor-pointer"
+                title="Remove from list (Don't show again)"
+              >
+                <EyeOff className="w-3 h-3" />
+                <span className="truncate">{language === 'TA' ? 'நீக்கு' : 'Remove'}</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-[#FFFDF9] text-gray-900 font-sans selection:bg-primary/20 flex flex-col">
@@ -718,10 +991,11 @@ export default function LandingPage() {
                   className="w-full h-11 px-3 rounded-xl border border-gray-200 bg-[#FFFDF9] text-gray-900 font-bold text-xs sm:text-sm focus:border-primary focus:bg-white focus:outline-none transition-all cursor-pointer"
                 >
                   <option value="Any">{language === 'TA' ? 'அனைத்து ஜாதகம் (Any Horoscope)' : 'Any Horoscope'}</option>
-                  <option value="SUTHAM">{language === 'TA' ? 'சுத்த ஜாதகம் (தோஷமில்லை)' : 'Sutham (No Dosham)'}</option>
-                  <option value="RAGU_KETHU">{language === 'TA' ? 'ராகு - கேது தோஷம்' : 'Ragu Kethu Dosham'}</option>
-                  <option value="SEVVAI">{language === 'TA' ? 'செவ்வாய் தோஷம்' : 'Sevvai Dosham'}</option>
-                  <option value="SEVVAI_RAGU_KETHU">{language === 'TA' ? 'செவ்வாய் & ராகு-கேது' : 'Sevvai & Ragu Kethu'}</option>
+                  <option value="SUTHAM">{language === 'TA' ? '🕊️ சுத்த ஜாதகம் (தோஷமில்லை)' : 'Sutham (No Dosham)'}</option>
+                  <option value="RAGU_KETHU">{language === 'TA' ? '🪐 ராகு - கேது தோஷம்' : 'Rahu - Ketu Dosham'}</option>
+                  <option value="SEVVAI">{language === 'TA' ? '🔴 செவ்வாய் தோஷம் (Manglik)' : 'Sevvai Dosham'}</option>
+                  <option value="SEVVAI_RAGU_KETHU">{language === 'TA' ? '⚡ செவ்வாய் & ராகு-கேது இரண்டும்' : 'Sevvai & Rahu-Ketu Both'}</option>
+                  <option value="NAGA">{language === 'TA' ? '🔮 நாக / இதர தோஷங்கள்' : 'Naga & Other Doshams'}</option>
                 </select>
               </div>
 
@@ -1009,223 +1283,124 @@ export default function LandingPage() {
             </div>
           )}
 
-          {/* Results Grid */}
+          {/* 5 DOSHAM DATA GROUPING BAR */}
           {!isSearching && displayedProfiles.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
-              {displayedProfiles.map((p) => {
-                const pDisplayId = p.displayId || p.registrationId || 'NM-0001';
-                const pName = p.name || p.fullName || 'பெயர் வெளியிடப்படவில்லை';
-                const pGender = p.gender === 'FEMALE' ? 'மணமகள்' : 'மணமகன்';
-                const pAge = p.age || (p.dob ? Math.abs(new Date(Date.now() - new Date(p.dob).getTime()).getUTCFullYear() - 1970) : null);
-                const pHeight = p.height ? `${p.height} cm` : (p.heightCm ? `${p.heightCm} cm` : null);
-                const pCaste = p.caste || 'தமிழ் சமூகம்';
-                const pKoottam = p.koottam || p.kootam;
-                const isBiz = String(p.workNature).toUpperCase().includes('BUSINESS');
-                const pRole = p.designation || (isBiz ? (language === 'TA' ? 'சொந்த தொழில்' : 'Business') : '');
-                const pComp = p.companyName || p.organisation || '';
-                const pWork = pRole ? (pComp ? `${pRole} @ ${pComp}` : pRole) : (pComp || (p.workNature && p.workNature !== 'PRIVATE' ? p.workNature : (language === 'TA' ? 'பணியில் உள்ளார்' : 'Employed')));
-                const pCity = p.city || p.workCity || 'தமிழ்நாடு';
-                const pRasi = p.rasi;
-                const pNakshatra = p.nakshatra || p.nakshatram;
-                const pFather = p.fatherName || p.family?.fatherName || p.jathagamData?.fatherName;
-                const pMother = p.motherName || p.family?.motherName || p.jathagamData?.motherName;
+            <div className="bg-[#FFFDF9] border border-[#D4AF37]/35 rounded-2xl p-3 sm:p-4 space-y-3 shadow-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2 text-xs sm:text-sm font-black text-gray-800">
+                  <div className="w-6 h-6 rounded-lg bg-[#D4AF37]/20 flex items-center justify-center border border-[#D4AF37]/40">
+                    <Compass className="w-3.5 h-3.5 text-[#D4AF37]" />
+                  </div>
+                  <span>{language === 'TA' ? 'ஜாதக தோஷ வாரியாக (5 பிரதான பிரிவுகள்):' : 'Grouped by 5 Astrological Doshams:'}</span>
+                </div>
 
-                const pKey = getProfileKey(p);
-                const decRecord = profileDecisions[pKey];
+                {/* Group by Dosham View Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setIsGroupedByDosham(!isGroupedByDosham)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center gap-1.5 shadow-2xs ${
+                    isGroupedByDosham
+                      ? 'bg-primary text-white border-primary shadow-xs'
+                      : 'bg-white text-gray-700 hover:text-primary border-gray-300 hover:border-primary/40'
+                  }`}
+                  title="Toggle sectioned grouping view by Dosham"
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>{language === 'TA' ? (isGroupedByDosham ? '✓ தோஷ வாரியாக தொகுக்கப்பட்டுள்ளது' : 'தோஷ வாரியாக தொகுத்துக் காட்டு') : (isGroupedByDosham ? '✓ Grouped by Dosham' : 'Group by Dosham View')}</span>
+                </button>
+              </div>
 
-                return (
-                  <div
-                    key={p.id || pDisplayId}
-                    className="bg-white rounded-2xl border-2 border-[#D4AF37]/40 shadow-md hover:shadow-xl hover:border-primary/50 transition-all overflow-hidden flex flex-col justify-between group"
-                  >
-                    <div className="p-4 sm:p-5 space-y-3">
-                      {/* Top Bar with ID and Status Badges */}
-                      <div className="flex items-center justify-between gap-2 border-b border-gray-100 pb-2.5">
-                        <span className="font-mono text-xs font-black text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20">
-                          {pDisplayId}
-                        </span>
-                        <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                          {decRecord?.status === 'SHORTLISTED' && (
-                            <span className="text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <Heart className="w-3 h-3 fill-current text-rose-500" />
-                              <span>{language === 'TA' ? 'விருப்பம்' : 'Shortlisted'}</span>
-                            </span>
-                          )}
-                          {decRecord?.status === 'HOLD' && (
-                            <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <Clock className="w-3 h-3 text-amber-600" />
-                              <span>Hold</span>
-                            </span>
-                          )}
-                          {decRecord?.seen && !decRecord?.status && (
-                            <span className="text-[10px] font-bold text-gray-600 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <Eye className="w-3 h-3 text-gray-500" />
-                              <span>{language === 'TA' ? 'பார்த்தவை' : 'Seen'}</span>
-                            </span>
-                          )}
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                            <span>100% Verified</span>
+              {/* 5 Dosham Group Filter Pills */}
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                {DOSHAM_GROUPS.map((g) => {
+                  const isSelected = selectedDoshamGroup === g.key;
+                  const count = doshamCounts[g.key] || 0;
+                  return (
+                    <button
+                      key={g.key}
+                      type="button"
+                      onClick={() => {
+                        setSelectedDoshamGroup(g.key);
+                        if (isGroupedByDosham && g.key !== 'ALL') setIsGroupedByDosham(false);
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center gap-1.5 shadow-2xs ${
+                        isSelected
+                          ? 'bg-primary text-white border-primary shadow-xs scale-[1.02]'
+                          : 'bg-white hover:bg-amber-50/40 text-gray-700 border-gray-200'
+                      }`}
+                    >
+                      <span>{g.icon}</span>
+                      <span>{language === 'TA' ? g.shortTa : g.shortEn}</span>
+                      <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black ${
+                        isSelected ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* RESULTS: Grouped by Dosham View */}
+          {!isSearching && isGroupedByDosham && selectedDoshamGroup === 'ALL' && groupedProfilesByDosham.length > 0 && (
+            <div className="space-y-8">
+              {groupedProfilesByDosham.map(({ group, profiles }) => (
+                <div key={group.key} className="space-y-4 bg-white/70 p-4 sm:p-5 rounded-3xl border border-[#D4AF37]/30 shadow-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200/80 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-2xl">{group.icon}</span>
+                      <div>
+                        <h4 className="font-serif font-black text-base sm:text-lg text-primary flex items-center gap-2">
+                          <span>{language === 'TA' ? group.labelTa : group.labelEn}</span>
+                          <span className="text-xs font-mono font-black px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                            {profiles.length} {language === 'TA' ? 'வரன்கள்' : 'Matches'}
                           </span>
-                        </div>
+                        </h4>
+                        <p className="text-xs text-gray-500 font-medium">
+                          {language === 'TA' ? group.descriptionTa : group.descriptionEn}
+                        </p>
                       </div>
-
-                      {/* Photo and Core Info */}
-                      <div className="flex items-start gap-3.5">
-                        <div className="w-20 h-24 rounded-xl overflow-hidden border border-[#D4AF37]/50 shrink-0 bg-primary/5 relative">
-                          {p.photoUrl ? (
-                            <img
-                              src={getDocumentViewerUrl(p.photoUrl)}
-                              alt={pName}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex flex-col items-center justify-center text-primary/60 p-1">
-                              <User className="w-8 h-8 text-[#D4AF37]" />
-                              <span className="text-[9px] font-bold text-gray-400 mt-1">Photo Protected</span>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex-1 min-w-0 space-y-1">
-                          <div className="inline-block text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-md">
-                            {pGender}
-                          </div>
-                          <h3 className="font-serif font-black text-base sm:text-lg text-primary truncate">
-                            {pName}
-                          </h3>
-                          <div className="text-xs font-bold text-gray-700 flex flex-wrap gap-1">
-                            {pAge && <span>{pAge} வயது</span>}
-                            {pHeight && <span>• {pHeight}</span>}
-                          </div>
-                          <p className="text-[11px] font-medium text-gray-600 truncate flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-primary shrink-0" />
-                            <span>{pCity}</span>
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Caste & Koottam Badge */}
-                      <div className="bg-[#FFFDF9] border border-primary/10 rounded-xl p-2 text-xs space-y-0.5">
-                        <div className="flex items-center gap-1 text-gray-800">
-                          <span className="font-bold text-primary shrink-0">சமூகம்:</span>
-                          <span className="font-bold truncate">{pCaste}</span>
-                        </div>
-                        {pKoottam && (
-                          <div className="flex items-center gap-1 text-gray-800">
-                            <span className="font-bold text-[#D4AF37] shrink-0">கூட்டம்:</span>
-                            <span className="font-black text-primary truncate">{pKoottam}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Rasi & Star & Work Snippet */}
-                      <div className="grid grid-cols-2 gap-1.5 text-[11px]">
-                        <div className="p-1.5 bg-indigo-50/60 rounded-lg border border-indigo-100 truncate">
-                          <span className="text-gray-500 block text-[9px] uppercase font-bold">ராசி & நட்சத்திரம்</span>
-                          <span className="font-bold text-indigo-950 truncate">
-                            {pRasi || '-'}{pNakshatra ? ` • ${pNakshatra}` : ''}
-                          </span>
-                        </div>
-                        <div className="p-1.5 bg-amber-50/60 rounded-lg border border-amber-100 truncate">
-                          <span className="text-gray-500 block text-[9px] uppercase font-bold">பணி & தொழில்</span>
-                          <span className="font-bold text-amber-950 truncate">{pWork}</span>
-                        </div>
-                      </div>
-
-                      {/* Parents Snippet if available */}
-                      {(pFather || pMother) && (
-                        <div className="text-[11px] text-gray-600 border-t border-gray-100 pt-1.5 flex flex-wrap gap-x-2">
-                          {pFather && <span>தந்தை: <strong className="text-gray-800">{pFather}</strong></span>}
-                          {pMother && <span>தாய்: <strong className="text-gray-800">{pMother}</strong></span>}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Card Actions Footer */}
-                    <div className="p-3 bg-gradient-to-b from-[#FFFDF9] to-white border-t border-[#D4AF37]/30 space-y-2">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenProfileModal(p)}
-                        className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-primary to-primary-light hover:from-primary-light hover:to-primary text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md transition-all cursor-pointer"
-                      >
-                        <User className="w-3.5 h-3.5 text-[#D4AF37]" />
-                        <span>{language === 'TA' ? 'முழு பயோடேட்டா காண்க' : 'View Full Biodata'}</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-
-                      {/* Request Private Contact / Photo Action */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDataRequestTarget(p);
-                          setIsDataRequestModalOpen(true);
-                        }}
-                        className="w-full py-1.5 px-3 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-                        title={language === 'TA' ? 'தொடர்பு எண் மற்றும் புகைப்படத்தை கோரவும்' : 'Request contact number and photo'}
-                      >
-                        <ShieldCheck className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                        <span>{language === 'TA' ? '📱 தொடர்பு எண் / புகைப்படம் கோரவும்' : 'Request Phone / Photo'}</span>
-                      </button>
-
-                      {/* Quick Decision Action Buttons */}
-                      {activeDecisionTab === 'REMOVED' ? (
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateDecision(p, null)}
-                          className="w-full py-1.5 px-3 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer border border-primary/20"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                          <span>{language === 'TA' ? 'மீண்டும் பட்டியலில் சேர்க்க (Restore)' : 'Restore to Active List'}</span>
-                        </button>
-                      ) : (
-                        <div className="grid grid-cols-3 gap-1.5 pt-0.5">
-                          {/* 1. Shortlist */}
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateDecision(p, decRecord?.status === 'SHORTLISTED' ? null : 'SHORTLISTED')}
-                            className={`py-1.5 px-2 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer border ${
-                              decRecord?.status === 'SHORTLISTED'
-                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
-                                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
-                            }`}
-                            title={decRecord?.status === 'SHORTLISTED' ? 'Remove from Shortlist' : 'Shortlist Match'}
-                          >
-                            <Heart className={`w-3 h-3 ${decRecord?.status === 'SHORTLISTED' ? 'fill-current text-white' : 'text-emerald-600'}`} />
-                            <span className="truncate">{decRecord?.status === 'SHORTLISTED' ? (language === 'TA' ? 'விருப்பமானது' : 'Shortlisted') : (language === 'TA' ? 'விருப்பம்' : 'Shortlist')}</span>
-                          </button>
-
-                          {/* 2. Hold */}
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateDecision(p, decRecord?.status === 'HOLD' ? null : 'HOLD')}
-                            className={`py-1.5 px-2 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer border ${
-                              decRecord?.status === 'HOLD'
-                                ? 'bg-amber-600 text-white border-amber-600 shadow-2xs'
-                                : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200'
-                            }`}
-                            title={decRecord?.status === 'HOLD' ? 'Remove Hold' : 'Put on Hold'}
-                          >
-                            <Clock className="w-3 h-3 text-amber-600" />
-                            <span className="truncate">{decRecord?.status === 'HOLD' ? (language === 'TA' ? 'Hold-ல் உள்ளது' : 'On Hold') : 'Hold'}</span>
-                          </button>
-
-                          {/* 3. Remove from List */}
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateDecision(p, 'REMOVED')}
-                            className="py-1.5 px-2 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 bg-gray-50 hover:bg-rose-50 text-gray-600 hover:text-rose-700 border border-gray-200 hover:border-rose-200 transition-all cursor-pointer"
-                            title="Remove from list (Don't show again)"
-                          >
-                            <EyeOff className="w-3 h-3" />
-                            <span className="truncate">{language === 'TA' ? 'நீக்கு' : 'Remove'}</span>
-                          </button>
-                        </div>
-                      )}
                     </div>
                   </div>
-                );
-              })}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+                    {profiles.map(renderCandidateCard)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* RESULTS: Standard Grid View */}
+          {!isSearching && (!isGroupedByDosham || selectedDoshamGroup !== 'ALL') && finalFilteredProfiles.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+              {finalFilteredProfiles.map(renderCandidateCard)}
+            </div>
+          )}
+
+          {/* Empty State for specific Dosham selection */}
+          {!isSearching && displayedProfiles.length > 0 && finalFilteredProfiles.length === 0 && (
+            <div className="max-w-md mx-auto bg-white rounded-3xl p-6 text-center border border-primary/20 shadow-xs space-y-3">
+              <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center mx-auto text-xl">
+                {DOSHAM_GROUPS.find((g) => g.key === selectedDoshamGroup)?.icon || '🕊️'}
+              </div>
+              <h4 className="font-bold text-base text-gray-900">
+                {language === 'TA' ? 'இந்த தோஷப் பிரிவில் வரன்கள் இல்லை' : 'No Profiles in this Dosham Category'}
+              </h4>
+              <p className="text-xs text-gray-500">
+                {language === 'TA'
+                  ? 'தேர்ந்தெடுக்கப்பட்ட தோஷத்தில் வரன்கள் இல்லை. அனைத்து வரன்களையும் காண "அனைத்தும்" என்பதைத் தேர்ந்தெடுக்கவும்.'
+                  : 'No matches found under this dosham. Click All Horoscopes to view all candidates.'}
+              </p>
+              <button
+                type="button"
+                onClick={() => setSelectedDoshamGroup('ALL')}
+                className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-light transition-all cursor-pointer"
+              >
+                {language === 'TA' ? 'அனைத்து ஜாதகங்களையும் காண்க' : 'View All Horoscopes'}
+              </button>
             </div>
           )}
 

@@ -97,3 +97,128 @@ export function translateNakshatra(value: string | null | undefined, language: '
   if (!found) return value;
   return language === 'TA' ? found.ta : found.en;
 }
+
+// ==========================================
+// 5 ASTROLOGICAL DOSHAM DATA GROUPING SYSTEM
+// ==========================================
+
+export type DoshamGroupKey = 'ALL' | 'SUTHAM' | 'RAGU_KETHU' | 'SEVVAI' | 'SEVVAI_RAGU_KETHU' | 'OTHER';
+
+export interface DoshamGroupDefinition {
+  key: DoshamGroupKey;
+  labelTa: string;
+  labelEn: string;
+  shortTa: string;
+  shortEn: string;
+  icon: string;
+  badgeBg: string;
+  badgeBorder: string;
+  badgeText: string;
+  descriptionTa: string;
+  descriptionEn: string;
+}
+
+export const DOSHAM_GROUPS: DoshamGroupDefinition[] = [
+  {
+    key: 'ALL',
+    labelTa: 'அனைத்து ஜாதகங்கள்',
+    labelEn: 'All Horoscopes',
+    shortTa: 'அனைத்தும்',
+    shortEn: 'All',
+    icon: '✨',
+    badgeBg: 'bg-primary/5',
+    badgeBorder: 'border-primary/20',
+    badgeText: 'text-primary',
+    descriptionTa: 'எல்லா தோஷ வகை வரன்களும்',
+    descriptionEn: 'Profiles of all horoscope types',
+  },
+  {
+    key: 'SUTHAM',
+    labelTa: 'சுத்த ஜாதகம் (தோஷமில்லை)',
+    labelEn: 'Sutham (No Dosham)',
+    shortTa: 'சுத்த ஜாதகம்',
+    shortEn: 'Sutham',
+    icon: '🕊️',
+    badgeBg: 'bg-emerald-50',
+    badgeBorder: 'border-emerald-300',
+    badgeText: 'text-emerald-800',
+    descriptionTa: 'செவ்வாய், ராகு-கேது தோஷங்கள் அற்ற சுத்தமான ஜாதகம்',
+    descriptionEn: 'Clean horoscope with no malefic doshams',
+  },
+  {
+    key: 'RAGU_KETHU',
+    labelTa: 'ராகு - கேது தோஷம்',
+    labelEn: 'Rahu - Ketu Dosham',
+    shortTa: 'ராகு - கேது',
+    shortEn: 'Rahu-Ketu',
+    icon: '🪐',
+    badgeBg: 'bg-purple-50',
+    badgeBorder: 'border-purple-300',
+    badgeText: 'text-purple-800',
+    descriptionTa: 'ராகு மற்றும் கேதுவின் ஆதிக்கம் கொண்ட ஜாதகம்',
+    descriptionEn: 'Horoscope with Rahu - Ketu placement',
+  },
+  {
+    key: 'SEVVAI',
+    labelTa: 'செவ்வாய் தோஷம் (Manglik)',
+    labelEn: 'Sevvai (Manglik) Dosham',
+    shortTa: 'செவ்வாய்',
+    shortEn: 'Sevvai',
+    icon: '🔴',
+    badgeBg: 'bg-rose-50',
+    badgeBorder: 'border-rose-300',
+    badgeText: 'text-rose-800',
+    descriptionTa: 'செவ்வாய் 2, 4, 7, 8, 12-ல் உள்ள மங்கள தோஷம்',
+    descriptionEn: 'Manglik placement requiring similar horoscope',
+  },
+  {
+    key: 'SEVVAI_RAGU_KETHU',
+    labelTa: 'செவ்வாய் & ராகு-கேது இரண்டும்',
+    labelEn: 'Sevvai & Rahu-Ketu Both',
+    shortTa: 'செவ்வாய் & ராகு-கேது',
+    shortEn: 'Both',
+    icon: '⚡',
+    badgeBg: 'bg-amber-50',
+    badgeBorder: 'border-amber-300',
+    badgeText: 'text-amber-800',
+    descriptionTa: 'செவ்வாய் மற்றும் ராகு-கேது ஆகிய இரண்டு தோஷங்களும் அமைந்த ஜாதகம்',
+    descriptionEn: 'Horoscope having both Sevvai and Rahu-Ketu',
+  },
+  {
+    key: 'OTHER',
+    labelTa: 'நாக / களத்திர / இதர தோஷங்கள்',
+    labelEn: 'Naga & Other Doshams',
+    shortTa: 'இதர தோஷங்கள்',
+    shortEn: 'Other',
+    icon: '🔮',
+    badgeBg: 'bg-indigo-50',
+    badgeBorder: 'border-indigo-300',
+    badgeText: 'text-indigo-800',
+    descriptionTa: 'நாக தோஷம், களத்திர தோஷம் போன்ற பரிகார தோஷங்கள்',
+    descriptionEn: 'Special / parigara doshams such as Naga dosham',
+  },
+];
+
+export function getProfileDoshamCategory(profile: any): 'SUTHAM' | 'RAGU_KETHU' | 'SEVVAI' | 'SEVVAI_RAGU_KETHU' | 'OTHER' {
+  if (!profile) return 'SUTHAM';
+  const d = String(profile?.dosham || profile?.jathagamData?.dosham || '').toUpperCase();
+  const ds = Array.isArray(profile?.doshams)
+    ? profile.doshams.map((x: any) => String(x).toUpperCase())
+    : (Array.isArray(profile?.jathagamData?.doshams) ? profile.jathagamData.doshams.map((x: any) => String(x).toUpperCase()) : []);
+  
+  const hasSevvai = d.includes('SEVVAI') || d.includes('செவ்வாய்') || d.includes('MANGLIK') || ds.includes('SEVVAI');
+  const hasRagu = d.includes('RAGU') || d.includes('RAHU') || d.includes('ராகு') || d.includes('கேது') || ds.includes('RAHU_KETHU') || ds.includes('RAGU_KETHU');
+  const hasNaga = d.includes('NAGA') || d.includes('நாக') || ds.includes('NAGA');
+  const hasBoth = d.includes('SEVVAI_RAHU_KETHU') || d.includes('SEVVAI_RAGU_KETHU') || ds.includes('SEVVAI_RAHU_KETHU');
+
+  if (hasBoth || (hasSevvai && hasRagu)) return 'SEVVAI_RAGU_KETHU';
+  if (hasRagu) return 'RAGU_KETHU';
+  if (hasSevvai) return 'SEVVAI';
+  if (hasNaga || (d && d !== 'NONE' && !d.includes('NONE') && !d.includes('சுத்தம்') && !d.includes('இல்லை'))) return 'OTHER';
+  return 'SUTHAM';
+}
+
+export function getDoshamBadgeInfo(catKey: string): DoshamGroupDefinition {
+  return DOSHAM_GROUPS.find((g) => g.key === catKey) || DOSHAM_GROUPS[1];
+}
+

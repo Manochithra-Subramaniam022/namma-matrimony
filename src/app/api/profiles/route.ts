@@ -241,12 +241,39 @@ export async function GET(req: NextRequest) {
       filtered = filtered.filter((p) => (p.nakshatra || '').toLowerCase().includes(nLower));
     }
 
-    // 6. Dosham
-    if (dosham && dosham !== 'Any' && dosham.trim()) {
-      if (dosham.toUpperCase() === 'SUTHAM') {
+    // 6. Dosham (5 Distinct Astrological Groups: Sutham, Ragu-Kethu, Sevvai, Both, Naga/Other)
+    if (dosham && dosham !== 'Any' && dosham.toUpperCase() !== 'ALL' && dosham.trim()) {
+      const dUpper = dosham.toUpperCase();
+      if (dUpper === 'SUTHAM' || dUpper === 'NONE') {
         filtered = filtered.filter((p) => {
           const d = (p.dosham || '').toUpperCase();
-          return !d || d.includes('NONE') || d.includes('சுத்தம்') || d.includes('இல்லை');
+          return !d || d === 'NONE' || d.includes('NONE') || d.includes('சுத்தம்') || d.includes('இல்லை');
+        });
+      } else if (dUpper === 'RAGU_KETHU' || dUpper === 'RAHU_KETHU') {
+        filtered = filtered.filter((p) => {
+          const d = (p.dosham || '').toUpperCase();
+          const hasRagu = d.includes('RAGU') || d.includes('RAHU') || d.includes('ராகு') || d.includes('கேது');
+          const hasSevvai = d.includes('SEVVAI') || d.includes('செவ்வாய்') || d.includes('MANGLIK');
+          return hasRagu && !hasSevvai;
+        });
+      } else if (dUpper === 'SEVVAI') {
+        filtered = filtered.filter((p) => {
+          const d = (p.dosham || '').toUpperCase();
+          const hasRagu = d.includes('RAGU') || d.includes('RAHU') || d.includes('ராகு') || d.includes('கேது');
+          const hasSevvai = d.includes('SEVVAI') || d.includes('செவ்வாய்') || d.includes('MANGLIK');
+          return hasSevvai && !hasRagu;
+        });
+      } else if (dUpper === 'SEVVAI_RAGU_KETHU' || dUpper === 'BOTH') {
+        filtered = filtered.filter((p) => {
+          const d = (p.dosham || '').toUpperCase();
+          const hasRagu = d.includes('RAGU') || d.includes('RAHU') || d.includes('ராகு') || d.includes('கேது');
+          const hasSevvai = d.includes('SEVVAI') || d.includes('செவ்வாய்') || d.includes('MANGLIK');
+          return hasRagu && hasSevvai;
+        });
+      } else if (dUpper === 'NAGA' || dUpper === 'OTHER') {
+        filtered = filtered.filter((p) => {
+          const d = (p.dosham || '').toUpperCase();
+          return d.includes('NAGA') || d.includes('நாக') || (d && d !== 'NONE' && !d.includes('NONE') && !d.includes('சுத்தம்') && !d.includes('இல்லை'));
         });
       } else {
         const dLower = dosham.toLowerCase();

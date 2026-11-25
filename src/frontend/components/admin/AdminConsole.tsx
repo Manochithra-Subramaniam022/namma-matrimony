@@ -41,6 +41,12 @@ import AkshayamProfileView from '@/frontend/components/profile/AkshayamProfileVi
 import CasteKoottamManager from './CasteKoottamManager';
 import { useLanguage } from '@/frontend/context/LanguageContext';
 import { BRANDING } from '@/constants/branding';
+import {
+  DoshamGroupKey,
+  DOSHAM_GROUPS,
+  getProfileDoshamCategory,
+  getDoshamBadgeInfo,
+} from '@/frontend/utils/astrology';
 
 export default function AdminConsole() {
   const { language, toggleLanguage } = useLanguage();
@@ -69,6 +75,7 @@ export default function AdminConsole() {
   // Filters & Search
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
   const [genderFilter, setGenderFilter] = useState<'ALL' | 'MALE' | 'FEMALE'>('ALL');
+  const [doshamFilter, setDoshamFilter] = useState<DoshamGroupKey>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Modals
@@ -268,6 +275,12 @@ export default function AdminConsole() {
       // Gender filter
       if (genderFilter !== 'ALL') {
         if (p.gender !== genderFilter) return false;
+      }
+
+      // 5-Dosham filter
+      if (doshamFilter !== 'ALL') {
+        const cat = getProfileDoshamCategory(p);
+        if (cat !== doshamFilter) return false;
       }
 
       // Search query
@@ -793,6 +806,25 @@ export default function AdminConsole() {
                 {language === 'TA' ? 'மணமகள்' : 'Brides'}
               </button>
             </div>
+
+            {/* 5 Dosham Group Filter Tabs */}
+            <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-xl overflow-x-auto self-start md:self-auto">
+              {DOSHAM_GROUPS.map((d) => (
+                <button
+                  key={d.key}
+                  type="button"
+                  onClick={() => setDoshamFilter(d.key)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1 ${
+                    doshamFilter === d.key
+                      ? 'bg-primary text-white shadow-xs'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <span>{d.icon}</span>
+                  <span>{language === 'TA' ? d.shortTa : d.shortEn}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Search Input */}
@@ -952,6 +984,18 @@ export default function AdminConsole() {
                             >
                               {isBride ? (language === 'TA' ? 'மணமகள்' : 'Bride') : (language === 'TA' ? 'மணமகன்' : 'Groom')}
                             </span>
+
+                            {/* 5-Dosham Badge */}
+                            {(() => {
+                              const dCat = getProfileDoshamCategory(candidate);
+                              const grp = getDoshamBadgeInfo(dCat);
+                              return (
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 ${grp.badgeBg} ${grp.badgeBorder} ${grp.badgeText}`}>
+                                  <span>{grp.icon}</span>
+                                  <span>{language === 'TA' ? grp.shortTa : grp.shortEn}</span>
+                                </span>
+                              );
+                            })()}
                           </div>
 
                           {/* Quick Highlights Summary Line */}
