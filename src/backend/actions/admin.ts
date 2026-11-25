@@ -205,6 +205,13 @@ export async function getAllProfilesForAdmin(options?: {
           motherMobile,
           siblings: siblingsList,
         },
+        // Normalized Documents & Attachments
+        photoUrl: p.photoUrl || p.profilePhotoUrl || p.jathagamData?.photoUrl || null,
+        jathakamUrl: p.jathakamUrl || p.horoscopeUrl || p.jathagamData?.jathakamUrl || p.jathagamData?.horoscopeUrl || null,
+        horoscopeUrl: p.jathakamUrl || p.horoscopeUrl || p.jathagamData?.horoscopeUrl || p.jathagamData?.jathakamUrl || null,
+        idProofUrl: p.idProofUrl || p.jathagamData?.idProofUrl || null,
+        casteCertificateUrl: p.casteCertificateUrl || p.jathagamData?.casteCertificateUrl || null,
+
         expectations: (p.userId ? expectationsByUserIdMap.get(p.userId) : null) || (user?.id ? expectationsByUserIdMap.get(user.id) : null) || p.jathagamData?.expectations || {},
       };
     });

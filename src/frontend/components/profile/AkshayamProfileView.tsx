@@ -29,6 +29,7 @@ import {
   ArrowLeft,
   Trash2,
   XCircle,
+  Download,
 } from 'lucide-react';
 import BrandLogo from '@/frontend/components/BrandLogo';
 import { BRANDING } from '@/constants/branding';
@@ -49,7 +50,21 @@ export default function AkshayamProfileView({
   language = 'TA',
 }: AkshayamProfileViewProps) {
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
+  const [docModal, setDocModal] = useState<{ url: string; title: string; isPdf: boolean } | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Helper to check if file is PDF
+  const isPdfUrl = (url?: string | null): boolean => {
+    if (!url) return false;
+    const clean = url.split('?')[0].toLowerCase();
+    return clean.endsWith('.pdf') || url.startsWith('data:application/pdf');
+  };
+
+  // Verification Documents
+  const idProofUrl = profile?.idProofUrl || profile?.jathagamData?.idProofUrl || null;
+  const casteCertUrl = profile?.casteCertificateUrl || profile?.jathagamData?.casteCertificateUrl || null;
+  const horoscopeDocUrl = profile?.jathakamUrl || profile?.horoscopeUrl || profile?.jathagamData?.jathakamUrl || profile?.jathagamData?.horoscopeUrl || null;
+  const hasDocuments = !!(idProofUrl || casteCertUrl || horoscopeDocUrl);
 
   // Derived Values
   const displayId = profile?.registrationId || profile?.displayId || profile?.refId || 'NM-0001';
@@ -1066,24 +1081,34 @@ export default function AkshayamProfileView({
 
 
               {/* Jathagam Copy Document Attachment */}
-              {profile?.horoscopeUrl && (
-                <div className="no-print bg-[#FFFDF9] border border-primary/20 rounded-xl p-3.5 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <FileText className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="text-xs font-bold text-gray-900">ஜாதக அசல் நகல் இணைக்கப்பட்டுள்ளது</p>
+              {horoscopeDocUrl && (
+                <div className="no-print bg-[#FFFDF9] border border-primary/20 rounded-xl p-3.5 flex items-center justify-between gap-3 shadow-2xs">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <FileText className="w-5 h-5 text-primary shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-gray-900 truncate">ஜாதக அசல் நகல் இணைக்கப்பட்டுள்ளது</p>
                       <p className="text-[11px] text-gray-500">Original Horoscope PDF / Image Copy</p>
                     </div>
                   </div>
-                  <a
-                    href={profile.horoscopeUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 bg-primary text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-primary-light transition-all"
-                  >
-                    <span>பார்வையிடுக</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setDocModal({ url: horoscopeDocUrl, title: 'ஜாதக அசல் நகல் (Original Horoscope Document)', isPdf: isPdfUrl(horoscopeDocUrl) })}
+                      className="inline-flex items-center gap-1 bg-primary text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-primary-light transition-all cursor-pointer shadow-2xs"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-[#D4AF37]" />
+                      <span>பார்வையிடுக</span>
+                    </button>
+                    <a
+                      href={horoscopeDocUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-1.5 rounded-lg bg-white border border-primary/20 text-primary hover:bg-primary/5 transition-all cursor-pointer"
+                      title="Open / Download"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
                 </div>
               )}
             </div>
@@ -1667,6 +1692,120 @@ export default function AkshayamProfileView({
             </div>
           )}
 
+          {/* SECTION 8: VERIFICATION DOCUMENTS & CERTIFICATES */}
+          {hasDocuments && (
+            <div className="bg-white rounded-2xl border border-primary/20 shadow-xs overflow-hidden no-print">
+              <div className="bg-gradient-to-r from-primary to-primary-light text-white px-4 py-2.5 sm:px-6 sm:py-3 flex items-center justify-between">
+                <h3 className="text-sm sm:text-base font-serif font-black flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#D4AF37]" />
+                  <span>8. சரிபார்ப்பு ஆவணங்கள் & சான்றிதழ்கள் (Verification Documents)</span>
+                </h3>
+                <span className="text-[11px] text-[#F3E5AB] font-bold">சரிபார்க்கப்பட்டது</span>
+              </div>
+
+              <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-xs">
+                {idProofUrl && (
+                  <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200 flex flex-col justify-between gap-2.5">
+                    <div className="flex items-start gap-2.5">
+                      <div className="p-2 rounded-lg bg-blue-100 text-blue-700 shrink-0">
+                        <ShieldCheck className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-900 text-xs">அரசு அடையாள அட்டை</p>
+                        <p className="text-[10px] text-gray-500">Govt ID Proof (Aadhaar / Voter ID / DL)</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1 border-t border-blue-200/60">
+                      <button
+                        type="button"
+                        onClick={() => setDocModal({ url: idProofUrl, title: 'அரசு அடையாள அட்டை (Govt ID Proof)', isPdf: isPdfUrl(idProofUrl) })}
+                        className="flex-1 py-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>பார்வையிடுக</span>
+                      </button>
+                      <a
+                        href={idProofUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-1.5 rounded-lg bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 transition-all cursor-pointer"
+                        title="Download / Open"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {casteCertUrl && (
+                  <div className="p-3 bg-purple-50/60 rounded-xl border border-purple-200 flex flex-col justify-between gap-2.5">
+                    <div className="flex items-start gap-2.5">
+                      <div className="p-2 rounded-lg bg-purple-100 text-purple-700 shrink-0">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-900 text-xs">சாதிச் சான்றிதழ்</p>
+                        <p className="text-[10px] text-gray-500">Caste / Community Certificate</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1 border-t border-purple-200/60">
+                      <button
+                        type="button"
+                        onClick={() => setDocModal({ url: casteCertUrl, title: 'சாதிச் சான்றிதழ் (Caste Certificate)', isPdf: isPdfUrl(casteCertUrl) })}
+                        className="flex-1 py-1.5 px-3 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>பார்வையிடுக</span>
+                      </button>
+                      <a
+                        href={casteCertUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-1.5 rounded-lg bg-white border border-purple-200 text-purple-700 hover:bg-purple-50 transition-all cursor-pointer"
+                        title="Download / Open"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {horoscopeDocUrl && (
+                  <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200 flex flex-col justify-between gap-2.5">
+                    <div className="flex items-start gap-2.5">
+                      <div className="p-2 rounded-lg bg-amber-100 text-amber-700 shrink-0">
+                        <Sparkles className="w-5 h-5 text-[#D4AF37]" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-900 text-xs">ஜாதக அசல் நகல்</p>
+                        <p className="text-[10px] text-gray-500">Original Horoscope PDF / Image Copy</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1 border-t border-amber-200/60">
+                      <button
+                        type="button"
+                        onClick={() => setDocModal({ url: horoscopeDocUrl, title: 'ஜாதக அசல் நகல் (Original Horoscope)', isPdf: isPdfUrl(horoscopeDocUrl) })}
+                        className="flex-1 py-1.5 px-3 rounded-lg bg-primary hover:bg-primary-light text-white text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-[#D4AF37]" />
+                        <span>பார்வையிடுக</span>
+                      </button>
+                      <a
+                        href={horoscopeDocUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-1.5 rounded-lg bg-white border border-amber-200 text-amber-800 hover:bg-amber-50 transition-all cursor-pointer"
+                        title="Download / Open"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
         </div>
 
         {/* 5. FOOTER OF BIODATA */}
@@ -1708,6 +1847,68 @@ export default function AkshayamProfileView({
               >
                 மூடுக (Close)
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DOCUMENT PREVIEW LIGHTBOX MODAL */}
+      {docModal && (
+        <div
+          className="fixed inset-0 z-[120] bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4"
+          onClick={() => setDocModal(null)}
+        >
+          <div
+            className="relative max-w-4xl w-full bg-white rounded-3xl overflow-hidden border-2 border-[#D4AF37] shadow-2xl p-3 sm:p-4 flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top Bar */}
+            <div className="flex items-center justify-between pb-3 border-b border-gray-200 shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <FileText className="w-5 h-5 text-primary shrink-0" />
+                <h4 className="font-bold text-sm sm:text-base text-gray-900 truncate">
+                  {docModal.title}
+                </h4>
+                <span className="font-mono text-xs px-2 py-0.5 rounded bg-primary/10 text-primary font-bold">
+                  {displayId}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={docModal.url}
+                  download
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1 rounded-full bg-primary text-white text-xs font-bold hover:bg-primary-light transition-all flex items-center gap-1"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">பதிவிறக்கு</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setDocModal(null)}
+                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center font-bold text-sm cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Document Content View */}
+            <div className="flex-1 overflow-auto p-2 flex items-center justify-center bg-stone-50 rounded-2xl mt-2 min-h-[300px]">
+              {docModal.isPdf ? (
+                <iframe
+                  src={docModal.url}
+                  title={docModal.title}
+                  className="w-full h-[70vh] rounded-xl border border-gray-200"
+                />
+              ) : (
+                <img
+                  src={docModal.url}
+                  alt={docModal.title}
+                  className="max-w-full max-h-[75vh] object-contain rounded-xl shadow-xs"
+                />
+              )}
             </div>
           </div>
         </div>

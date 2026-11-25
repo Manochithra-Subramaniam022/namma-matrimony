@@ -34,6 +34,7 @@ import {
   Image as ImageIcon,
   Lock,
   LogOut,
+  Download,
 } from 'lucide-react';
 import BrandLogo from '@/frontend/components/BrandLogo';
 import AkshayamProfileView from '@/frontend/components/profile/AkshayamProfileView';
@@ -77,6 +78,29 @@ export default function AdminConsole() {
   const [candidateToDelete, setCandidateToDelete] = useState<any | null>(null);
   const [actionInProgressId, setActionInProgressId] = useState<string | null>(null);
   const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<{
+    url: string;
+    title: string;
+    isPdf: boolean;
+    candidateName?: string;
+    displayId?: string;
+  } | null>(null);
+
+  const isPdfUrl = (url?: string | null): boolean => {
+    if (!url) return false;
+    const clean = url.split('?')[0].toLowerCase();
+    return clean.endsWith('.pdf') || url.startsWith('data:application/pdf');
+  };
+
+  const openDocPreview = (url: string, title: string, candidate: any) => {
+    setPreviewDoc({
+      url,
+      title,
+      isPdf: isPdfUrl(url),
+      candidateName: candidate.name || candidate.fullName,
+      displayId: candidate.displayId || candidate.registrationId,
+    });
+  };
 
   // Expandable profile details (collapsed by default, click to view info)
   const [expandedProfileIds, setExpandedProfileIds] = useState<Record<string, boolean>>({});
@@ -993,6 +1017,82 @@ export default function AdminConsole() {
                               </>
                             )}
                           </div>
+
+                          {/* Quick Document Badges (Click to preview directly!) */}
+                          <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                            {candidate.idProofUrl && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openDocPreview(
+                                    candidate.idProofUrl,
+                                    language === 'TA' ? 'அரசு அடையாள அட்டை (Govt ID Proof)' : 'Govt ID Proof',
+                                    candidate
+                                  );
+                                }}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 shadow-2xs transition-all cursor-pointer"
+                                title={language === 'TA' ? 'அரசு ID பார்வைக்கு கிளிக் செய்க' : 'Click to preview Govt ID Proof'}
+                              >
+                                <ShieldCheck className="w-3 h-3 text-blue-600 shrink-0" />
+                                <span>{language === 'TA' ? 'அரசு ID' : 'Govt ID'}</span>
+                              </button>
+                            )}
+                            {candidate.casteCertificateUrl && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openDocPreview(
+                                    candidate.casteCertificateUrl,
+                                    language === 'TA' ? 'சாதிச் சான்றிதழ் (Caste Certificate)' : 'Caste Certificate',
+                                    candidate
+                                  );
+                                }}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 shadow-2xs transition-all cursor-pointer"
+                                title={language === 'TA' ? 'சாதிச் சான்றிதழ் பார்வைக்கு கிளிக் செய்க' : 'Click to preview Caste Certificate'}
+                              >
+                                <FileText className="w-3 h-3 text-purple-600 shrink-0" />
+                                <span>{language === 'TA' ? 'சாதிச் சான்று' : 'Caste Cert'}</span>
+                              </button>
+                            )}
+                            {(candidate.jathakamUrl || candidate.horoscopeUrl) && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openDocPreview(
+                                    candidate.jathakamUrl || candidate.horoscopeUrl,
+                                    language === 'TA' ? 'ஜாதக அசல் நகல் (Horoscope Document)' : 'Horoscope Document',
+                                    candidate
+                                  );
+                                }}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 shadow-2xs transition-all cursor-pointer"
+                                title={language === 'TA' ? 'ஜாதக நகல் பார்வைக்கு கிளிக் செய்க' : 'Click to preview Horoscope Copy'}
+                              >
+                                <Sparkles className="w-3 h-3 text-[#D4AF37] shrink-0" />
+                                <span>{language === 'TA' ? 'ஜாதகம்' : 'Horoscope'}</span>
+                              </button>
+                            )}
+                            {cPhoto && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openDocPreview(
+                                    cPhoto,
+                                    language === 'TA' ? 'சுயவிவரப் புகைப்படம் (Profile Photo)' : 'Profile Photo',
+                                    candidate
+                                  );
+                                }}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-2xs transition-all cursor-pointer"
+                                title={language === 'TA' ? 'சுயவிவர படம் பார்வைக்கு கிளிக் செய்க' : 'Click to preview Profile Photo'}
+                              >
+                                <ImageIcon className="w-3 h-3 text-emerald-600 shrink-0" />
+                                <span>{language === 'TA' ? 'படம்' : 'Photo'}</span>
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -1270,42 +1370,240 @@ export default function AdminConsole() {
                             </p>
                           )}
 
-                          {/* Attached Documents Links */}
-                          <div className="pt-1 flex flex-wrap gap-1.5">
-                            {candidate.jathakamUrl && (
-                              <a
-                                href={candidate.jathakamUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-md text-[10px] font-bold"
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* DEDICATED VERIFICATION DOCUMENTS SECTION */}
+                    <div className="mx-4 sm:mx-6 mb-4 bg-white p-3.5 sm:p-4 rounded-2xl border-2 border-primary/20 shadow-2xs space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-primary/10 pb-2.5">
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                          <h4 className="text-xs sm:text-sm font-black uppercase text-primary tracking-wider font-serif">
+                            {language === 'TA' ? 'சரிபார்க்கப்பட வேண்டிய ஆவணங்கள் & சான்றிதழ்கள்' : 'Uploaded Verification Documents'}
+                          </h4>
+                        </div>
+                        <span className="text-[11px] font-bold text-gray-500">
+                          {[
+                            candidate.idProofUrl ? 'ID' : null,
+                            candidate.casteCertificateUrl ? 'Caste' : null,
+                            (candidate.jathakamUrl || candidate.horoscopeUrl) ? 'Horoscope' : null,
+                            cPhoto ? 'Photo' : null,
+                          ].filter(Boolean).length} / 4 {language === 'TA' ? 'ஆவணங்கள் இணைக்கப்பட்டுள்ளன' : 'Documents Uploaded'}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        {/* Document 1: Govt ID Proof */}
+                        <div className={`p-3 rounded-xl border flex flex-col justify-between gap-2.5 transition-all ${
+                          candidate.idProofUrl
+                            ? 'bg-blue-50/70 border-blue-300 shadow-2xs'
+                            : 'bg-gray-50/70 border-gray-200 opacity-60'
+                        }`}>
+                          <div className="flex items-start gap-2.5">
+                            <div className="p-2 rounded-lg bg-blue-100 text-blue-700 shrink-0">
+                              <ShieldCheck className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-gray-900 truncate">
+                                {language === 'TA' ? 'அரசு அடையாள அட்டை' : 'Govt ID Proof'}
+                              </p>
+                              <p className="text-[10px] text-gray-500">
+                                {candidate.idProofUrl
+                                  ? (isPdfUrl(candidate.idProofUrl) ? 'PDF ஆவணம்' : 'பட ஆவணம் (Image)')
+                                  : (language === 'TA' ? 'இணைக்கப்படவில்லை' : 'Not Attached')}
+                              </p>
+                            </div>
+                          </div>
+
+                          {candidate.idProofUrl ? (
+                            <div className="flex items-center gap-1.5 pt-2 border-t border-blue-200/80">
+                              <button
+                                type="button"
+                                onClick={() => openDocPreview(
+                                  candidate.idProofUrl,
+                                  language === 'TA' ? 'அரசு அடையாள அட்டை (Govt ID Proof)' : 'Govt ID Proof',
+                                  candidate
+                                )}
+                                className="flex-1 py-1.5 px-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer shadow-2xs"
                               >
-                                <FileText className="w-3 h-3 text-[#D4AF37]" />
-                                <span>{language === 'TA' ? 'ஜாதகம் PDF' : 'Horoscope'}</span>
-                              </a>
-                            )}
-                            {candidate.idProofUrl && (
+                                <Eye className="w-3 h-3" />
+                                <span>{language === 'TA' ? 'பார்வை' : 'Preview'}</span>
+                              </button>
                               <a
                                 href={candidate.idProofUrl}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="inline-flex items-center gap-1 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-md text-[10px] font-bold"
+                                className="p-1.5 rounded-lg bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 transition-all cursor-pointer"
+                                title="Open in new tab / Download"
                               >
-                                <ShieldCheck className="w-3 h-3 text-blue-600" />
-                                <span>{language === 'TA' ? 'அரசு ID' : 'Govt ID'}</span>
+                                <ExternalLink className="w-3.5 h-3.5" />
                               </a>
-                            )}
-                            {candidate.casteCertificateUrl && (
+                            </div>
+                          ) : (
+                            <div className="text-[10px] text-gray-400 italic pt-1 border-t border-gray-200">
+                              {language === 'TA' ? 'பதிவேற்றப்படவில்லை' : 'Not uploaded'}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Document 2: Caste Certificate */}
+                        <div className={`p-3 rounded-xl border flex flex-col justify-between gap-2.5 transition-all ${
+                          candidate.casteCertificateUrl
+                            ? 'bg-purple-50/70 border-purple-300 shadow-2xs'
+                            : 'bg-gray-50/70 border-gray-200 opacity-60'
+                        }`}>
+                          <div className="flex items-start gap-2.5">
+                            <div className="p-2 rounded-lg bg-purple-100 text-purple-700 shrink-0">
+                              <FileText className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-gray-900 truncate">
+                                {language === 'TA' ? 'சாதிச் சான்றிதழ்' : 'Caste Certificate'}
+                              </p>
+                              <p className="text-[10px] text-gray-500">
+                                {candidate.casteCertificateUrl
+                                  ? (isPdfUrl(candidate.casteCertificateUrl) ? 'PDF சான்றிதழ்' : 'பட சான்றிதழ் (Image)')
+                                  : (language === 'TA' ? 'இணைக்கப்படவில்லை' : 'Not Attached')}
+                              </p>
+                            </div>
+                          </div>
+
+                          {candidate.casteCertificateUrl ? (
+                            <div className="flex items-center gap-1.5 pt-2 border-t border-purple-200/80">
+                              <button
+                                type="button"
+                                onClick={() => openDocPreview(
+                                  candidate.casteCertificateUrl,
+                                  language === 'TA' ? 'சாதிச் சான்றிதழ் (Caste Certificate)' : 'Caste Certificate',
+                                  candidate
+                                )}
+                                className="flex-1 py-1.5 px-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer shadow-2xs"
+                              >
+                                <Eye className="w-3 h-3" />
+                                <span>{language === 'TA' ? 'பார்வை' : 'Preview'}</span>
+                              </button>
                               <a
                                 href={candidate.casteCertificateUrl}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="inline-flex items-center gap-1 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 px-2 py-0.5 rounded-md text-[10px] font-bold"
+                                className="p-1.5 rounded-lg bg-white border border-purple-200 text-purple-700 hover:bg-purple-50 transition-all cursor-pointer"
+                                title="Open in new tab / Download"
                               >
-                                <FileText className="w-3 h-3 text-purple-600" />
-                                <span>{language === 'TA' ? 'சாதிச் சான்றிதழ்' : 'Caste Cert'}</span>
+                                <ExternalLink className="w-3.5 h-3.5" />
                               </a>
-                            )}
+                            </div>
+                          ) : (
+                            <div className="text-[10px] text-gray-400 italic pt-1 border-t border-gray-200">
+                              {language === 'TA' ? 'பதிவேற்றப்படவில்லை' : 'Not uploaded'}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Document 3: Horoscope Copy */}
+                        <div className={`p-3 rounded-xl border flex flex-col justify-between gap-2.5 transition-all ${
+                          (candidate.jathakamUrl || candidate.horoscopeUrl)
+                            ? 'bg-amber-50/70 border-amber-300 shadow-2xs'
+                            : 'bg-gray-50/70 border-gray-200 opacity-60'
+                        }`}>
+                          <div className="flex items-start gap-2.5">
+                            <div className="p-2 rounded-lg bg-amber-100 text-amber-700 shrink-0">
+                              <Sparkles className="w-4 h-4 text-[#D4AF37]" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-gray-900 truncate">
+                                {language === 'TA' ? 'ஜாதக அசல் நகல்' : 'Horoscope Document'}
+                              </p>
+                              <p className="text-[10px] text-gray-500">
+                                {(candidate.jathakamUrl || candidate.horoscopeUrl)
+                                  ? (isPdfUrl(candidate.jathakamUrl || candidate.horoscopeUrl) ? 'PDF ஜாதகம்' : 'ஜாதகக் கட்ட படம்')
+                                  : (language === 'TA' ? 'இணைக்கப்படவில்லை' : 'Not Attached')}
+                              </p>
+                            </div>
                           </div>
+
+                          {(candidate.jathakamUrl || candidate.horoscopeUrl) ? (
+                            <div className="flex items-center gap-1.5 pt-2 border-t border-amber-200/80">
+                              <button
+                                type="button"
+                                onClick={() => openDocPreview(
+                                  candidate.jathakamUrl || candidate.horoscopeUrl,
+                                  language === 'TA' ? 'ஜாதக அசல் நகல் (Horoscope Document)' : 'Horoscope Document',
+                                  candidate
+                                )}
+                                className="flex-1 py-1.5 px-2 rounded-lg bg-primary hover:bg-primary-light text-white text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer shadow-2xs"
+                              >
+                                <Eye className="w-3 h-3 text-[#D4AF37]" />
+                                <span>{language === 'TA' ? 'பார்வை' : 'Preview'}</span>
+                              </button>
+                              <a
+                                href={candidate.jathakamUrl || candidate.horoscopeUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="p-1.5 rounded-lg bg-white border border-amber-200 text-amber-800 hover:bg-amber-50 transition-all cursor-pointer"
+                                title="Open in new tab / Download"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            </div>
+                          ) : (
+                            <div className="text-[10px] text-gray-400 italic pt-1 border-t border-gray-200">
+                              {language === 'TA' ? 'பதிவேற்றப்படவில்லை' : 'Not uploaded'}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Document 4: Profile Photo */}
+                        <div className={`p-3 rounded-xl border flex flex-col justify-between gap-2.5 transition-all ${
+                          cPhoto
+                            ? 'bg-emerald-50/70 border-emerald-300 shadow-2xs'
+                            : 'bg-gray-50/70 border-gray-200 opacity-60'
+                        }`}>
+                          <div className="flex items-start gap-2.5">
+                            <div className="p-2 rounded-lg bg-emerald-100 text-emerald-700 shrink-0">
+                              <ImageIcon className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-gray-900 truncate">
+                                {language === 'TA' ? 'சுயவிவர புகைப்படம்' : 'Profile Photo'}
+                              </p>
+                              <p className="text-[10px] text-gray-500">
+                                {cPhoto
+                                  ? 'நேரடி புகைப்படம்'
+                                  : (language === 'TA' ? 'இணைக்கப்படவில்லை' : 'Not Attached')}
+                              </p>
+                            </div>
+                          </div>
+
+                          {cPhoto ? (
+                            <div className="flex items-center gap-1.5 pt-2 border-t border-emerald-200/80">
+                              <button
+                                type="button"
+                                onClick={() => openDocPreview(
+                                  cPhoto,
+                                  language === 'TA' ? 'சுயவிவரப் புகைப்படம் (Profile Photo)' : 'Profile Photo',
+                                  candidate
+                                )}
+                                className="flex-1 py-1.5 px-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer shadow-2xs"
+                              >
+                                <Eye className="w-3 h-3" />
+                                <span>{language === 'TA' ? 'பார்வை' : 'Preview'}</span>
+                              </button>
+                              <a
+                                href={cPhoto}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="p-1.5 rounded-lg bg-white border border-emerald-200 text-emerald-800 hover:bg-emerald-50 transition-all cursor-pointer"
+                                title="Open in new tab / Download"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            </div>
+                          ) : (
+                            <div className="text-[10px] text-gray-400 italic pt-1 border-t border-gray-200">
+                              {language === 'TA' ? 'பதிவேற்றப்படவில்லை' : 'Not uploaded'}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1602,6 +1900,74 @@ export default function AdminConsole() {
               ✕
             </button>
             <img src={previewPhotoUrl} alt="Candidate Profile" className="w-full max-h-[80vh] object-contain rounded-2xl" />
+          </div>
+        </div>
+      )}
+
+      {/* 8.5 MODAL: IN-APP DOCUMENT PREVIEW (PDF & IMAGE VIEWER) */}
+      {previewDoc && (
+        <div
+          className="fixed inset-0 z-[120] bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4"
+          onClick={() => setPreviewDoc(null)}
+        >
+          <div
+            className="relative max-w-4xl w-full bg-white rounded-3xl overflow-hidden border-2 border-[#D4AF37] shadow-2xl p-3 sm:p-5 flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top Bar */}
+            <div className="flex items-center justify-between pb-3 border-b border-gray-200 shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-1.5 rounded-lg bg-primary/10 text-primary shrink-0">
+                  <FileText className="w-5 h-5 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="font-bold text-sm sm:text-base text-gray-900 truncate">
+                    {previewDoc.title}
+                  </h4>
+                  <p className="text-xs text-gray-500 font-medium truncate">
+                    {previewDoc.candidateName} {previewDoc.displayId ? `• ${previewDoc.displayId}` : ''}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={previewDoc.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1.5 rounded-full bg-primary text-white text-xs font-bold hover:bg-primary-light transition-all flex items-center gap-1.5 shadow-xs"
+                  title="Open in new tab / Download file"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-[#D4AF37]" />
+                  <span className="hidden sm:inline">{language === 'TA' ? 'புதிய தாவலில் திற' : 'Open in New Tab'}</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setPreviewDoc(null)}
+                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center font-bold text-sm cursor-pointer transition-colors"
+                  title="Close Preview"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Document Body */}
+            <div className="flex-1 overflow-auto p-2 flex items-center justify-center bg-stone-100/70 rounded-2xl mt-3 min-h-[350px]">
+              {previewDoc.isPdf ? (
+                <iframe
+                  src={previewDoc.url}
+                  title={previewDoc.title}
+                  className="w-full h-[72vh] rounded-xl border border-gray-200 shadow-2xs bg-white"
+                />
+              ) : (
+                <img
+                  src={previewDoc.url}
+                  alt={previewDoc.title}
+                  className="max-w-full max-h-[75vh] object-contain rounded-xl shadow-sm"
+                />
+              )}
+            </div>
           </div>
         </div>
       )}
