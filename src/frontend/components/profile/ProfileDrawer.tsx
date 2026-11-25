@@ -26,9 +26,13 @@ import {
   Briefcase,
   GraduationCap,
   CheckCircle,
-  Maximize2
+  Maximize2,
+  Bell,
+  ChevronRight,
+  Lock,
 } from 'lucide-react';
 import Link from 'next/link';
+import NotificationDrawer from '@/frontend/components/notifications/NotificationDrawer';
 
 interface ProfileDrawerProps {
   isOpen: boolean;
@@ -53,6 +57,22 @@ export default function ProfileDrawer({ isOpen, onClose }: ProfileDrawerProps) {
   const [candidateToDelete, setCandidateToDelete] = useState<any | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteSuccessMsg, setDeleteSuccessMsg] = useState('');
+
+  // Data Requests & Notification state
+  const [showNotificationDrawer, setShowNotificationDrawer] = useState(false);
+  const [unreadRequestsCount, setUnreadRequestsCount] = useState(0);
+
+  const checkUnreadRequests = useCallback(async (mobile?: string) => {
+    const mob = mobile || userMobile;
+    if (!mob) return;
+    try {
+      const res = await fetch(`/api/requests/data?mobile=${encodeURIComponent(mob)}`);
+      const data = await res.json();
+      if (data.success && typeof data.unreadCount === 'number') {
+        setUnreadRequestsCount(data.unreadCount);
+      }
+    } catch {}
+  }, [userMobile]);
 
   // Lock body scroll when drawer is open
   useEffect(() => {
@@ -127,6 +147,7 @@ export default function ProfileDrawer({ isOpen, onClose }: ProfileDrawerProps) {
       if (effectiveMobile) {
         setUserMobile(effectiveMobile);
         localStorage.setItem('namma_user_mobile', effectiveMobile);
+        checkUnreadRequests(effectiveMobile);
 
         try {
           const res = await fetch(`/api/register?mobile=${encodeURIComponent(effectiveMobile)}`);
@@ -359,6 +380,21 @@ export default function ProfileDrawer({ isOpen, onClose }: ProfileDrawerProps) {
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            {/* Notifications Button */}
+            <button
+              type="button"
+              onClick={() => setShowNotificationDrawer(true)}
+              title={language === 'TA' ? 'அறிவிப்புகள்' : 'Notifications'}
+              className="relative p-1.5 sm:p-2 rounded-full hover:bg-white/10 text-white/90 hover:text-white transition-colors cursor-pointer"
+            >
+              <Bell className="w-4 h-4 text-[#D4AF37]" />
+              {unreadRequestsCount > 0 && (
+                <span className="absolute top-0 right-0 w-4 h-4 rounded-full bg-amber-400 text-amber-950 font-black text-[9px] flex items-center justify-center animate-pulse">
+                  {unreadRequestsCount}
+                </span>
+              )}
+            </button>
+
             {/* Expand to full page link */}
             <Link
               href="/profile"
@@ -470,6 +506,38 @@ export default function ProfileDrawer({ isOpen, onClose }: ProfileDrawerProps) {
                   </div>
                   <div className="text-sm font-bold text-rose-700">{bridesCount}</div>
                 </div>
+              </div>
+            </div>
+
+            {/* NOTIFICATIONS & DATA REQUESTS BANNER CARD */}
+            <div
+              onClick={() => setShowNotificationDrawer(true)}
+              className="bg-gradient-to-r from-amber-50 to-orange-50/50 hover:from-amber-100/70 hover:to-orange-100/70 border-2 border-amber-300/80 rounded-2xl p-3.5 shadow-xs transition-all cursor-pointer flex items-center justify-between gap-3 group"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs relative group-hover:scale-105 transition-transform">
+                  <Bell className="w-5 h-5 text-white" />
+                  {unreadRequestsCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-600 text-white font-black text-[9px] flex items-center justify-center animate-bounce">
+                      {unreadRequestsCount}
+                    </span>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <h4 className="font-serif font-black text-xs sm:text-sm text-gray-900 truncate">
+                    {language === 'TA' ? 'தகவல் கோரிக்கைகள் & அறிவிப்புகள்' : 'Data Requests & Approvals'}
+                  </h4>
+                  <p className="text-[11px] text-amber-950 font-medium truncate">
+                    {unreadRequestsCount > 0
+                      ? (language === 'TA' ? `🔔 ${unreadRequestsCount} புதிய கோரிக்கை நிலுவையில் உள்ளது (ஒப்புதல் அளிக்க கிளிக் செய்யவும்)` : `${unreadRequestsCount} request(s) awaiting your approval`)
+                      : (language === 'TA' ? 'தொடர்பு எண் & புகைப்படம் கோரிக்கைகளை நிர்வகிக்கவும்' : 'Manage phone & photo access approvals')}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1 text-xs font-bold text-amber-900 shrink-0">
+                <span className="hidden sm:inline">{language === 'TA' ? 'பார்வையிடுக' : 'View'}</span>
+                <ChevronRight className="w-4 h-4 text-amber-700" />
               </div>
             </div>
 
@@ -887,6 +955,15 @@ export default function ProfileDrawer({ isOpen, onClose }: ProfileDrawerProps) {
           </div>
         </div>
       )}
+
+      {/* NOTIFICATIONS & DATA REQUESTS DRAWER */}
+      <NotificationDrawer
+        isOpen={showNotificationDrawer}
+        onClose={() => setShowNotificationDrawer(false)}
+        userMobile={userMobile}
+        language={language}
+        onActionComplete={() => checkUnreadRequests(userMobile)}
+      />
     </>
   );
 }

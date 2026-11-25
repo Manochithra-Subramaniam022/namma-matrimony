@@ -30,9 +30,12 @@ import {
   Trash2,
   XCircle,
   Download,
+  Unlock,
+  Send,
 } from 'lucide-react';
 import BrandLogo from '@/frontend/components/BrandLogo';
 import { BRANDING } from '@/constants/branding';
+import DataRequestModal from '@/frontend/components/profile/DataRequestModal';
 
 interface AkshayamProfileViewProps {
   profile: any;
@@ -52,6 +55,53 @@ export default function AkshayamProfileView({
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [docModal, setDocModal] = useState<{ url: string; title: string; isPdf: boolean } | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Data Access Request state
+  const [isDataRequestModalOpen, setIsDataRequestModalOpen] = useState(false);
+  const [requestModalType, setRequestModalType] = useState<'PHONE' | 'PHOTO' | 'BOTH'>('BOTH');
+  const [dataRequestStatus, setDataRequestStatus] = useState<'NONE' | 'PENDING' | 'ACCEPTED' | 'REJECTED'>('NONE');
+
+  // Check data request status
+  React.useEffect(() => {
+    const targetDisplay = profile?.registrationId || profile?.displayId || profile?.refId || '';
+    const targetId = profile?.id || '';
+
+    try {
+      const savedStr = typeof window !== 'undefined' ? localStorage.getItem('namma_sent_requests') : null;
+      if (savedStr) {
+        const list = JSON.parse(savedStr);
+        if (Array.isArray(list)) {
+          const match = list.find(
+            (r: any) =>
+              (targetId && r.targetProfileId === targetId) ||
+              (targetDisplay && r.targetDisplayId?.toLowerCase() === targetDisplay.toLowerCase())
+          );
+          if (match && match.status) {
+            setDataRequestStatus(match.status);
+          }
+        }
+      }
+
+      const userMob = typeof window !== 'undefined' ? localStorage.getItem('namma_user_mobile') : null;
+      if (userMob) {
+        fetch(`/api/requests/data?requesterMobile=${encodeURIComponent(userMob)}`)
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.success && Array.isArray(data.sentRequests)) {
+              const match = data.sentRequests.find(
+                (r: any) =>
+                  (targetId && r.targetProfileId === targetId) ||
+                  (targetDisplay && r.targetDisplayId?.toLowerCase() === targetDisplay.toLowerCase())
+              );
+              if (match && match.status) {
+                setDataRequestStatus(match.status);
+              }
+            }
+          })
+          .catch(() => {});
+      }
+    } catch {}
+  }, [profile]);
 
   // Helper to check if file is PDF
   const isPdfUrl = (url?: string | null): boolean => {
@@ -626,7 +676,8 @@ export default function AkshayamProfileView({
 
   // Contact & Privacy Details
   const rawMobile = profile?.userContact?.mobile || profile?.whatsappNumber || profile?.primaryMobile || profile?.profileCreatedBy || '';
-  const primaryMobile = isMobileHidden && rawMobile
+  const isAccessGranted = dataRequestStatus === 'ACCEPTED';
+  const primaryMobile = (isMobileHidden && !isAccessGranted) && rawMobile
     ? `${rawMobile.slice(0, 3)}****${rawMobile.slice(-2)} (பாதுகாக்கப்பட்டது)`
     : rawMobile || null;
 
@@ -761,6 +812,32 @@ export default function AkshayamProfileView({
                 <span>{language === 'TA' ? 'நீக்கு' : 'Delete'}</span>
               </button>
             )}
+
+            {/* Request Data Action Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setRequestModalType('BOTH');
+                setIsDataRequestModalOpen(true);
+              }}
+              className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-xs ${
+                dataRequestStatus === 'ACCEPTED'
+                  ? 'bg-emerald-600 text-white'
+                  : dataRequestStatus === 'PENDING'
+                  ? 'bg-amber-600 text-white'
+                  : 'bg-primary hover:bg-primary-light text-white'
+              }`}
+              title="Request Contact & Photo"
+            >
+              <Lock className="w-3.5 h-3.5 text-[#D4AF37]" />
+              <span>
+                {dataRequestStatus === 'ACCEPTED'
+                  ? (language === 'TA' ? 'அனுமதிக்கப்பட்டது' : 'Access Granted')
+                  : dataRequestStatus === 'PENDING'
+                  ? (language === 'TA' ? 'கோரப்பட்டுள்ளது' : 'Requested')
+                  : (language === 'TA' ? 'தகவல் கோரவும்' : 'Request Data')}
+              </span>
+            </button>
           </div>
         </div>
 
@@ -854,6 +931,33 @@ export default function AkshayamProfileView({
                   <span className="inline-block text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
                     🕒 பரிசீலனையில் உள்ளது (Pending)
                   </span>
+                )}
+              </div>
+
+              {/* Photo Access Request Button */}
+              <div className="mt-2 text-center no-print">
+                {dataRequestStatus === 'ACCEPTED' ? (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-100/80 border border-emerald-300 px-2.5 py-1 rounded-full shadow-2xs">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>{language === 'TA' ? 'புகைப்படம் திறக்கப்பட்டது' : 'Photo Unlocked'}</span>
+                  </span>
+                ) : dataRequestStatus === 'PENDING' ? (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-300 px-2.5 py-1 rounded-full shadow-2xs">
+                    <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+                    <span>{language === 'TA' ? 'கோரப்பட்டுள்ளது' : 'Requested'}</span>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRequestModalType('PHOTO');
+                      setIsDataRequestModalOpen(true);
+                    }}
+                    className="inline-flex items-center gap-1 text-[10px] font-bold text-primary hover:text-white bg-primary/10 hover:bg-primary border border-primary/20 px-2.5 py-1 rounded-full transition-all cursor-pointer shadow-2xs"
+                  >
+                    <User className="w-3 h-3 text-primary" />
+                    <span>{language === 'TA' ? '📷 புகைப்படம் கோரவும்' : 'Request Photo'}</span>
+                  </button>
                 )}
               </div>
             </div>
@@ -1706,6 +1810,52 @@ export default function AkshayamProfileView({
                     </p>
                   </div>
                 )}
+
+                {/* Request Contact Button if Hidden */}
+                {isMobileHidden && dataRequestStatus !== 'ACCEPTED' && (
+                  <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3 no-print">
+                    <div className="flex items-center gap-2">
+                      <Lock className="w-4 h-4 text-amber-700 shrink-0" />
+                      <div>
+                        <p className="text-xs font-bold text-amber-900">
+                          {language === 'TA' ? 'தொடர்பு எண் தனியுரிமைக்காக மறைக்கப்பட்டுள்ளது' : 'Contact number is protected for privacy'}
+                        </p>
+                        <p className="text-[10px] text-amber-700">
+                          {language === 'TA' ? 'குடும்பத்தினரின் ஒப்புதலுடன் முழு எண்ணைக் காண அனுமதி கோரவும்' : 'Request access from the family to unlock contact details'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRequestModalType('PHONE');
+                        setIsDataRequestModalOpen(true);
+                      }}
+                      className={`w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+                        dataRequestStatus === 'PENDING'
+                          ? 'bg-amber-600 text-white cursor-default'
+                          : 'bg-primary hover:bg-primary-light text-white'
+                      }`}
+                    >
+                      <Phone className="w-3.5 h-3.5" />
+                      <span>
+                        {dataRequestStatus === 'PENDING'
+                          ? (language === 'TA' ? 'அனுமதி கோரப்பட்டுள்ளது (Pending)' : 'Requested (Pending)')
+                          : (language === 'TA' ? 'தொடர்பு எண் கோரவும்' : 'Request Phone Number')}
+                      </span>
+                    </button>
+                  </div>
+                )}
+
+                {dataRequestStatus === 'ACCEPTED' && (
+                  <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl flex items-center gap-2 text-xs text-emerald-800 font-bold no-print">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>
+                      {language === 'TA' ? 'தகவல் அனுமதி வழங்கப்பட்டுள்ளது! தொடர்பு விவரங்கள் திறக்கப்பட்டுள்ளன.' : 'Access granted! Contact details unlocked.'}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1931,6 +2081,24 @@ export default function AkshayamProfileView({
           </div>
         </div>
       )}
+
+      {/* DATA ACCESS REQUEST MODAL */}
+      <DataRequestModal
+        isOpen={isDataRequestModalOpen}
+        onClose={() => setIsDataRequestModalOpen(false)}
+        targetProfile={{
+          id: profile?.id,
+          displayId: displayId,
+          name: fullName,
+          gender: profile?.gender,
+          mobile: rawMobile,
+        }}
+        initialType={requestModalType}
+        language={language}
+        onRequestSent={(newReq) => {
+          setDataRequestStatus(newReq.status);
+        }}
+      />
 
     </div>
   );

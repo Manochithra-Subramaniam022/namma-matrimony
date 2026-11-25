@@ -7,6 +7,8 @@ import { BRANDING } from '@/constants/branding';
 import BrandLogo from '../BrandLogo';
 import ProfileDrawer from '@/frontend/components/profile/ProfileDrawer';
 import AkshayamProfileView from '@/frontend/components/profile/AkshayamProfileView';
+import NotificationDrawer from '@/frontend/components/notifications/NotificationDrawer';
+import DataRequestModal from '@/frontend/components/profile/DataRequestModal';
 import {
   Sparkles,
   ShieldCheck,
@@ -35,14 +37,48 @@ import {
   EyeOff,
   ThumbsUp,
   Trash2,
+  Bell,
 } from 'lucide-react';
 import { rasiOptions, nakshatraByRasi, allNakshatras } from '@/frontend/utils/astrology';
 
 const AGE_OPTIONS = Array.from({ length: 55 - 18 + 1 }, (_, i) => 18 + i);
 
+const getDocumentViewerUrl = (url?: string | null): string => {
+  if (!url) return '';
+  if (url.startsWith('data:')) return url;
+  if (url.startsWith('/api/storage/document')) return url;
+  if (url.includes('/storage/v1/object/')) {
+    return `/api/storage/document?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+};
+
 export default function LandingPage() {
   const { language, toggleLanguage } = useLanguage();
   const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState(false);
+
+  // Data Access Request & Notification state
+  const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  const [dataRequestTarget, setDataRequestTarget] = useState<any | null>(null);
+  const [isDataRequestModalOpen, setIsDataRequestModalOpen] = useState(false);
+
+  // Check unread notifications count
+  const checkUnreadNotifications = async () => {
+    try {
+      const mob = typeof window !== 'undefined' ? localStorage.getItem('namma_user_mobile') : null;
+      if (!mob) return;
+      const res = await fetch(`/api/requests/data?mobile=${encodeURIComponent(mob)}`);
+      const data = await res.json();
+      if (data.success && typeof data.unreadCount === 'number') {
+        setUnreadNotificationsCount(data.unreadCount);
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    checkUnreadNotifications();
+  }, []);
 
   const [lookingFor, setLookingFor] = useState('BRIDE');
   const [ageFrom, setAgeFrom] = useState('21');
@@ -359,6 +395,21 @@ export default function LandingPage() {
             >
               <User className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" />
               <span>{language === 'TA' ? 'சுயவிவரக் கணக்கு' : 'My Profile'}</span>
+            </button>
+
+            {/* Notification Bell Trigger */}
+            <button
+              type="button"
+              onClick={() => setIsNotificationDrawerOpen(true)}
+              className="relative p-1.5 sm:p-2 rounded-full bg-primary/5 hover:bg-primary/10 border border-primary/20 text-primary transition-all shrink-0 cursor-pointer"
+              title={language === 'TA' ? 'அறிவிப்புகள் மற்றும் கோரிக்கைகள்' : 'Notifications & Requests'}
+            >
+              <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+              {unreadNotificationsCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-rose-600 text-white text-[9px] sm:text-[10px] font-black flex items-center justify-center animate-pulse shadow-xs">
+                  {unreadNotificationsCount}
+                </span>
+              )}
             </button>
 
             {/* Free Register CTA */}
@@ -1024,7 +1075,7 @@ export default function LandingPage() {
                         <div className="w-20 h-24 rounded-xl overflow-hidden border border-[#D4AF37]/50 shrink-0 bg-primary/5 relative">
                           {p.photoUrl ? (
                             <img
-                              src={p.photoUrl}
+                              src={getDocumentViewerUrl(p.photoUrl)}
                               alt={pName}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             />
@@ -1101,6 +1152,20 @@ export default function LandingPage() {
                         <User className="w-3.5 h-3.5 text-[#D4AF37]" />
                         <span>{language === 'TA' ? 'முழு பயோடேட்டா காண்க' : 'View Full Biodata'}</span>
                         <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+
+                      {/* Request Private Contact / Photo Action */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDataRequestTarget(p);
+                          setIsDataRequestModalOpen(true);
+                        }}
+                        className="w-full py-1.5 px-3 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                        title={language === 'TA' ? 'தொடர்பு எண் மற்றும் புகைப்படத்தை கோரவும்' : 'Request contact number and photo'}
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                        <span>{language === 'TA' ? '📱 தொடர்பு எண் / புகைப்படம் கோரவும்' : 'Request Phone / Photo'}</span>
                       </button>
 
                       {/* Quick Decision Action Buttons */}
@@ -1613,6 +1678,36 @@ export default function LandingPage() {
           </button>
         </div>
       )}
+
+      {/* 9. DATA ACCESS REQUEST MODAL */}
+      {dataRequestTarget && (
+        <DataRequestModal
+          isOpen={isDataRequestModalOpen}
+          onClose={() => {
+            setIsDataRequestModalOpen(false);
+            setDataRequestTarget(null);
+          }}
+          targetProfile={dataRequestTarget}
+          language={language}
+          onRequestSent={() => {
+            checkUnreadNotifications();
+          }}
+        />
+      )}
+
+      {/* 10. NOTIFICATION DRAWER (View Received and Sent Requests) */}
+      <NotificationDrawer
+        isOpen={isNotificationDrawerOpen}
+        onClose={() => {
+          setIsNotificationDrawerOpen(false);
+          checkUnreadNotifications();
+        }}
+        userMobile={typeof window !== 'undefined' ? localStorage.getItem('namma_user_mobile') || undefined : undefined}
+        language={language}
+        onActionComplete={() => {
+          checkUnreadNotifications();
+        }}
+      />
     </div>
   );
 }

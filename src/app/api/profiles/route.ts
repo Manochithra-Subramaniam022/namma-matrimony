@@ -267,8 +267,16 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Return the results slice up to limit
-    const finalResults = filtered.slice(0, limit);
+    // Return the results slice up to limit, wrapping storage URLs so private bucket photos load cleanly
+    const finalResults = filtered.slice(0, limit).map((p) => {
+      const photoUrl = p.photoUrl && p.photoUrl.includes('/storage/v1/object/')
+        ? `/api/storage/document?url=${encodeURIComponent(p.photoUrl)}`
+        : p.photoUrl;
+      return {
+        ...p,
+        photoUrl,
+      };
+    });
 
     return NextResponse.json({
       success: true,

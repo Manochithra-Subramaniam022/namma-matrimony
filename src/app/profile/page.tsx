@@ -29,9 +29,11 @@ import {
   PlusCircle,
   RotateCcw,
   Trash2,
-  CheckCircle
+  CheckCircle,
+  Bell,
 } from 'lucide-react';
 import Link from 'next/link';
+import NotificationDrawer from '@/frontend/components/notifications/NotificationDrawer';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,6 +55,22 @@ export default function ProfilePage() {
   const [candidateToDelete, setCandidateToDelete] = useState<any | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteSuccessMsg, setDeleteSuccessMsg] = useState('');
+
+  // Notifications & Data Request state
+  const [showNotificationDrawer, setShowNotificationDrawer] = useState(false);
+  const [unreadRequestsCount, setUnreadRequestsCount] = useState(0);
+
+  const checkUnreadRequests = async (mobile?: string) => {
+    const mob = mobile || userMobile;
+    if (!mob) return;
+    try {
+      const res = await fetch(`/api/requests/data?mobile=${encodeURIComponent(mob)}`);
+      const data = await res.json();
+      if (data.success && typeof data.unreadCount === 'number') {
+        setUnreadRequestsCount(data.unreadCount);
+      }
+    } catch {}
+  };
 
   // Delete candidate handler
   const handleConfirmDelete = async () => {
@@ -149,6 +167,7 @@ export default function ProfilePage() {
         if (effectiveMobile) {
           setUserMobile(effectiveMobile);
           localStorage.setItem('namma_user_mobile', effectiveMobile);
+          checkUnreadRequests(effectiveMobile);
 
           // Fetch fresh list from Supabase
           try {
@@ -413,6 +432,21 @@ export default function ProfilePage() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Notifications Button */}
+            <button
+              type="button"
+              onClick={() => setShowNotificationDrawer(true)}
+              className="relative p-2 rounded-full hover:bg-primary/5 border border-primary/20 text-primary transition-colors cursor-pointer"
+              title={language === 'TA' ? 'அறிவிப்புகள் & தகவல் கோரிக்கைகள்' : 'Notifications & Requests'}
+            >
+              <Bell className="w-4 h-4 text-[#D4AF37]" />
+              {unreadRequestsCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-400 text-amber-950 font-black text-[9px] flex items-center justify-center animate-pulse">
+                  {unreadRequestsCount}
+                </span>
+              )}
+            </button>
+
             {/* Language Switcher */}
             <button
               type="button"
@@ -496,6 +530,38 @@ export default function ProfilePage() {
 
       {/* 3. CANDIDATE REGISTRATIONS SECTION (N PATHIVUGAL) */}
       <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 pt-6 sm:pt-8 space-y-6">
+
+        {/* NOTIFICATIONS & DATA ACCESS REQUESTS CARD */}
+        <div
+          onClick={() => setShowNotificationDrawer(true)}
+          className="bg-gradient-to-r from-amber-50 via-orange-50/40 to-amber-50 hover:from-amber-100/70 hover:to-orange-100/70 border-2 border-amber-300 rounded-2xl p-4 sm:p-5 shadow-xs transition-all cursor-pointer flex items-center justify-between gap-4 group"
+        >
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md relative group-hover:scale-105 transition-transform">
+              <Bell className="w-6 h-6 text-white" />
+              {unreadRequestsCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-600 text-white font-black text-[10px] flex items-center justify-center animate-bounce">
+                  {unreadRequestsCount}
+                </span>
+              )}
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-serif font-black text-sm sm:text-base text-gray-900 truncate">
+                {language === 'TA' ? 'புதிய தகவல் கோரிக்கைகள் & அறிவிப்புகள் (Data Access Requests)' : 'Data Access Requests & Notifications'}
+              </h3>
+              <p className="text-xs text-amber-950 font-medium mt-0.5">
+                {unreadRequestsCount > 0
+                  ? (language === 'TA' ? `🔔 ${unreadRequestsCount} புதிய தகவல் கோரிக்கை நிலுவையில் உள்ளது (ஒப்புதல் அளிக்க கிளிக் செய்க)` : `${unreadRequestsCount} new request(s) awaiting your approval`)
+                  : (language === 'TA' ? 'பார்வையாளர்கள் உங்கள் தொடர்பு எண் மற்றும் புகைப்படத்தை அணுக கோரியுள்ள விவரங்களை இங்கே நிர்வகிக்கலாம்.' : 'Manage phone & photo access requests received from prospective matches.')}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500/15 text-amber-950 font-bold text-xs shrink-0 group-hover:bg-amber-500/25 transition-colors">
+            <span>{language === 'TA' ? 'பார்வையிடுக' : 'View Requests'}</span>
+            <ChevronRight className="w-4 h-4 text-amber-800" />
+          </div>
+        </div>
         
         {/* Section Header with Stats and Filters */}
         <div className="bg-white p-4 sm:p-6 rounded-2xl border border-primary/15 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -896,6 +962,15 @@ export default function ProfilePage() {
           <span>{deleteSuccessMsg}</span>
         </div>
       )}
+
+      {/* 9. NOTIFICATIONS & DATA REQUESTS DRAWER */}
+      <NotificationDrawer
+        isOpen={showNotificationDrawer}
+        onClose={() => setShowNotificationDrawer(false)}
+        userMobile={userMobile}
+        language={language}
+        onActionComplete={() => checkUnreadRequests(userMobile)}
+      />
     </div>
   );
 }
