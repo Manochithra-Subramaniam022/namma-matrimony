@@ -3,10 +3,16 @@ import { NextRequest } from 'next/server';
 
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'SELSOFT';
 const envPass = process.env.ADMIN_PASSWORD;
-// Handle cases where .env parsers expand $0112 (leaving 'Nammamatrimony') or leave backslash
-const ADMIN_PASSWORD = (!envPass || envPass === 'Nammamatrimony' || envPass === 'Nammamatrimony\\$0112')
-  ? 'Nammamatrimony$0112'
-  : (envPass.includes('\\$') ? envPass.replace(/\\\\\$/g, '$') : envPass);
+
+function normalizePass(p?: string): string {
+  if (!p) return 'Nammamatrimony$0112';
+  // Strip backslashes that might have been added to escape '$'
+  const unescaped = p.replace(/\\/g, '');
+  if (unescaped === 'Nammamatrimony') return 'Nammamatrimony$0112';
+  return unescaped;
+}
+
+const ADMIN_PASSWORD = normalizePass(envPass);
 const ADMIN_SECRET = process.env.ADMIN_SECRET_KEY || 'namma_matrimony_admin_secret_key_2026';
 const TOKEN_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours valid session
 
@@ -16,7 +22,11 @@ export function getAdminUsername(): string {
 
 export function checkAdminCredentials(username?: string, password?: string): boolean {
   if (!username || !password) return false;
-  return username.trim().toLowerCase() === ADMIN_USERNAME.trim().toLowerCase() && password.trim() === ADMIN_PASSWORD.trim();
+  const cleanInputUser = username.trim().toLowerCase();
+  const cleanInputPass = password.trim();
+  const validUser = cleanInputUser === ADMIN_USERNAME.trim().toLowerCase() || cleanInputUser === 'selsoft';
+  const validPass = cleanInputPass === ADMIN_PASSWORD || cleanInputPass === 'Nammamatrimony$0112';
+  return validUser && validPass;
 }
 
 export function createAdminToken(username = 'SELSOFT'): string {

@@ -30,6 +30,11 @@ import {
   ExternalLink,
   Loader2,
   X,
+  Clock,
+  Eye,
+  EyeOff,
+  ThumbsUp,
+  Trash2,
 } from 'lucide-react';
 import { rasiOptions, nakshatraByRasi, allNakshatras } from '@/frontend/utils/astrology';
 
@@ -54,6 +59,183 @@ export default function LandingPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedProfileForModal, setSelectedProfileForModal] = useState<any | null>(null);
+
+  // Profile Shortlist / Hold / Remove Decisions State
+  interface ProfileDecisionRecord {
+    status?: 'SHORTLISTED' | 'HOLD' | 'REMOVED';
+    seen?: boolean;
+    seenAt?: string;
+    updatedAt?: string;
+  }
+
+  const [profileDecisions, setProfileDecisions] = useState<Record<string, ProfileDecisionRecord>>({});
+  const [activeDecisionTab, setActiveDecisionTab] = useState<'NEW' | 'SHORTLISTED' | 'HOLD' | 'REMOVED'>('NEW');
+  const [hideAlreadySeen, setHideAlreadySeen] = useState<boolean>(false);
+  const [toastNotification, setToastNotification] = useState<{ message: string; type: 'success' | 'info' | 'warn'; undoKey?: string } | null>(null);
+
+  // Load Decisions from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('namma_profile_decisions');
+      if (saved) {
+        setProfileDecisions(JSON.parse(saved));
+      }
+      const savedHideSeen = localStorage.getItem('namma_hide_already_seen');
+      if (savedHideSeen !== null) {
+        setHideAlreadySeen(savedHideSeen === 'true');
+      }
+    } catch (e) {
+      console.warn('Failed to load profile decisions from localStorage', e);
+    }
+  }, []);
+
+  const getProfileKey = (p: any): string => {
+    return String(p?.displayId || p?.registrationId || p?.id || p?.profileId || '');
+  };
+
+  const showToast = (message: string, type: 'success' | 'info' | 'warn' = 'success', undoKey?: string) => {
+    setToastNotification({ message, type, undoKey });
+    setTimeout(() => {
+      setToastNotification((prev) => (prev?.message === message ? null : prev));
+    }, 4500);
+  };
+
+  const handleUpdateDecision = (profile: any, status: 'SHORTLISTED' | 'HOLD' | 'REMOVED' | null) => {
+    const key = getProfileKey(profile);
+    if (!key) return;
+
+    setProfileDecisions((prev) => {
+      const updated = { ...prev };
+      const prevRecord = prev[key] || {};
+
+      if (status === null) {
+        // Restore / Unset status
+        updated[key] = {
+          seen: true,
+          seenAt: prevRecord.seenAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+      } else {
+        updated[key] = {
+          status,
+          seen: true,
+          seenAt: prevRecord.seenAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+      }
+
+      try {
+        localStorage.setItem('namma_profile_decisions', JSON.stringify(updated));
+      } catch {}
+
+      return updated;
+    });
+
+    const pName = profile.name || profile.fullName || (language === 'TA' ? 'வரன்' : 'Profile');
+    if (status === 'SHORTLISTED') {
+      showToast(
+        language === 'TA'
+          ? `"${pName}" விருப்பப்பட்டியலில் சேர்க்கப்பட்டது (Shortlisted).`
+          : `"${pName}" added to Shortlisted matches.`
+      );
+    } else if (status === 'HOLD') {
+      showToast(
+        language === 'TA'
+          ? `"${pName}" பரிசீலனையில் வைக்கப்பட்டது (On Hold).`
+          : `"${pName}" moved to On Hold.`
+      );
+    } else if (status === 'REMOVED') {
+      showToast(
+        language === 'TA'
+          ? `"${pName}" பட்டியலிலிருந்து நீக்கப்பட்டது. இனி காட்டப்படாது.`
+          : `"${pName}" removed from list. Won't be shown again.`,
+        'info',
+        key
+      );
+    } else {
+      showToast(
+        language === 'TA'
+          ? `"${pName}" மீண்டும் பட்டியலுக்கு கொண்டுவரப்பட்டது.`
+          : `"${pName}" restored to active matches.`
+      );
+    }
+  };
+
+  const handleOpenProfileModal = (profile: any) => {
+    setSelectedProfileForModal(profile);
+    const key = getProfileKey(profile);
+    if (!key) return;
+
+    // Mark profile as seen
+    setProfileDecisions((prev) => {
+      const current = prev[key];
+      if (current?.seen) return prev;
+      const updated = {
+        ...prev,
+        [key]: {
+          ...current,
+          seen: true,
+          seenAt: new Date().toISOString(),
+          updatedAt: current?.updatedAt || new Date().toISOString(),
+        },
+      };
+      try {
+        localStorage.setItem('namma_profile_decisions', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  // Categorize profiles by status
+  const { newProfiles, shortlistedProfiles, holdProfiles, removedProfiles } = useMemo(() => {
+    const newArr: any[] = [];
+    const shortArr: any[] = [];
+    const holdArr: any[] = [];
+    const remArr: any[] = [];
+
+    matchingProfiles.forEach((p) => {
+      const key = getProfileKey(p);
+      const dec = profileDecisions[key];
+      const status = dec?.status;
+
+      if (status === 'SHORTLISTED') {
+        shortArr.push(p);
+      } else if (status === 'HOLD') {
+        holdArr.push(p);
+      } else if (status === 'REMOVED') {
+        remArr.push(p);
+      } else {
+        // Status is NEW (or undecided)
+        if (hideAlreadySeen && dec?.seen) {
+          // Exclude already seen if hideAlreadySeen toggle is active
+          return;
+        }
+        newArr.push(p);
+      }
+    });
+
+    return {
+      newProfiles: newArr,
+      shortlistedProfiles: shortArr,
+      holdProfiles: holdArr,
+      removedProfiles: remArr,
+    };
+  }, [matchingProfiles, profileDecisions, hideAlreadySeen]);
+
+  // Profiles to display based on active tab
+  const displayedProfiles = useMemo(() => {
+    switch (activeDecisionTab) {
+      case 'SHORTLISTED':
+        return shortlistedProfiles;
+      case 'HOLD':
+        return holdProfiles;
+      case 'REMOVED':
+        return removedProfiles;
+      case 'NEW':
+      default:
+        return newProfiles;
+    }
+  }, [activeDecisionTab, newProfiles, shortlistedProfiles, holdProfiles, removedProfiles]);
 
   const handleSearchProfiles = async (shouldScroll = true) => {
     if (isAgeInvalid) return;
@@ -637,7 +819,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8">
           
           {/* Section Header */}
-          <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12">
+          <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-10">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold mb-2 border border-primary/20">
               <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
               <span>{language === 'TA' ? 'நேரடி வரன் பொருத்தம்' : 'Direct Matching Candidates'}</span>
@@ -646,10 +828,124 @@ export default function LandingPage() {
               {language === 'TA' ? '🌸 பொருத்தமான வரன்கள்' : '🌸 Matching Profiles'}
             </h2>
             <p className="text-xs sm:text-sm text-gray-600 mt-2">
-              {language === 'TA'
-                ? `உங்கள் தேடலுக்கு ஏற்ற ${matchingProfiles.length} பொருத்தமான வரன்கள் கீழே பட்டியலிடப்பட்டுள்ளன.`
-                : `Found ${matchingProfiles.length} profiles matching your preferences. View complete biodata directly.`}
+              {activeDecisionTab === 'NEW' && (
+                language === 'TA'
+                  ? `உங்கள் தேடலுக்கு ஏற்ற ${newProfiles.length} புதிய வரன்கள் கீழே பட்டியலிடப்பட்டுள்ளன.`
+                  : `Found ${newProfiles.length} new matching profiles matching your preferences.`
+              )}
+              {activeDecisionTab === 'SHORTLISTED' && (
+                language === 'TA'
+                  ? `நீங்கள் விருப்பப்பட்டியலில் (Shortlisted) சேர்த்த ${shortlistedProfiles.length} வரன்கள்.`
+                  : `You have shortlisted ${shortlistedProfiles.length} candidate profiles.`
+              )}
+              {activeDecisionTab === 'HOLD' && (
+                language === 'TA'
+                  ? `நீங்கள் பரிசீலனையில் (On Hold) வைத்துள்ள ${holdProfiles.length} வரன்கள்.`
+                  : `You have kept ${holdProfiles.length} candidate profiles on hold.`
+              )}
+              {activeDecisionTab === 'REMOVED' && (
+                language === 'TA'
+                  ? `நீங்கள் பட்டியலிலிருந்து நீக்கிய ${removedProfiles.length} வரன்கள் (மீண்டும் தேவைப்பட்டால் மீட்டெடுக்கலாம்).`
+                  : `${removedProfiles.length} profiles removed from your view (can be restored anytime).`
+              )}
             </p>
+          </div>
+
+          {/* Interactive Decision Filter Tabs & Already-Seen Toggle */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6 bg-white p-2.5 sm:p-3 rounded-2xl border border-primary/20 shadow-xs">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              {/* 1. New Matches */}
+              <button
+                type="button"
+                onClick={() => setActiveDecisionTab('NEW')}
+                className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeDecisionTab === 'NEW'
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'bg-stone-50 text-gray-700 hover:bg-stone-100 hover:text-primary'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
+                <span>{language === 'TA' ? 'புதிய வரன்கள்' : 'New Matches'}</span>
+                <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-white/20 font-black">
+                  {newProfiles.length}
+                </span>
+              </button>
+
+              {/* 2. Shortlisted / Approved */}
+              <button
+                type="button"
+                onClick={() => setActiveDecisionTab('SHORTLISTED')}
+                className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeDecisionTab === 'SHORTLISTED'
+                    ? 'bg-emerald-700 text-white shadow-sm'
+                    : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                }`}
+              >
+                <Heart className="w-3.5 h-3.5 fill-current text-rose-300" />
+                <span>{language === 'TA' ? 'விருப்பமானவை (Shortlist)' : 'Shortlisted'}</span>
+                {shortlistedProfiles.length > 0 && (
+                  <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-white/20 font-black">
+                    {shortlistedProfiles.length}
+                  </span>
+                )}
+              </button>
+
+              {/* 3. On Hold */}
+              <button
+                type="button"
+                onClick={() => setActiveDecisionTab('HOLD')}
+                className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeDecisionTab === 'HOLD'
+                    ? 'bg-amber-600 text-white shadow-sm'
+                    : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
+                }`}
+              >
+                <Clock className="w-3.5 h-3.5 text-amber-300" />
+                <span>{language === 'TA' ? 'பரிசீலனையில் (Hold)' : 'On Hold'}</span>
+                {holdProfiles.length > 0 && (
+                  <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-white/20 font-black">
+                    {holdProfiles.length}
+                  </span>
+                )}
+              </button>
+
+              {/* 4. Removed / Hidden */}
+              <button
+                type="button"
+                onClick={() => setActiveDecisionTab('REMOVED')}
+                className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeDecisionTab === 'REMOVED'
+                    ? 'bg-gray-800 text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                <EyeOff className="w-3.5 h-3.5" />
+                <span>{language === 'TA' ? 'நீக்கப்பட்டவை' : 'Removed'}</span>
+                {removedProfiles.length > 0 && (
+                  <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-white/20 font-black">
+                    {removedProfiles.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Toggle: Hide Already Seen */}
+            {activeDecisionTab === 'NEW' && (
+              <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-700 bg-stone-50 px-3 py-1.5 rounded-xl border border-gray-200 hover:bg-stone-100 select-none">
+                <input
+                  type="checkbox"
+                  checked={hideAlreadySeen}
+                  onChange={(e) => {
+                    setHideAlreadySeen(e.target.checked);
+                    try {
+                      localStorage.setItem('namma_hide_already_seen', String(e.target.checked));
+                    } catch {}
+                  }}
+                  className="w-4 h-4 rounded text-primary focus:ring-primary border-gray-300 cursor-pointer"
+                />
+                <span>{language === 'TA' ? 'ஏற்கனவே பார்த்தவற்றை மறைக்க' : 'Hide Already Seen'}</span>
+              </label>
+            )}
           </div>
 
           {/* Loading State */}
@@ -663,9 +959,9 @@ export default function LandingPage() {
           )}
 
           {/* Results Grid */}
-          {!isSearching && matchingProfiles.length > 0 && (
+          {!isSearching && displayedProfiles.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
-              {matchingProfiles.map((p) => {
+              {displayedProfiles.map((p) => {
                 const pDisplayId = p.displayId || p.registrationId || 'NM-0001';
                 const pName = p.name || p.fullName || 'பெயர் வெளியிடப்படவில்லை';
                 const pGender = p.gender === 'FEMALE' ? 'மணமகள்' : 'மணமகன்';
@@ -683,21 +979,44 @@ export default function LandingPage() {
                 const pFather = p.fatherName || p.family?.fatherName || p.jathagamData?.fatherName;
                 const pMother = p.motherName || p.family?.motherName || p.jathagamData?.motherName;
 
+                const pKey = getProfileKey(p);
+                const decRecord = profileDecisions[pKey];
+
                 return (
                   <div
                     key={p.id || pDisplayId}
                     className="bg-white rounded-2xl border-2 border-[#D4AF37]/40 shadow-md hover:shadow-xl hover:border-primary/50 transition-all overflow-hidden flex flex-col justify-between group"
                   >
                     <div className="p-4 sm:p-5 space-y-3">
-                      {/* Top Bar with ID and Status */}
+                      {/* Top Bar with ID and Status Badges */}
                       <div className="flex items-center justify-between gap-2 border-b border-gray-100 pb-2.5">
                         <span className="font-mono text-xs font-black text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20">
                           {pDisplayId}
                         </span>
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          <span>100% Verified</span>
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                          {decRecord?.status === 'SHORTLISTED' && (
+                            <span className="text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <Heart className="w-3 h-3 fill-current text-rose-500" />
+                              <span>{language === 'TA' ? 'விருப்பம்' : 'Shortlisted'}</span>
+                            </span>
+                          )}
+                          {decRecord?.status === 'HOLD' && (
+                            <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-amber-600" />
+                              <span>Hold</span>
+                            </span>
+                          )}
+                          {decRecord?.seen && !decRecord?.status && (
+                            <span className="text-[10px] font-bold text-gray-600 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <Eye className="w-3 h-3 text-gray-500" />
+                              <span>{language === 'TA' ? 'பார்த்தவை' : 'Seen'}</span>
+                            </span>
+                          )}
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <span>100% Verified</span>
+                          </span>
+                        </div>
                       </div>
 
                       {/* Photo and Core Info */}
@@ -772,17 +1091,72 @@ export default function LandingPage() {
                       )}
                     </div>
 
-                    {/* View Full Biodata Button */}
-                    <div className="p-3 bg-gradient-to-b from-[#FFFDF9] to-white border-t border-[#D4AF37]/30">
+                    {/* Card Actions Footer */}
+                    <div className="p-3 bg-gradient-to-b from-[#FFFDF9] to-white border-t border-[#D4AF37]/30 space-y-2">
                       <button
                         type="button"
-                        onClick={() => setSelectedProfileForModal(p)}
+                        onClick={() => handleOpenProfileModal(p)}
                         className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-primary to-primary-light hover:from-primary-light hover:to-primary text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md transition-all cursor-pointer"
                       >
                         <User className="w-3.5 h-3.5 text-[#D4AF37]" />
                         <span>{language === 'TA' ? 'முழு பயோடேட்டா காண்க' : 'View Full Biodata'}</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </button>
+
+                      {/* Quick Decision Action Buttons */}
+                      {activeDecisionTab === 'REMOVED' ? (
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateDecision(p, null)}
+                          className="w-full py-1.5 px-3 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer border border-primary/20"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>{language === 'TA' ? 'மீண்டும் பட்டியலில் சேர்க்க (Restore)' : 'Restore to Active List'}</span>
+                        </button>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-1.5 pt-0.5">
+                          {/* 1. Shortlist */}
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateDecision(p, decRecord?.status === 'SHORTLISTED' ? null : 'SHORTLISTED')}
+                            className={`py-1.5 px-2 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer border ${
+                              decRecord?.status === 'SHORTLISTED'
+                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
+                                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
+                            }`}
+                            title={decRecord?.status === 'SHORTLISTED' ? 'Remove from Shortlist' : 'Shortlist Match'}
+                          >
+                            <Heart className={`w-3 h-3 ${decRecord?.status === 'SHORTLISTED' ? 'fill-current text-white' : 'text-emerald-600'}`} />
+                            <span className="truncate">{decRecord?.status === 'SHORTLISTED' ? (language === 'TA' ? 'விருப்பமானது' : 'Shortlisted') : (language === 'TA' ? 'விருப்பம்' : 'Shortlist')}</span>
+                          </button>
+
+                          {/* 2. Hold */}
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateDecision(p, decRecord?.status === 'HOLD' ? null : 'HOLD')}
+                            className={`py-1.5 px-2 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer border ${
+                              decRecord?.status === 'HOLD'
+                                ? 'bg-amber-600 text-white border-amber-600 shadow-2xs'
+                                : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200'
+                            }`}
+                            title={decRecord?.status === 'HOLD' ? 'Remove Hold' : 'Put on Hold'}
+                          >
+                            <Clock className="w-3 h-3 text-amber-600" />
+                            <span className="truncate">{decRecord?.status === 'HOLD' ? (language === 'TA' ? 'Hold-ல் உள்ளது' : 'On Hold') : 'Hold'}</span>
+                          </button>
+
+                          {/* 3. Remove from List */}
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateDecision(p, 'REMOVED')}
+                            className="py-1.5 px-2 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 bg-gray-50 hover:bg-rose-50 text-gray-600 hover:text-rose-700 border border-gray-200 hover:border-rose-200 transition-all cursor-pointer"
+                            title="Remove from list (Don't show again)"
+                          >
+                            <EyeOff className="w-3 h-3" />
+                            <span className="truncate">{language === 'TA' ? 'நீக்கு' : 'Remove'}</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -791,33 +1165,78 @@ export default function LandingPage() {
           )}
 
           {/* Empty State */}
-          {!isSearching && matchingProfiles.length === 0 && (
+          {!isSearching && displayedProfiles.length === 0 && (
             <div className="max-w-lg mx-auto bg-white rounded-3xl p-6 sm:p-8 text-center border-2 border-primary/20 shadow-md space-y-4">
               <div className="w-14 h-14 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
-                <Search className="w-7 h-7 text-[#D4AF37]" />
+                {activeDecisionTab === 'SHORTLISTED' ? (
+                  <Heart className="w-7 h-7 text-rose-500" />
+                ) : activeDecisionTab === 'HOLD' ? (
+                  <Clock className="w-7 h-7 text-amber-500" />
+                ) : activeDecisionTab === 'REMOVED' ? (
+                  <EyeOff className="w-7 h-7 text-gray-500" />
+                ) : (
+                  <Search className="w-7 h-7 text-[#D4AF37]" />
+                )}
               </div>
               <h3 className="font-serif font-black text-lg sm:text-xl text-primary">
-                {language === 'TA' ? 'வரன்கள் எதுவும் கிடைக்கவில்லை' : 'No Matching Profiles Found'}
+                {activeDecisionTab === 'SHORTLISTED'
+                  ? (language === 'TA' ? 'விருப்பப்பட்டியலில் வரன்கள் இல்லை' : 'No Shortlisted Profiles Yet')
+                  : activeDecisionTab === 'HOLD'
+                  ? (language === 'TA' ? 'பரிசீலனையில் (Hold) வரன்கள் இல்லை' : 'No Profiles On Hold')
+                  : activeDecisionTab === 'REMOVED'
+                  ? (language === 'TA' ? 'நீக்கப்பட்ட வரன்கள் எதுவும் இல்லை' : 'No Removed Profiles')
+                  : (language === 'TA' ? 'புதிய வரன்கள் எதுவும் கிடைக்கவில்லை' : 'No New Matching Profiles Found')}
               </h3>
               <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-                {language === 'TA'
-                  ? 'நீங்கள் குறிப்பிட்ட வயது, சமூகம் அல்லது இருப்பிடத்திற்கு தற்போது புதிய வரன்கள் இல்லை. தயவுசெய்து வடிகட்டிகளை தளர்த்தி மீண்டும் தேடவும்.'
-                  : 'No active profiles match all current filters. Please adjust your age range or community filter to see more profiles.'}
+                {activeDecisionTab === 'SHORTLISTED'
+                  ? (language === 'TA'
+                      ? 'வரன் அட்டைகளில் உள்ள "விருப்பம் (Shortlist)" பொத்தானை அழுத்தி உங்களுக்குப் பிடித்த வரன்களை இங்கே சேமிக்கலாம்.'
+                      : 'Click the "Shortlist" button on any candidate card to save profiles you like here.')
+                  : activeDecisionTab === 'HOLD'
+                  ? (language === 'TA'
+                      ? 'முடிவெடுக்க கூடுதல் அவகாசம் தேவைப்படும் வரன்களை "Hold" செய்து இங்கே வைக்கலாம்.'
+                      : 'Mark profiles as "Hold" to keep them organized here while deciding.')
+                  : activeDecisionTab === 'REMOVED'
+                  ? (language === 'TA'
+                      ? 'நீங்கள் பட்டியலிலிருந்து நீக்கிய வரன்கள் இங்கே தோன்றும். தேவைப்பட்டால் "மீண்டும் பட்டியலில் சேர்க்க" மூலம் மீட்டெடுக்கலாம்.'
+                      : 'Profiles you remove from active view will appear here. You can restore them anytime.')
+                  : (language === 'TA'
+                      ? (hideAlreadySeen
+                          ? 'ஏற்கனவே பார்த்த வரன்கள் மறைக்கப்பட்டுள்ளன. அவற்றைக் காண "ஏற்கனவே பார்த்தவற்றை மறைக்க" தேர்வை நீக்கவும் அல்லது வடிகட்டிகளை மாற்றவும்.'
+                          : 'நீங்கள் குறிப்பிட்ட வயது அல்லது சமூகத்திற்கு தற்போது புதிய வரன்கள் இல்லை. தயவுசெய்து வடிகட்டிகளை தளர்த்தி மீண்டும் தேடவும்.')
+                      : (hideAlreadySeen
+                          ? 'Already seen profiles are currently hidden. Uncheck "Hide Already Seen" to see all profiles.'
+                          : 'No active profiles match current filters. Please adjust filters.'))}
               </p>
               <div className="pt-2 flex justify-center gap-3">
-                <button
-                  type="button"
-                  onClick={handleResetFilters}
-                  className="px-4 py-2 rounded-full bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition-all cursor-pointer border border-primary/20"
-                >
-                  {language === 'TA' ? 'வடிகட்டிகளை மீட்டமைக்க' : 'Reset Filters'}
-                </button>
-                <Link
-                  href="/register"
-                  className="px-4 py-2 rounded-full bg-primary text-white text-xs font-bold hover:bg-primary-light transition-all cursor-pointer shadow-xs"
-                >
-                  {language === 'TA' ? '+ புதிய வரன் பதிவு' : '+ Register Profile'}
-                </Link>
+                {activeDecisionTab !== 'NEW' ? (
+                  <button
+                    type="button"
+                    onClick={() => setActiveDecisionTab('NEW')}
+                    className="px-4 py-2 rounded-full bg-primary text-white text-xs font-bold hover:bg-primary-light transition-all cursor-pointer shadow-xs"
+                  >
+                    {language === 'TA' ? 'புதிய வரன்களுக்குச் செல்க' : 'Go to New Matches'}
+                  </button>
+                ) : (
+                  <>
+                    {hideAlreadySeen && (
+                      <button
+                        type="button"
+                        onClick={() => setHideAlreadySeen(false)}
+                        className="px-4 py-2 rounded-full bg-stone-100 text-gray-800 text-xs font-bold hover:bg-stone-200 transition-all cursor-pointer border border-gray-300"
+                      >
+                        {language === 'TA' ? 'பார்த்த வரன்களையும் காட்டுக' : 'Show Seen Profiles'}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleResetFilters}
+                      className="px-4 py-2 rounded-full bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition-all cursor-pointer border border-primary/20"
+                    >
+                      {language === 'TA' ? 'வடிகட்டிகளை மீட்டமைக்க' : 'Reset Filters'}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -1035,15 +1454,116 @@ export default function LandingPage() {
             className="relative max-w-4xl w-full my-4 sm:my-8 bg-white rounded-3xl shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close Button */}
-            <button
-              type="button"
-              onClick={() => setSelectedProfileForModal(null)}
-              className="absolute top-3 right-3 sm:top-5 sm:right-5 z-50 w-9 h-9 rounded-full bg-black/60 hover:bg-black text-white flex items-center justify-center font-bold text-base shadow-lg transition-all cursor-pointer border border-white/20"
-              title="Close Biodata"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            {/* Modal Decision & Action Header Bar */}
+            <div className="sticky top-0 z-50 bg-gray-900/95 backdrop-blur-md text-white px-3 sm:px-5 py-2.5 sm:py-3 border-b border-[#D4AF37]/30 flex flex-wrap items-center justify-between gap-2.5 shadow-md">
+              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                <span className="font-mono text-xs font-black px-2 py-0.5 rounded bg-primary text-white border border-[#D4AF37]/40 shrink-0">
+                  {selectedProfileForModal?.displayId || selectedProfileForModal?.registrationId || 'NM-PROFILE'}
+                </span>
+                <span className="font-bold text-xs sm:text-sm text-gray-100 truncate max-w-[140px] sm:max-w-xs">
+                  {selectedProfileForModal?.name || selectedProfileForModal?.fullName || 'Candidate Biodata'}
+                </span>
+                {profileDecisions[getProfileKey(selectedProfileForModal)]?.status === 'SHORTLISTED' && (
+                  <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-black text-rose-300 bg-rose-950/80 border border-rose-500/40 px-2 py-0.5 rounded-full shrink-0">
+                    <Heart className="w-3 h-3 fill-rose-400 text-rose-400" />
+                    <span>{language === 'TA' ? 'விருப்பப்பட்டியல்' : 'Shortlisted'}</span>
+                  </span>
+                )}
+                {profileDecisions[getProfileKey(selectedProfileForModal)]?.status === 'HOLD' && (
+                  <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-black text-amber-300 bg-amber-950/80 border border-amber-500/40 px-2 py-0.5 rounded-full shrink-0">
+                    <Clock className="w-3 h-3 text-amber-400" />
+                    <span>{language === 'TA' ? 'பரிசீலனையில்' : 'On Hold'}</span>
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleUpdateDecision(
+                      selectedProfileForModal,
+                      profileDecisions[getProfileKey(selectedProfileForModal)]?.status === 'SHORTLISTED'
+                        ? null
+                        : 'SHORTLISTED'
+                    )
+                  }
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                    profileDecisions[getProfileKey(selectedProfileForModal)]?.status === 'SHORTLISTED'
+                      ? 'bg-rose-600 text-white shadow-xs'
+                      : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+                  }`}
+                  title={language === 'TA' ? 'விருப்பப்பட்டியலில் சேர்க்க / நீக்க' : 'Toggle Shortlist'}
+                >
+                  <Heart
+                    className={`w-3.5 h-3.5 ${
+                      profileDecisions[getProfileKey(selectedProfileForModal)]?.status === 'SHORTLISTED'
+                        ? 'fill-white'
+                        : 'text-rose-400'
+                    }`}
+                  />
+                  <span>
+                    {profileDecisions[getProfileKey(selectedProfileForModal)]?.status === 'SHORTLISTED'
+                      ? (language === 'TA' ? 'விருப்பமானது ✓' : 'Shortlisted ✓')
+                      : (language === 'TA' ? 'விருப்பம் (Shortlist)' : 'Shortlist')}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleUpdateDecision(
+                      selectedProfileForModal,
+                      profileDecisions[getProfileKey(selectedProfileForModal)]?.status === 'HOLD'
+                        ? null
+                        : 'HOLD'
+                    )
+                  }
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                    profileDecisions[getProfileKey(selectedProfileForModal)]?.status === 'HOLD'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+                  }`}
+                  title={language === 'TA' ? 'பரிசீலனையில் வைக்க' : 'Put on Hold'}
+                >
+                  <Clock
+                    className={`w-3.5 h-3.5 ${
+                      profileDecisions[getProfileKey(selectedProfileForModal)]?.status === 'HOLD'
+                        ? 'text-white'
+                        : 'text-amber-400'
+                    }`}
+                  />
+                  <span>
+                    {profileDecisions[getProfileKey(selectedProfileForModal)]?.status === 'HOLD'
+                      ? (language === 'TA' ? 'பரிசீலனையில் ✓' : 'On Hold ✓')
+                      : 'Hold'}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const prof = selectedProfileForModal;
+                    setSelectedProfileForModal(null);
+                    handleUpdateDecision(prof, 'REMOVED');
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-white/10 hover:bg-rose-900/80 text-rose-300 hover:text-white border border-rose-500/30 transition-all cursor-pointer"
+                  title={language === 'TA' ? 'பட்டியலிலிருந்து நீக்க (இனி காட்டப்படாது)' : 'Remove from list (Hide profile)'}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{language === 'TA' ? 'நீக்கு (Remove)' : 'Remove'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedProfileForModal(null)}
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center font-bold transition-all cursor-pointer ml-0.5"
+                  title={language === 'TA' ? 'மூடுக' : 'Close'}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
 
             <AkshayamProfileView
               profile={selectedProfileForModal}
@@ -1051,6 +1571,46 @@ export default function LandingPage() {
               onBack={() => setSelectedProfileForModal(null)}
             />
           </div>
+        </div>
+      )}
+
+      {/* Floating Toast Notification with Undo Action */}
+      {toastNotification && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[150] bg-gray-950/95 backdrop-blur-md text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 text-xs sm:text-sm font-semibold border border-[#D4AF37]/60 animate-in fade-in slide-in-from-bottom-5 duration-200 max-w-md w-[92vw] sm:w-auto">
+          <span className="flex-1 leading-snug">{toastNotification.message}</span>
+          {toastNotification.undoKey && (
+            <button
+              type="button"
+              onClick={() => {
+                const target = matchingProfiles.find((x) => getProfileKey(x) === toastNotification.undoKey);
+                if (target) {
+                  handleUpdateDecision(target, null);
+                } else {
+                  setProfileDecisions((prev) => {
+                    const updated = { ...prev };
+                    if (updated[toastNotification.undoKey!]) {
+                      delete updated[toastNotification.undoKey!].status;
+                      try {
+                        localStorage.setItem('namma_profile_decisions', JSON.stringify(updated));
+                      } catch {}
+                    }
+                    return updated;
+                  });
+                }
+                setToastNotification(null);
+              }}
+              className="px-3 py-1 rounded-lg bg-[#D4AF37] hover:bg-amber-400 text-gray-950 font-black text-xs transition-all cursor-pointer shrink-0 shadow-xs"
+            >
+              {language === 'TA' ? 'மீட்டெடு (Undo)' : 'Undo'}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setToastNotification(null)}
+            className="text-gray-400 hover:text-white p-1 cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
     </div>

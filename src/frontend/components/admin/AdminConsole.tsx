@@ -676,7 +676,7 @@ export default function AdminConsole() {
                   : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
               }`}
             >
-              {language === 'TA' ? 'மொத்தம்' : 'Total'}: <strong className="font-mono font-black">{stats.total}</strong>
+              {language === 'TA' ? 'மொத்தம்' : 'Total'}: <strong className="font-mono font-black">{isLoading ? '...' : stats.total}</strong>
             </button>
 
             <button
@@ -690,7 +690,7 @@ export default function AdminConsole() {
             >
               <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
               <span>{language === 'TA' ? 'நிலுவை' : 'Pending'}:</span>
-              <strong className="font-mono font-black">{stats.pending}</strong>
+              <strong className="font-mono font-black">{isLoading ? '...' : stats.pending}</strong>
             </button>
 
             <button
@@ -702,7 +702,7 @@ export default function AdminConsole() {
                   : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
               }`}
             >
-              {language === 'TA' ? 'ஒப்புதல்' : 'Approved'}: <strong className="font-mono font-black">{stats.approved}</strong>
+              {language === 'TA' ? 'ஒப்புதல்' : 'Approved'}: <strong className="font-mono font-black">{isLoading ? '...' : stats.approved}</strong>
             </button>
 
             <button
@@ -714,7 +714,7 @@ export default function AdminConsole() {
                   : 'bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100'
               }`}
             >
-              {language === 'TA' ? 'நிராகரிப்பு' : 'Denied'}: <strong className="font-mono font-black">{stats.rejected}</strong>
+              {language === 'TA' ? 'நிராகரிப்பு' : 'Denied'}: <strong className="font-mono font-black">{isLoading ? '...' : stats.rejected}</strong>
             </button>
           </div>
         </div>
@@ -841,10 +841,13 @@ export default function AdminConsole() {
 
         {/* 4. PROFILES LIST */}
         {isLoading ? (
-          <div className="bg-white rounded-3xl border border-primary/15 p-12 text-center space-y-3">
-            <BrandLogo size="md" />
-            <p className="text-xs sm:text-sm font-bold text-primary animate-pulse">
-              {language === 'TA' ? 'வரன் பதிவுகள் ஏற்றப்படுகின்றன...' : 'Loading Candidate Registrations...'}
+          <div className="bg-white rounded-3xl border border-primary/15 p-12 text-center space-y-3 shadow-xs">
+            <RefreshCw className="w-8 h-8 text-primary animate-spin mx-auto" />
+            <h3 className="text-sm sm:text-base font-bold text-primary font-serif">
+              {language === 'TA' ? 'வரன் பதிவுகள் தரவுத்தளத்திலிருந்து ஏற்றப்படுகின்றன...' : 'Loading Candidate Registrations...'}
+            </h3>
+            <p className="text-xs text-gray-400">
+              {language === 'TA' ? 'தயவுசெய்து சில வினாடிகள் காத்திருக்கவும்' : 'Please wait a few seconds'}
             </p>
           </div>
         ) : errorMsg ? (
