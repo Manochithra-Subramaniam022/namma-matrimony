@@ -98,9 +98,9 @@ export default function AkshayamProfileView({
               }
             }
           })
-          .catch(() => {});
+          .catch(() => { });
       }
-    } catch {}
+    } catch { }
   }, [profile]);
 
   // Helper to check if file is PDF
@@ -820,13 +820,12 @@ export default function AkshayamProfileView({
                 setRequestModalType('BOTH');
                 setIsDataRequestModalOpen(true);
               }}
-              className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-xs ${
-                dataRequestStatus === 'ACCEPTED'
-                  ? 'bg-emerald-600 text-white'
-                  : dataRequestStatus === 'PENDING'
+              className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-xs ${dataRequestStatus === 'ACCEPTED'
+                ? 'bg-emerald-600 text-white'
+                : dataRequestStatus === 'PENDING'
                   ? 'bg-amber-600 text-white'
                   : 'bg-primary hover:bg-primary-light text-white'
-              }`}
+                }`}
               title="Request Contact & Photo"
             >
               <Lock className="w-3.5 h-3.5 text-[#D4AF37]" />
@@ -834,8 +833,8 @@ export default function AkshayamProfileView({
                 {dataRequestStatus === 'ACCEPTED'
                   ? (language === 'TA' ? 'அனுமதிக்கப்பட்டது' : 'Access Granted')
                   : dataRequestStatus === 'PENDING'
-                  ? (language === 'TA' ? 'கோரப்பட்டுள்ளது' : 'Requested')
-                  : (language === 'TA' ? 'தகவல் கோரவும்' : 'Request Data')}
+                    ? (language === 'TA' ? 'கோரப்பட்டுள்ளது' : 'Requested')
+                    : (language === 'TA' ? 'தகவல் கோரவும்' : 'Request Data')}
               </span>
             </button>
           </div>
@@ -1842,11 +1841,10 @@ export default function AkshayamProfileView({
                         setRequestModalType('PHONE');
                         setIsDataRequestModalOpen(true);
                       }}
-                      className={`w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs ${
-                        dataRequestStatus === 'PENDING'
-                          ? 'bg-amber-600 text-white cursor-default'
-                          : 'bg-primary hover:bg-primary-light text-white'
-                      }`}
+                      className={`w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs ${dataRequestStatus === 'PENDING'
+                        ? 'bg-amber-600 text-white cursor-default'
+                        : 'bg-primary hover:bg-primary-light text-white'
+                        }`}
                     >
                       <Phone className="w-3.5 h-3.5" />
                       <span>
