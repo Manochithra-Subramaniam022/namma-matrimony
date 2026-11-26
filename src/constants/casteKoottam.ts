@@ -216,6 +216,26 @@ export const DEFAULT_CASTE_KOOTTAM_MAP: CasteKoottamConfig = {
     "Amman Kulam (அம்மன் குலம்)",
     "Ayyanar Kulam (அய்யனார் குலம்)",
     "Kulam / Pirivu (குலம் / பிரிவு)"
+  ],
+
+  "No Caste": [
+    "Discuss (நேரில் பேசிக்கொள்ளலாம்)",
+    "No Kulam / Not Applicable (குலம் இல்லை / பொருந்தாது)"
+  ],
+
+  "Caste No Bar": [
+    "Discuss (நேரில் பேசிக்கொள்ளலாம்)",
+    "No Kulam / Not Applicable (குலம் இல்லை / பொருந்தாது)"
+  ],
+
+  "Inter-Caste": [
+    "Discuss (நேரில் பேசிக்கொள்ளலாம்)",
+    "No Kulam / Not Applicable (குலம் இல்லை / பொருந்தாது)"
+  ],
+
+  "Other": [
+    "Discuss (நேரில் பேசிக்கொள்ளலாம்)",
+    "No Kulam / Not Applicable (குலம் இல்லை / பொருந்தாது)"
   ]
 };
 
@@ -228,6 +248,14 @@ export function getKoottamFieldLabel(caste: string, language: 'TA' | 'EN' = 'TA'
   isGotram: boolean;
 } {
   const c = (caste || '').toLowerCase();
+
+  if (c.includes('no caste') || c.includes('சாதி இல்லை') || c.includes('caste no bar') || c.includes('inter-caste')) {
+    return {
+      title: language === 'TA' ? 'கூட்டம் / குலம் (Kulam / Koottam)' : 'Kulam / Koottam',
+      placeholder: language === 'TA' ? 'தேர்வு செய்க அல்லது நேரில் பேசிக்கொள்ளலாம்' : 'Select or Discuss',
+      isGotram: false
+    };
+  }
 
   if (c.includes('brahmin') || c.includes('பிராமணர்')) {
     return {
@@ -297,6 +325,8 @@ export function getKoottamsForCaste(
 
   // Fallback generic
   return [
+    "Discuss (நேரில் பேசிக்கொள்ளலாம்)",
+    "No Kulam / Not Applicable (குலம் இல்லை)",
     "Default / Family Clan",
     "Agasthya Gotram",
     "Siva Gotram",

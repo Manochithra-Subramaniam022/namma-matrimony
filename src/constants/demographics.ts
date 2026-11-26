@@ -33,6 +33,7 @@ export const CASTE_OPTIONS: DropdownOption[] = [
   { value: "Devendra Kula Vellalar", labelEn: "Devendra Kula Vellalar", labelTa: "தேவேந்திர குல வேளாளர்" },
   { value: "Sourashtra", labelEn: "Sourashtra", labelTa: "சௌராஷ்ட்ரா" },
   { value: "Sengunthar / Kaikolar", labelEn: "Sengunthar / Kaikolar", labelTa: "செங்குந்தர் / கைக்கோளர்" },
+  { value: "No Caste", labelEn: "No Caste", labelTa: "சாதி இல்லை (No Caste)" },
   { value: "Inter-Caste", labelEn: "Inter-Caste", labelTa: "சாதி மறுப்பு" },
   { value: "Caste No Bar", labelEn: "Caste No Bar", labelTa: "சாதி தடையில்லை" },
   { value: "Other", labelEn: "Other", labelTa: "மற்றவை" }
@@ -128,7 +129,9 @@ export const TERM_DICTIONARY: Record<string, string> = {
   "Yadav": "யாதவ் / கோனார்",
   "Sourashtra": "சௌராஷ்டிரா",
   "Arunthathiyar": "அருந்ததியர்",
+  "No Caste": "சாதி இல்லை",
   "Caste No Bar": "சாதி தடையில்லை",
+  "Discuss": "நேரில் பேசிக்கொள்ளலாம்",
   "Other Hindu": "மற்ற இந்து",
   
   "Christian Adi Dravida": "கிறிஸ்தவ ஆதி திராவிடர்",

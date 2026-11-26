@@ -276,7 +276,12 @@ export function Step1PersonalInfo({
 
   // When caste changes, if the previously selected koottam is not valid for this caste, reset it
   useEffect(() => {
-    if (watchKoottam && watchKoottam !== 'Other / Not Listed' && !availableKoottams.includes(watchKoottam)) {
+    if (
+      watchKoottam &&
+      watchKoottam !== 'Other / Not Listed' &&
+      !watchKoottam.includes('Discuss') &&
+      !availableKoottams.includes(watchKoottam)
+    ) {
       setValue('koottam', '');
     }
   }, [watchCaste, availableKoottams, watchKoottam, setValue]);
@@ -868,9 +873,17 @@ export function Step1PersonalInfo({
               className="w-full h-11 px-3.5 rounded-xl border border-gray-300 bg-[#FFFDF9] text-gray-900 font-medium text-sm focus:border-primary focus:bg-white focus:outline-none transition-all"
             >
               <option value="">{koottamFieldMeta.placeholder}</option>
-              {availableKoottams.map((k) => (
-                <option key={k} value={k}>{k}</option>
-              ))}
+              <option value="Discuss (நேரில் பேசிக்கொள்ளலாம்)" className="font-bold text-emerald-800 bg-emerald-50">
+                {language === 'TA' ? '🤝 நேரில் பேசிக்கொள்ளலாம் (Discuss)' : '🤝 Discuss (To be discussed)'}
+              </option>
+              {availableKoottams
+                .filter((k) => !k.includes('Discuss'))
+                .map((k) => (
+                  <option key={k} value={k}>{k}</option>
+                ))}
+              <option value="Other / Not Listed" className="text-gray-600">
+                {language === 'TA' ? 'மற்றவை / பட்டியலில் இல்லை (Other / Not Listed)' : 'Other / Not Listed'}
+              </option>
             </select>
             {watchKoottam === 'Other / Not Listed' && (
               <input

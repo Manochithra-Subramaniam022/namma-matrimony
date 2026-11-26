@@ -1000,9 +1000,11 @@ export default function AkshayamProfileView({
                 </div>
                 {(profile?.koottam || profile?.kootam || profile?.customKoottam) && (
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-primary shrink-0">கூட்டம்:</span>
+                    <span className="font-bold text-primary shrink-0">கூட்டம் / குலம்:</span>
                     <span className="font-black text-[#D4AF37] bg-primary/5 px-2 py-0.5 rounded-md">
-                      {profile?.koottam || profile?.kootam || profile?.customKoottam}
+                      {String(profile?.koottam || profile?.kootam || profile?.customKoottam).includes('Discuss')
+                        ? '🤝 நேரில் பேசிக்கொள்ளலாம் (To be discussed)'
+                        : (profile?.koottam || profile?.kootam || profile?.customKoottam)}
                     </span>
                   </div>
                 )}

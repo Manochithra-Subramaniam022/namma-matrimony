@@ -211,11 +211,25 @@ export async function GET(req: NextRequest) {
     // 2. Caste
     if (caste && caste !== 'Any' && caste.trim()) {
       const cLower = caste.toLowerCase();
-      filtered = filtered.filter((p) => {
-        const pCaste = (p.caste || '').toLowerCase();
-        const pSub = (p.subCaste || '').toLowerCase();
-        return pCaste.includes(cLower) || cLower.includes(pCaste) || pSub.includes(cLower);
-      });
+      if (cLower === 'no caste' || cLower.includes('no caste') || cLower.includes('சாதி இல்லை')) {
+        filtered = filtered.filter((p) => {
+          const pCaste = (p.caste || '').toLowerCase();
+          return (
+            !pCaste ||
+            pCaste === 'no caste' ||
+            pCaste.includes('no caste') ||
+            pCaste.includes('சாதி இல்லை') ||
+            pCaste.includes('caste no bar') ||
+            pCaste.includes('சாதி தடையில்லை')
+          );
+        });
+      } else {
+        filtered = filtered.filter((p) => {
+          const pCaste = (p.caste || '').toLowerCase();
+          const pSub = (p.subCaste || '').toLowerCase();
+          return pCaste.includes(cLower) || cLower.includes(pCaste) || pSub.includes(cLower);
+        });
+      }
     }
 
     // 3. Area / District

@@ -510,7 +510,7 @@ export default function LandingPage() {
                 {pAge ? `${pAge} வயது` : ''} {pHeight ? `• ${pHeight}` : ''}
               </p>
               <p className="text-xs text-gray-600 font-semibold truncate">
-                {pCaste} {pKoottam ? `• ${pKoottam}` : ''}
+                {pCaste} {pKoottam ? `• ${pKoottam.includes('Discuss') ? (language === 'TA' ? 'நேரில் பேசிக்கொள்ளலாம்' : 'Discuss') : pKoottam}` : ''}
               </p>
             </div>
           </div>
@@ -897,6 +897,8 @@ export default function LandingPage() {
                   className="w-full h-11 px-3 rounded-xl border border-gray-200 bg-[#FFFDF9] text-gray-900 font-bold text-xs sm:text-sm focus:border-primary focus:bg-white focus:outline-none transition-all cursor-pointer"
                 >
                   <option value="Any">{language === 'TA' ? 'அனைத்து சமூகம் (All Tamil)' : 'All Tamil Communities (Any)'}</option>
+                  <option value="No Caste">{language === 'TA' ? 'சாதி இல்லை (No Caste)' : 'No Caste'}</option>
+                  <option value="Caste No Bar">{language === 'TA' ? 'சாதி தடையில்லை (Caste No Bar)' : 'Caste No Bar'}</option>
                   <option value="Kongu Vellalar Gounder">கொங்கு வேளாளர் கவுண்டர்</option>
                   <option value="Vanniyar">வன்னியர்</option>
                   <option value="Nadar">நாடார்</option>
